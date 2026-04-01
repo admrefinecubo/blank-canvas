@@ -102,7 +102,7 @@ export default function AdminLojaVisitas() {
                         <div className="w-[180px]">
                           <Select
                             value={visita.status ?? "agendada"}
-                            onValueChange={(value) => statusMutation.mutate({ id: visita.id, status: value })}
+                            onValueChange={(value) => statusMutation.mutate({ id: visita.id, status: value as (typeof VISITA_STATUS_OPTIONS)[number]["value"] })}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione" />

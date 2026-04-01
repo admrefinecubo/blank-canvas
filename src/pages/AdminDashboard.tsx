@@ -375,7 +375,7 @@ export default function AdminDashboard() {
                     <tr key={c.id} className="border-b border-border/50">
                       <td className="py-3"><div><span className="font-medium">{c.name}</span><p className="text-xs text-muted-foreground">{c.owner_email}</p></div></td>
                       <td className="py-3">
-                        <Select value={c.status} onValueChange={v => updateStatusMutation.mutate({ id: c.id, status: v })}>
+                        <Select value={c.status} onValueChange={v => updateStatusMutation.mutate({ id: c.id, status: v as Clinic["status"] })}>
                           <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="ativa"><span className="flex items-center gap-1"><CheckCircle className="h-3 w-3 text-green-500" />Ativa</span></SelectItem>

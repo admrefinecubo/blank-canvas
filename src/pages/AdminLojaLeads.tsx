@@ -130,7 +130,7 @@ export default function AdminLojaLeads() {
                       <div className="w-[180px]" onClick={(event) => event.stopPropagation()}>
                         <Select
                           value={lead.etapa_pipeline ?? "novo"}
-                          onValueChange={(value) => stageMutation.mutate({ leadId: lead.id, etapa: value })}
+                          onValueChange={(value) => stageMutation.mutate({ leadId: lead.id, etapa: value as (typeof LEAD_STAGE_OPTIONS)[number]["value"] })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione" />
