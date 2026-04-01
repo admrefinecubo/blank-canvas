@@ -56,30 +56,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles((data as UserRole[]) || []);
   };
 
+  const hydrateAuthState = async (nextSession: Session | null) => {
+    setLoading(true);
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+    setRoles([]);
+
+    if (!nextSession?.user) {
+      setImpersonatedClinicId(null);
+      localStorage.removeItem('impersonated_clinic_id');
+      setLoading(false);
+      return;
+    }
+
+    await fetchRoles(nextSession.user.id);
+    setLoading(false);
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          setTimeout(() => fetchRoles(session.user.id), 0);
-        } else {
-          setRoles([]);
-          setImpersonatedClinicId(null);
-          localStorage.removeItem('impersonated_clinic_id');
-        }
-        setLoading(false);
+      (_event, nextSession) => {
+        void hydrateAuthState(nextSession);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchRoles(session.user.id);
-      }
-      setLoading(false);
-    });
+    void supabase.auth.getSession().then(({ data: { session } }) => hydrateAuthState(session));
 
     return () => subscription.unsubscribe();
   }, []);
