@@ -78,7 +78,7 @@ export default function Financial() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Financeiro</h1>
-        <Card><CardContent className="py-16 text-center"><p className="text-muted-foreground">Selecione uma clínica para ver o financeiro.</p></CardContent></Card>
+        <Card><CardContent className="py-16 text-center"><p className="text-muted-foreground">Selecione uma conta para ver o financeiro.</p></CardContent></Card>
       </div>
     );
   }

@@ -525,6 +525,7 @@ export default function SettingsPage() {
   const faviconInputRef = useRef<HTMLInputElement>(null);
 
   const [clinicForm, setClinicForm] = useState({ name: "", phone: "", email: "" });
+  const [brandForm, setBrandForm] = useState({ clinicName: "", clinicSubtitle: "CRM", primaryColor: PRESET_COLORS[0].value, logoUrl: null as string | null, faviconUrl: null as string | null });
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
   const [newMember, setNewMember] = useState({ email: "", password: "", role: "clinic_staff" });
 
@@ -545,6 +546,16 @@ export default function SettingsPage() {
   const effectiveClinicId = clinicId || selectedClinicId;
 
   useEffect(() => { if (effectiveClinic) setClinicForm({ name: effectiveClinic.name || "", phone: effectiveClinic.phone || "", email: effectiveClinic.email || "" }); }, [effectiveClinic]);
+  useEffect(() => {
+    if (!effectiveClinic) return;
+    setBrandForm({
+      clinicName: effectiveClinic.name || settings.clinicName,
+      clinicSubtitle: effectiveClinic.clinic_subtitle || "CRM",
+      primaryColor: effectiveClinic.primary_color || settings.primaryColor,
+      logoUrl: effectiveClinic.logo_url || null,
+      faviconUrl: effectiveClinic.favicon_url || null,
+    });
+  }, [effectiveClinic, settings.clinicName, settings.primaryColor]);
   useEffect(() => { if (adminClinics?.length && !selectedClinicId) setSelectedClinicId(adminClinics[0].id); }, [adminClinics, selectedClinicId]);
 
   const { data: teamMembers, isLoading: teamLoading } = useQuery({
@@ -577,51 +588,72 @@ export default function SettingsPage() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
+  const saveBrandingMutation = useMutation({
+    mutationFn: async () => {
+      if (!effectiveClinicId) throw new Error("Nenhuma conta selecionada");
+
+      const { error } = await supabase
+        .from("clinics")
+        .update({
+          name: brandForm.clinicName,
+          clinic_subtitle: brandForm.clinicSubtitle || null,
+          primary_color: brandForm.primaryColor,
+          logo_url: brandForm.logoUrl,
+          favicon_url: brandForm.faviconUrl,
+        })
+        .eq("id", effectiveClinicId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinic-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["clinics-for-settings"] });
+      updateSettings(brandForm);
+      setClinicForm((prev) => ({ ...prev, name: brandForm.clinicName }));
+      toast({ title: "Identidade visual salva!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: "logoUrl" | "faviconUrl") => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast({ title: "Arquivo inválido", description: "Selecione uma imagem", variant: "destructive" }); return; }
-    
-    if (field === "logoUrl" && effectiveClinicId) {
-      // Upload to Storage bucket
-      const fileExt = file.name.split('.').pop();
-      const filePath = `logos/${effectiveClinicId}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from("clinic-assets")
-        .upload(filePath, file, { upsert: true });
-      
-      if (uploadError) {
-        toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
-        return;
-      }
-      
-      const { data: urlData } = supabase.storage.from("clinic-assets").getPublicUrl(filePath);
-      const publicUrl = urlData.publicUrl + `?t=${Date.now()}`; // cache bust
-      
-      await supabase.from("clinics").update({ logo_url: publicUrl }).eq("id", effectiveClinicId);
-      updateSettings({ [field]: publicUrl });
-      toast({ title: "Logo atualizada!" });
-    } else {
-      // Favicon: keep as base64 (small file, browser-only)
-      const reader = new FileReader();
-      reader.onload = () => {
-        updateSettings({ [field]: reader.result as string });
-        toast({ title: "Imagem atualizada!" });
-      };
-      reader.readAsDataURL(file);
+
+    if (!effectiveClinicId) {
+      toast({ title: "Selecione uma conta", variant: "destructive" });
+      return;
     }
+
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${field === "logoUrl" ? "logos" : "favicons"}/${effectiveClinicId}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("clinic-assets")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("clinic-assets").getPublicUrl(filePath);
+    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    setBrandForm((prev) => ({ ...prev, [field]: publicUrl }));
+    updateSettings({ [field]: publicUrl });
+    toast({ title: field === "logoUrl" ? "Logo atualizada!" : "Favicon atualizado!" });
   };
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Configurações</h1>
 
-      <Tabs defaultValue="whitelabel">
+      <Tabs defaultValue={isPlatformAdmin ? "whitelabel" : "clinic"}>
         <TabsList className="bg-accent flex-wrap h-auto gap-1">
-          <TabsTrigger value="whitelabel" className="gap-1.5"><Palette className="h-3.5 w-3.5" /> White Label</TabsTrigger>
-          <TabsTrigger value="clinic">Loja</TabsTrigger>
-          <TabsTrigger value="team">Equipe</TabsTrigger>
+          {isPlatformAdmin && <TabsTrigger value="whitelabel" className="gap-1.5"><Palette className="h-3.5 w-3.5" /> White Label</TabsTrigger>}
+          <TabsTrigger value="clinic">Conta</TabsTrigger>
+          {isPlatformAdmin && <TabsTrigger value="team">Equipe</TabsTrigger>}
           <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>
           <TabsTrigger value="post-procedure">Pós-Venda</TabsTrigger>
           <TabsTrigger value="integrations">Integrações</TabsTrigger>
@@ -629,30 +661,39 @@ export default function SettingsPage() {
           <TabsTrigger value="audit"><History className="h-3.5 w-3.5 mr-1" />Auditoria</TabsTrigger>
         </TabsList>
 
-        {/* White Label */}
-        <TabsContent value="whitelabel" className="mt-4 space-y-4">
+        {isPlatformAdmin && <TabsContent value="whitelabel" className="mt-4 space-y-4">
           <Card className="bg-card">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Identidade Visual</CardTitle>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={() => { resetSettings(); toast({ title: "Configurações restauradas!" }); }}><RotateCcw className="h-3.5 w-3.5" /> Restaurar padrão</Button>
+                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={() => {
+                  resetSettings();
+                  setBrandForm({
+                    clinicName: effectiveClinic?.name || "Loja",
+                    clinicSubtitle: effectiveClinic?.clinic_subtitle || "CRM",
+                    primaryColor: effectiveClinic?.primary_color || "195 100% 50%",
+                    logoUrl: effectiveClinic?.logo_url || null,
+                    faviconUrl: effectiveClinic?.favicon_url || null,
+                  });
+                  toast({ title: "Pré-visualização restaurada!" });
+                }}><RotateCcw className="h-3.5 w-3.5" /> Restaurar</Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div><Label>Nome da Marca</Label><Input value={settings.clinicName} onChange={(e) => updateSettings({ clinicName: e.target.value })} placeholder="Nome que aparecerá na sidebar" /></div>
-                <div><Label>Subtítulo</Label><Input value={settings.clinicSubtitle} onChange={(e) => updateSettings({ clinicSubtitle: e.target.value })} placeholder="Ex: CRM, Clínica, Studio" /></div>
+                <div><Label>Nome da Marca</Label><Input value={brandForm.clinicName} onChange={(e) => setBrandForm(prev => ({ ...prev, clinicName: e.target.value }))} placeholder="Nome que aparecerá no CRM do cliente" /></div>
+                <div><Label>Subtítulo</Label><Input value={brandForm.clinicSubtitle} onChange={(e) => setBrandForm(prev => ({ ...prev, clinicSubtitle: e.target.value }))} placeholder="Ex: CRM, Loja, Studio" /></div>
               </div>
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-3">
                   <Label>Logo (Sidebar)</Label>
                   <div className="flex items-center gap-4">
                     <div className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 overflow-hidden">
-                      {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" /> : <span className="text-lg font-bold text-primary">{settings.clinicName.charAt(0)}</span>}
+                      {brandForm.logoUrl ? <img src={brandForm.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" /> : <span className="text-lg font-bold text-primary">{brandForm.clinicName.charAt(0)}</span>}
                     </div>
                     <div className="flex flex-col gap-2">
                       <Button variant="outline" size="sm" className="gap-1.5" onClick={() => logoInputRef.current?.click()}><Upload className="h-3.5 w-3.5" /> Enviar logo</Button>
-                      {settings.logoUrl && <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => updateSettings({ logoUrl: null })}>Remover</Button>}
+                      {brandForm.logoUrl && <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setBrandForm(prev => ({ ...prev, logoUrl: null }))}>Remover</Button>}
                     </div>
                   </div>
                   <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, "logoUrl")} />
@@ -661,11 +702,11 @@ export default function SettingsPage() {
                   <Label>Favicon</Label>
                   <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 overflow-hidden">
-                      {settings.faviconUrl ? <img src={settings.faviconUrl} alt="Favicon" className="h-full w-full object-contain p-0.5" /> : <span className="text-xs font-bold text-primary">{settings.clinicName.charAt(0)}</span>}
+                      {brandForm.faviconUrl ? <img src={brandForm.faviconUrl} alt="Favicon" className="h-full w-full object-contain p-0.5" /> : <span className="text-xs font-bold text-primary">{brandForm.clinicName.charAt(0)}</span>}
                     </div>
                     <div className="flex flex-col gap-2">
                       <Button variant="outline" size="sm" className="gap-1.5" onClick={() => faviconInputRef.current?.click()}><Upload className="h-3.5 w-3.5" /> Enviar favicon</Button>
-                      {settings.faviconUrl && <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => updateSettings({ faviconUrl: null })}>Remover</Button>}
+                      {brandForm.faviconUrl && <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setBrandForm(prev => ({ ...prev, faviconUrl: null }))}>Remover</Button>}
                     </div>
                   </div>
                   <input ref={faviconInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, "faviconUrl")} />
@@ -675,8 +716,8 @@ export default function SettingsPage() {
                 <Label>Cor Primária</Label>
                 <div className="flex flex-wrap gap-3">
                   {PRESET_COLORS.map(color => (
-                    <button key={color.value} onClick={() => updateSettings({ primaryColor: color.value })} className="group flex flex-col items-center gap-1.5">
-                      <div className="h-10 w-10 rounded-xl border-2 transition-all hover:scale-110" style={{ backgroundColor: `hsl(${color.value})`, borderColor: settings.primaryColor === color.value ? `hsl(${color.value})` : "transparent", boxShadow: settings.primaryColor === color.value ? `0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(${color.value})` : "none" }} />
+                    <button key={color.value} onClick={() => setBrandForm(prev => ({ ...prev, primaryColor: color.value }))} className="group flex flex-col items-center gap-1.5" type="button">
+                      <div className="h-10 w-10 rounded-xl border-2 transition-all hover:scale-110" style={{ backgroundColor: `hsl(${color.value})`, borderColor: brandForm.primaryColor === color.value ? `hsl(${color.value})` : "transparent", boxShadow: brandForm.primaryColor === color.value ? `0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(${color.value})` : "none" }} />
                       <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">{color.name}</span>
                     </button>
                   ))}
@@ -685,36 +726,45 @@ export default function SettingsPage() {
               <div className="rounded-xl border border-border bg-muted/20 p-6 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pré-visualização</p>
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden ${settings.logoUrl ? '' : ''}`} style={settings.logoUrl ? {} : { backgroundColor: `hsl(${settings.primaryColor})` }}>
-                    {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-cover" /> : <span className="text-sm font-bold text-white">{settings.clinicName.charAt(0)}</span>}
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden ${brandForm.logoUrl ? '' : ''}`} style={brandForm.logoUrl ? {} : { backgroundColor: `hsl(${brandForm.primaryColor})` }}>
+                    {brandForm.logoUrl ? <img src={brandForm.logoUrl} alt="Logo" className="h-full w-full object-cover" /> : <span className="text-sm font-bold text-white">{brandForm.clinicName.charAt(0)}</span>}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-base font-semibold tracking-tight">{settings.clinicName}</span>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{settings.clinicSubtitle}</span>
+                    <span className="text-base font-semibold tracking-tight">{brandForm.clinicName}</span>
+                    <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{brandForm.clinicSubtitle}</span>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-2">
-                  <Button size="sm" style={{ backgroundColor: `hsl(${settings.primaryColor})` }} className="text-white">Botão Primário</Button>
-                  <Button size="sm" variant="outline" style={{ borderColor: `hsl(${settings.primaryColor})`, color: `hsl(${settings.primaryColor})` }}>Botão Outline</Button>
+                  <Button size="sm" style={{ backgroundColor: `hsl(${brandForm.primaryColor})` }} className="text-white">Botão Primário</Button>
+                  <Button size="sm" variant="outline" style={{ borderColor: `hsl(${brandForm.primaryColor})`, color: `hsl(${brandForm.primaryColor})` }}>Botão Outline</Button>
                 </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => saveBrandingMutation.mutate()} disabled={saveBrandingMutation.isPending || !effectiveClinicId}>
+                  {saveBrandingMutation.isPending ? "Salvando..." : "Salvar identidade visual"}
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent>}
 
         <TabsContent value="clinic" className="mt-4 space-y-4">
           {isPlatformAdmin && !clinicId && adminClinics && adminClinics.length > 0 && (
             <div className="flex gap-2">{adminClinics.map(c => (<Button key={c.id} variant={selectedClinicId === c.id ? "default" : "outline"} size="sm" onClick={() => setSelectedClinicId(c.id)}>{c.name}</Button>))}</div>
           )}
           <Card className="bg-card">
-            <CardHeader><CardTitle className="text-sm">Informações Gerais</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">Informações da Conta</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><Label>Nome da Loja</Label><Input value={clinicForm.name} onChange={e => setClinicForm(f => ({ ...f, name: e.target.value }))} /></div>
                 <div><Label>Telefone</Label><Input value={clinicForm.phone} onChange={e => setClinicForm(f => ({ ...f, phone: e.target.value }))} /></div>
                 <div><Label>E-mail</Label><Input value={clinicForm.email} onChange={e => setClinicForm(f => ({ ...f, email: e.target.value }))} /></div>
               </div>
-              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>{saveMutation.isPending ? "Salvando..." : "Salvar Alterações"}</Button>
+              {isPlatformAdmin ? (
+                <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>{saveMutation.isPending ? "Salvando..." : "Salvar Alterações"}</Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">Os dados da conta e a identidade visual são gerenciados pelo administrador da plataforma.</p>
+              )}
             </CardContent>
           </Card>
           <Card className="bg-card">
@@ -729,7 +779,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="team" className="mt-4 space-y-4">
+        {isPlatformAdmin && <TabsContent value="team" className="mt-4 space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -777,7 +827,7 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent>}
 
         <TabsContent value="goals" className="mt-4 space-y-4">
           <GoalsTab clinicId={effectiveClinicId} />

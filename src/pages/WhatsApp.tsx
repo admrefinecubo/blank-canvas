@@ -14,7 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 
 const TEMPLATES = [
-  { category: "Atendimento", name: "Boas-vindas", text: "Olá, {{nome}}! Seja bem-vindo(a) à {{clínica}}. Sou {{atendente}}, como posso ajudá-lo(a)?" },
+  { category: "Atendimento", name: "Boas-vindas", text: "Olá, {{nome}}! Seja bem-vindo(a) à {{loja}}. Sou {{atendente}}, como posso ajudá-lo(a)?" },
   { category: "Atendimento", name: "Solicitar dados", text: "{{nome}}, para darmos andamento, preciso de algumas informações. Pode me informar seu nome completo e data de nascimento?" },
   { category: "Agenda", name: "Confirmação D-1", text: "{{nome}}, lembrando da sua consulta amanhã ({{data}}) às {{horário}} com {{profissional}}. Confirma sua presença? Responda SIM ou NÃO." },
   { category: "Agenda", name: "Lembrete 2h", text: "{{nome}}, sua consulta é daqui a 2 horas, às {{horário}}. Estamos aguardando você!" },
@@ -22,7 +22,7 @@ const TEMPLATES = [
   { category: "Orçamento", name: "Envio de orçamento", text: "{{nome}}, segue o orçamento do(s) procedimento(s) que conversamos. Qualquer dúvida, estou à disposição." },
   { category: "Orçamento", name: "Follow-up D+3", text: "{{nome}}, gostaria de saber se conseguiu analisar o orçamento que enviei. Posso esclarecer alguma dúvida?" },
   { category: "Pós-procedimento", name: "Pós-procedimento", text: "{{nome}}, como está se sentindo após o procedimento? Lembre-se de seguir as orientações que passamos. Qualquer dúvida, estamos aqui!" },
-  { category: "NPS", name: "NPS", text: "{{nome}}, de 0 a 10, quanto recomendaria a {{clínica}} para um amigo? Sua opinião é muito importante para nós." },
+  { category: "NPS", name: "NPS", text: "{{nome}}, de 0 a 10, quanto recomendaria a {{loja}} para um amigo? Sua opinião é muito importante para nós." },
 ];
 
 export default function WhatsApp() {
@@ -104,7 +104,7 @@ export default function WhatsApp() {
   if (!clinicId) {
     return (
       <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
-        <p className="text-muted-foreground">Selecione uma clínica para acessar o WhatsApp.</p>
+        <p className="text-muted-foreground">Selecione uma conta para acessar o WhatsApp.</p>
       </div>
     );
   }
@@ -130,7 +130,7 @@ export default function WhatsApp() {
             </div>
             <h2 className="mt-4 text-xl font-bold">Conectar WhatsApp</h2>
             <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-              Configure a Evolution API para conectar o número da clínica via QR Code e enviar mensagens automatizadas.
+              Configure a Evolution API para conectar o número da conta via QR Code e enviar mensagens automatizadas.
             </p>
             <Button className="mt-6" onClick={() => setShowSetup(true)}>
               <QrCode className="mr-2 h-4 w-4" /> Configurar Conexão
@@ -227,7 +227,7 @@ export default function WhatsApp() {
             </div>
             <div>
               <Label>Nome da Instância *</Label>
-              <Input placeholder="minha-clinica" value={setupForm.instance_name} onChange={e => setSetupForm(f => ({ ...f, instance_name: e.target.value }))} />
+              <Input placeholder="minha-loja" value={setupForm.instance_name} onChange={e => setSetupForm(f => ({ ...f, instance_name: e.target.value }))} />
               <p className="text-xs text-muted-foreground mt-1">Identificador único para esta conexão</p>
             </div>
             <Button className="w-full" onClick={() => { connectMutation.mutate(); setShowSetup(false); }} disabled={!setupForm.api_url || !setupForm.api_key || !setupForm.instance_name || connectMutation.isPending}>
