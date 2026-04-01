@@ -32,6 +32,11 @@ interface Clinic {
   logo_url: string | null; notes: string | null; created_at: string;
 }
 
+interface LojaSummary {
+  id: string;
+  clinic_id: string | null;
+}
+
 const STATUS_COLORS = {
   ativa: "bg-green-500/10 text-green-500 border-green-500/20",
   inativa: "bg-muted text-muted-foreground border-border",
@@ -102,6 +107,15 @@ export default function AdminDashboard() {
     enabled: activeTab === "activity" || activeTab === "dashboard",
   });
 
+  const { data: lojas = [] } = useQuery({
+    queryKey: ["admin-lojas-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("lojas").select("id, clinic_id");
+      if (error) throw error;
+      return (data as LojaSummary[]) || [];
+    },
+  });
+
   // ===== Mutations =====
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -135,10 +149,11 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-lojas-summary"] });
       setNewClinicOpen(false);
       setNewClinic({ name: "", city: "", state: "", phone: "", email: "", ownerName: "", ownerEmail: "", ownerPassword: "", primaryColor: "24 95% 53%", notes: "" });
       setLogoPreview(null);
-      toast.success("Loja e acesso do proprietário criados com sucesso!");
+      toast.success("Conta criada com acesso do proprietário liberado.");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -159,8 +174,9 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-lojas-summary"] });
       setEditingClinic(null);
-      toast.success("Loja atualizada!");
+      toast.success("Conta atualizada!");
     },
   });
 
@@ -175,15 +191,18 @@ export default function AdminDashboard() {
     },
     onSuccess: (data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-lojas-summary"] });
       toast.success(vars.ban
-        ? `Loja bloqueada! ${data.banned_count} usuário(s) banido(s).`
-        : `Loja desbloqueada! ${data.unbanned_count} usuário(s) reativado(s).`
+        ? `Conta bloqueada! ${data.banned_count} usuário(s) banido(s).`
+        : `Conta desbloqueada! ${data.unbanned_count} usuário(s) reativado(s).`
       );
     },
     onError: (e: any) => toast.error(e.message),
   });
 
   const activeClinics = clinics.filter(c => c.status === "ativa").length;
+  const operationalStores = lojas.length;
+  const clinicsWithoutStore = clinics.filter(c => !lojas.some(loja => loja.clinic_id === c.id)).length;
   const canceladas = clinics.filter(c => c.status === "cancelada").length;
   const totalLeads = allPatients.length;
   const totalAppointments = allAppointments.length;
@@ -213,7 +232,7 @@ export default function AdminDashboard() {
 
   const adminNavItems = [
     { id: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
-    { id: "clinics" as const, label: "Lojas", icon: Building2 },
+    { id: "clinics" as const, label: "Contas", icon: Building2 },
     { id: "metrics" as const, label: "Métricas de Uso", icon: BarChart3 },
     { id: "activity" as const, label: "Atividade", icon: History },
   ];
@@ -231,7 +250,7 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-bold tracking-tight">Visão geral da operação</h1>
             <Badge variant="outline">{adminNavItems.find(i => i.id === activeTab)?.label}</Badge>
           </div>
-          <p className="text-sm text-muted-foreground">Gerencie lojas, acompanhe métricas e navegue no admin sem abrir um segundo shell.</p>
+          <p className="text-sm text-muted-foreground">Separe contas de clientes e lojas operacionais para evitar leitura errada do estado do sistema.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {adminNavItems.map(item => (
@@ -258,8 +277,10 @@ export default function AdminDashboard() {
       {/* ========== DASHBOARD ========== */}
       {activeTab === "dashboard" && (
         <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Lojas Ativas</p><p className="text-2xl font-bold">{activeClinics}</p></CardContent></Card>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
+                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Contas Ativas</p><p className="text-2xl font-bold">{activeClinics}</p></CardContent></Card>
+                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Lojas Operacionais</p><p className="text-2xl font-bold">{operationalStores}</p></CardContent></Card>
+                <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Contas sem Loja</p><p className="text-2xl font-bold">{clinicsWithoutStore}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Total Leads</p><p className="text-2xl font-bold">{totalLeads}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Visitas</p><p className="text-2xl font-bold">{totalAppointments}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Faturamento Total</p><p className="text-2xl font-bold">R$ {totalRevenue.toLocaleString("pt-BR")}</p></CardContent></Card>
@@ -269,11 +290,11 @@ export default function AdminDashboard() {
               {/* Quick Clinic Table */}
               {clinics.length > 0 && (
                 <Card>
-                  <CardHeader><CardTitle className="text-sm">Lojas — Visão Geral</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="text-sm">Contas — Visão Geral</CardTitle></CardHeader>
                   <CardContent className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead><tr className="border-b border-border text-left text-muted-foreground">
-                        <th className="pb-3 font-medium">Loja</th><th className="pb-3 font-medium">Status</th>
+                         <th className="pb-3 font-medium">Conta</th><th className="pb-3 font-medium">Status</th>
                         <th className="pb-3 font-medium">Leads</th><th className="pb-3 font-medium">Visitas</th>
                         <th className="pb-3 font-medium">Fatur.</th><th className="pb-3 font-medium">WhatsApp</th><th className="pb-3 font-medium">Calendar</th>
                       </tr></thead>
@@ -321,29 +342,29 @@ export default function AdminDashboard() {
       {activeTab === "clinics" && (
         <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Gestão de Lojas</h2>
+                <h2 className="text-2xl font-bold">Gestão de Contas</h2>
                 <Dialog open={newClinicOpen} onOpenChange={setNewClinicOpen}>
-                  <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Nova Loja</Button></DialogTrigger>
+                  <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Nova Conta</Button></DialogTrigger>
                   <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-                    <DialogHeader><DialogTitle>Cadastrar Nova Loja</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>Cadastrar Nova Conta</DialogTitle></DialogHeader>
                     <div className="space-y-6 py-2">
                       <div className="space-y-3">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dados da Loja</p>
-                        <div><Label>Nome da Loja *</Label><Input placeholder="Ex: Loja Conforto SP" value={newClinic.name} onChange={e => setNewClinic(p => ({ ...p, name: e.target.value }))} /></div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dados da Conta</p>
+                        <div><Label>Nome da Conta *</Label><Input placeholder="Ex: Conforto SP" value={newClinic.name} onChange={e => setNewClinic(p => ({ ...p, name: e.target.value }))} /></div>
                         <div className="grid grid-cols-2 gap-3">
                           <div><Label>Cidade</Label><Input placeholder="São Paulo" value={newClinic.city} onChange={e => setNewClinic(p => ({ ...p, city: e.target.value }))} /></div>
                           <div><Label>Estado</Label><Input placeholder="SP" maxLength={2} value={newClinic.state} onChange={e => setNewClinic(p => ({ ...p, state: e.target.value.toUpperCase() }))} /></div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div><Label>Telefone</Label><Input placeholder="(11) 99999-0000" value={newClinic.phone} onChange={e => setNewClinic(p => ({ ...p, phone: e.target.value }))} /></div>
-                          <div><Label>E-mail</Label><Input type="email" placeholder="contato@loja.com" value={newClinic.email} onChange={e => setNewClinic(p => ({ ...p, email: e.target.value }))} /></div>
+                          <div><Label>E-mail</Label><Input type="email" placeholder="contato@empresa.com" value={newClinic.email} onChange={e => setNewClinic(p => ({ ...p, email: e.target.value }))} /></div>
                         </div>
                       </div>
                       <div className="space-y-3">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proprietário</p>
                         <div className="grid grid-cols-2 gap-3">
                           <div><Label>Nome *</Label><Input placeholder="Fulano da Silva" value={newClinic.ownerName} onChange={e => setNewClinic(p => ({ ...p, ownerName: e.target.value }))} /></div>
-                          <div><Label>E-mail de Acesso *</Label><Input type="email" placeholder="fulano@loja.com" value={newClinic.ownerEmail} onChange={e => setNewClinic(p => ({ ...p, ownerEmail: e.target.value }))} /></div>
+                          <div><Label>E-mail de Acesso *</Label><Input type="email" placeholder="fulano@empresa.com" value={newClinic.ownerEmail} onChange={e => setNewClinic(p => ({ ...p, ownerEmail: e.target.value }))} /></div>
                         </div>
                         <div><Label>Senha Inicial *</Label><Input type="password" placeholder="Mínimo 6 caracteres" value={newClinic.ownerPassword} onChange={e => setNewClinic(p => ({ ...p, ownerPassword: e.target.value }))} /></div>
                       </div>
@@ -365,19 +386,19 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-                      <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>{createMutation.isPending ? "Criando..." : "Criar Loja"}</Button>
+                      <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending}>{createMutation.isPending ? "Criando..." : "Criar Conta"}</Button>
                     </div>
                   </DialogContent>
                 </Dialog>
               </div>
 
               <div className="flex gap-2">
-                <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="h-9 w-64 bg-background pl-9 text-sm" placeholder="Buscar loja..." value={search} onChange={e => setSearch(e.target.value)} /></div>
+                 <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="h-9 w-64 bg-background pl-9 text-sm" placeholder="Buscar conta..." value={search} onChange={e => setSearch(e.target.value)} /></div>
               </div>
 
               <Card><CardContent className="pt-6 overflow-x-auto"><table className="w-full text-sm">
                 <thead><tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="pb-3 font-medium">Loja</th><th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 font-medium">Conta</th><th className="pb-3 font-medium">Status</th>
                   <th className="pb-3 font-medium">Cidade</th><th className="pb-3 font-medium">Proprietário</th>
                   <th className="pb-3 font-medium">Leads</th><th className="pb-3 font-medium">Integrações</th>
                   <th className="pb-3 font-medium">Ações</th>
@@ -385,7 +406,7 @@ export default function AdminDashboard() {
                 <tbody>{loadingClinics ? (
                   <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Carregando...</td></tr>
                 ) : filteredClinics.length === 0 ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Nenhuma loja encontrada</td></tr>
+                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Nenhuma conta encontrada</td></tr>
                 ) : filteredClinics.map(c => {
                   const m = clinicMetrics.find(cm => cm.id === c.id);
                   return (

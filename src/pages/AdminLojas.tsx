@@ -24,6 +24,23 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
+type LojaRow = {
+  id: string;
+  clinic_id?: string | null;
+  nome_loja: string;
+  nome_assistente?: string | null;
+  nome_assistente_ia?: string | null;
+  instance?: string | null;
+  ativo?: boolean | null;
+  created_at?: string | null;
+};
+
+type ClinicRow = {
+  id: string;
+  name: string;
+  owner_email: string;
+};
+
 const AVATAR_COLORS = [
   "bg-blue-500", "bg-emerald-500", "bg-violet-500", "bg-amber-500",
   "bg-rose-500", "bg-cyan-500", "bg-indigo-500", "bg-pink-500",
@@ -42,23 +59,6 @@ export default function AdminLojas() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
    const [createForm, setCreateForm] = useState({ clinic_id: "", nome_loja: "", nome_assistente: "Sofia", instance: "" });
    const [linkForm, setLinkForm] = useState({ lojaId: null as string | null, clinic_id: "" });
-
-  type LojaRow = {
-    id: string;
-     clinic_id?: string | null;
-    nome_loja: string;
-    nome_assistente?: string | null;
-    nome_assistente_ia?: string | null;
-    instance?: string | null;
-    ativo?: boolean | null;
-    created_at?: string | null;
-  };
-
-   type ClinicRow = {
-     id: string;
-     name: string;
-     owner_email: string;
-   };
 
   const { data: lojas, isLoading } = useQuery({
     queryKey: ["admin-lojas"],
@@ -88,6 +88,11 @@ export default function AdminLojas() {
      () => Object.fromEntries(clinics.map((clinic) => [clinic.id, clinic])) as Record<string, ClinicRow>,
      [clinics],
    );
+
+  const clinicsWithoutStore = useMemo(
+    () => clinics.filter((clinic) => !lojas?.some((loja) => loja.clinic_id === clinic.id)),
+    [clinics, lojas],
+  );
 
    const lojaToLink = lojas?.find((loja) => loja.id === linkForm.lojaId) ?? null;
 
@@ -177,7 +182,7 @@ export default function AdminLojas() {
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Lojas</h1>
-          <p className="text-sm text-muted-foreground">Gerencie os tenants do agente WhatsApp</p>
+          <p className="text-sm text-muted-foreground">Gerencie as lojas operacionais vinculadas às contas dos clientes</p>
         </div>
         <Button className="gap-2" onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4" /> Nova Loja
@@ -273,6 +278,45 @@ export default function AdminLojas() {
           )}
         </CardContent>
       </Card>
+
+      {!!clinicsWithoutStore.length && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Contas sem loja operacional</h2>
+                <p className="text-sm text-muted-foreground">Essas contas existem no sistema, mas ainda não possuem registro em <code>lojas</code>.</p>
+              </div>
+              <Badge variant="outline">{clinicsWithoutStore.length}</Badge>
+            </div>
+
+            <div className="space-y-3">
+              {clinicsWithoutStore.map((clinic) => (
+                <div key={clinic.id} className="flex flex-col gap-3 rounded-xl border border-border p-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="font-medium">{clinic.name}</p>
+                    <p className="text-sm text-muted-foreground">Owner: {clinic.owner_email}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => {
+                      setCreateForm((current) => ({
+                        ...current,
+                        clinic_id: clinic.id,
+                        nome_loja: current.nome_loja || clinic.name,
+                      }));
+                      setShowCreate(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" /> Criar loja
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

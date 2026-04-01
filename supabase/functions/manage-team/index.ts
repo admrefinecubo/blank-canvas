@@ -111,6 +111,40 @@ serve(async (req) => {
       }
     };
 
+    const ensureLoja = async (clinicId: string, clinicName: string) => {
+      const { data: existingLoja, error: lojaLookupError } = await supabaseAdmin
+        .from("lojas")
+        .select("id")
+        .eq("clinic_id", clinicId)
+        .limit(1)
+        .maybeSingle();
+
+      if (lojaLookupError) throw lojaLookupError;
+      if (existingLoja) return existingLoja.id;
+
+      const defaultInstance = clinicName
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 40) || crypto.randomUUID().slice(0, 8);
+
+      const { data: newLoja, error: insertLojaError } = await supabaseAdmin
+        .from("lojas")
+        .insert({
+          clinic_id: clinicId,
+          nome_loja: clinicName,
+          nome_assistente_ia: "Sofia",
+          instance: defaultInstance,
+        })
+        .select("id")
+        .single();
+
+      if (insertLojaError) throw insertLojaError;
+      return newLoja.id;
+    };
+
     const { action, ...params } = await req.json();
 
     if (action === "list") {
@@ -156,6 +190,15 @@ serve(async (req) => {
       if (!email || !password || !role || !clinic_id) throw new Error("email, password, role, clinic_id required");
       if (String(password).length < 6) throw new Error("password must be at least 6 characters");
 
+      const { data: clinic, error: clinicError } = await supabaseAdmin
+        .from("clinics")
+        .select("id, name")
+        .eq("id", clinic_id)
+        .maybeSingle();
+
+      if (clinicError) throw clinicError;
+      if (!clinic) throw new Error("Clinic not found");
+
       const existingUser = await findUserByEmail(email);
 
       let userId = existingUser?.id;
@@ -179,8 +222,9 @@ serve(async (req) => {
 
       await ensureProfile(userId, email, display_name);
       await ensureRole(userId, role, clinic_id);
+      const lojaId = await ensureLoja(clinic_id, clinic.name);
 
-      return new Response(JSON.stringify({ success: true, user_id: userId, created }), {
+      return new Response(JSON.stringify({ success: true, user_id: userId, created, loja_id: lojaId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
