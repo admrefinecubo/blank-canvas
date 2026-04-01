@@ -80,21 +80,15 @@ const App = () => (
               </Route>
               <Route path="/admin" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AppLayout /></ProtectedRoute>}>
                 <Route index element={<AdminDashboard />} />
-              </Route>
-              <Route path="/admin/clinic/:id" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AppLayout /></ProtectedRoute>}>
-                <Route index element={<AdminClinicDetail />} />
-              </Route>
-              <Route path="/admin/stats" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AppLayout /></ProtectedRoute>}>
-                <Route index element={<AdminStats />} />
-              </Route>
-              <Route path="/admin/lojas" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AppLayout /></ProtectedRoute>}>
-                <Route index element={<AdminLojas />} />
-                <Route path=":id" element={<AdminLojaDetail />} />
-                <Route path=":id/catalogo" element={<AdminLojaCatalogo />} />
-                <Route path=":id/leads" element={<AdminLojaLeads />} />
-                <Route path=":id/conversas" element={<AdminLojaConversas />} />
-                <Route path=":id/followups" element={<AdminLojaFollowups />} />
-                <Route path=":id/visitas" element={<AdminLojaVisitas />} />
+                <Route path="clinic/:id" element={<AdminClinicDetail />} />
+                <Route path="stats" element={<AdminStats />} />
+                <Route path="lojas" element={<AdminLojas />} />
+                <Route path="lojas/:id" element={<AdminLojaDetail />} />
+                <Route path="lojas/:id/catalogo" element={<AdminLojaCatalogo />} />
+                <Route path="lojas/:id/leads" element={<AdminLojaLeads />} />
+                <Route path="lojas/:id/conversas" element={<AdminLojaConversas />} />
+                <Route path="lojas/:id/followups" element={<AdminLojaFollowups />} />
+                <Route path="lojas/:id/visitas" element={<AdminLojaVisitas />} />
               </Route>
               <Route path="/settings" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route index element={<SettingsPage />} />

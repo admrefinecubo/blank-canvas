@@ -227,12 +227,11 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Admin Console</p>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">Painel Administrativo</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Visão geral da operação</h1>
             <Badge variant="outline">{adminNavItems.find(i => i.id === activeTab)?.label}</Badge>
           </div>
-          <p className="text-sm text-muted-foreground">Gerencie lojas, acompanhe métricas e entre no CRM sem abrir um segundo layout.</p>
+          <p className="text-sm text-muted-foreground">Gerencie lojas, acompanhe métricas e navegue no admin sem abrir um segundo shell.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {adminNavItems.map(item => (
@@ -259,7 +258,6 @@ export default function AdminDashboard() {
       {/* ========== DASHBOARD ========== */}
       {activeTab === "dashboard" && (
         <div className="space-y-6">
-               <h1 className="text-2xl font-bold">Painel Administrativo CUBO</h1>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Lojas Ativas</p><p className="text-2xl font-bold">{activeClinics}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Total Leads</p><p className="text-2xl font-bold">{totalLeads}</p></CardContent></Card>
@@ -323,7 +321,7 @@ export default function AdminDashboard() {
       {activeTab === "clinics" && (
         <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold">Gestão de Lojas</h1>
+                <h2 className="text-2xl font-bold">Gestão de Lojas</h2>
                 <Dialog open={newClinicOpen} onOpenChange={setNewClinicOpen}>
                   <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Nova Loja</Button></DialogTrigger>
                   <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
