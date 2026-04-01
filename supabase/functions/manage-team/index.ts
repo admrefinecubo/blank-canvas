@@ -36,6 +36,81 @@ serve(async (req) => {
     
     if (!callerRoles?.length) throw new Error("Only platform admins can manage team members");
 
+    const listAllUsers = async () => {
+      const users: any[] = [];
+      let page = 1;
+
+      while (true) {
+        const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error) throw error;
+
+        const batch = data?.users || [];
+        users.push(...batch);
+
+        if (batch.length < 1000) break;
+        page += 1;
+      }
+
+      return users;
+    };
+
+    const findUserByEmail = async (email: string) => {
+      const users = await listAllUsers();
+      return users.find((item) => item.email?.toLowerCase() === email.toLowerCase()) || null;
+    };
+
+    const ensureProfile = async (userId: string, email: string, displayName?: string) => {
+      const { data: existingProfile, error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, display_name")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      const safeDisplayName = displayName?.trim() || email.split("@")[0];
+
+      if (!existingProfile) {
+        const { error: insertProfileError } = await supabaseAdmin
+          .from("profiles")
+          .insert({ user_id: userId, display_name: safeDisplayName });
+
+        if (insertProfileError) throw insertProfileError;
+        return;
+      }
+
+      if (safeDisplayName && existingProfile.display_name !== safeDisplayName) {
+        const { error: updateProfileError } = await supabaseAdmin
+          .from("profiles")
+          .update({ display_name: safeDisplayName })
+          .eq("user_id", userId);
+
+        if (updateProfileError) throw updateProfileError;
+      }
+    };
+
+    const ensureRole = async (userId: string, role: string, clinicId: string) => {
+      const { data: existingRole, error: roleLookupError } = await supabaseAdmin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", role)
+        .eq("clinic_id", clinicId)
+        .maybeSingle();
+
+      if (roleLookupError) throw roleLookupError;
+
+      if (!existingRole) {
+        const { error: insertRoleError } = await supabaseAdmin.from("user_roles").insert({
+          user_id: userId,
+          role,
+          clinic_id: clinicId,
+        });
+
+        if (insertRoleError) throw insertRoleError;
+      }
+    };
+
     const { action, ...params } = await req.json();
 
     if (action === "list") {
@@ -77,24 +152,35 @@ serve(async (req) => {
     }
 
     if (action === "create") {
-      const { email, password, role, clinic_id } = params;
+      const { email, password, role, clinic_id, display_name } = params;
       if (!email || !password || !role || !clinic_id) throw new Error("email, password, role, clinic_id required");
+      if (String(password).length < 6) throw new Error("password must be at least 6 characters");
 
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-      });
-      if (createError) throw createError;
+      const existingUser = await findUserByEmail(email);
 
-      const { error: roleError } = await supabaseAdmin.from("user_roles").insert({
-        user_id: newUser.user.id,
-        role,
-        clinic_id,
-      });
-      if (roleError) throw roleError;
+      let userId = existingUser?.id;
+      let created = false;
 
-      return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+      if (!existingUser) {
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: {
+            display_name: display_name || email.split("@")[0],
+          },
+        });
+        if (createError) throw createError;
+        userId = newUser.user.id;
+        created = true;
+      }
+
+      if (!userId) throw new Error("Failed to provision user");
+
+      await ensureProfile(userId, email, display_name);
+      await ensureRole(userId, role, clinic_id);
+
+      return new Response(JSON.stringify({ success: true, user_id: userId, created }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
