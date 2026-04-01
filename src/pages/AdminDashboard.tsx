@@ -357,14 +357,14 @@ export default function AdminDashboard() {
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div><Label>Telefone</Label><Input placeholder="(11) 99999-0000" value={newClinic.phone} onChange={e => setNewClinic(p => ({ ...p, phone: e.target.value }))} /></div>
-                          <div><Label>E-mail</Label><Input type="email" placeholder="contato@cliente.com" value={newClinic.email} onChange={e => setNewClinic(p => ({ ...p, email: e.target.value }))} /></div>
+                          <div><Label>E-mail</Label><Input type="email" placeholder="contato@empresa.com" value={newClinic.email} onChange={e => setNewClinic(p => ({ ...p, email: e.target.value }))} /></div>
                         </div>
                       </div>
                       <div className="space-y-3">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proprietário</p>
                         <div className="grid grid-cols-2 gap-3">
                           <div><Label>Nome *</Label><Input placeholder="Fulano da Silva" value={newClinic.ownerName} onChange={e => setNewClinic(p => ({ ...p, ownerName: e.target.value }))} /></div>
-                          <div><Label>E-mail de Acesso *</Label><Input type="email" placeholder="fulano@cliente.com" value={newClinic.ownerEmail} onChange={e => setNewClinic(p => ({ ...p, ownerEmail: e.target.value }))} /></div>
+                          <div><Label>E-mail de Acesso *</Label><Input type="email" placeholder="fulano@empresa.com" value={newClinic.ownerEmail} onChange={e => setNewClinic(p => ({ ...p, ownerEmail: e.target.value }))} /></div>
                         </div>
                         <div><Label>Senha Inicial *</Label><Input type="password" placeholder="Mínimo 6 caracteres" value={newClinic.ownerPassword} onChange={e => setNewClinic(p => ({ ...p, ownerPassword: e.target.value }))} /></div>
                       </div>

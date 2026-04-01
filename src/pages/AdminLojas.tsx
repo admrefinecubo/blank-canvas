@@ -182,7 +182,7 @@ export default function AdminLojas() {
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Lojas</h1>
-          <p className="text-sm text-muted-foreground">Gerencie os tenants do agente WhatsApp</p>
+          <p className="text-sm text-muted-foreground">Gerencie as lojas operacionais vinculadas às contas dos clientes</p>
         </div>
         <Button className="gap-2" onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4" /> Nova Loja
