@@ -527,10 +527,12 @@ export type Database = {
       }
       leads: {
         Row: {
+          bot_paused_until: string | null
           created_at: string
           etapa_pipeline: Database["public"]["Enums"]["lead_stage"]
           id: string
           interesse: string | null
+          is_bot_active: boolean
           loja_id: string
           nome: string | null
           origem: string | null
@@ -539,10 +541,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bot_paused_until?: string | null
           created_at?: string
           etapa_pipeline?: Database["public"]["Enums"]["lead_stage"]
           id?: string
           interesse?: string | null
+          is_bot_active?: boolean
           loja_id: string
           nome?: string | null
           origem?: string | null
@@ -551,10 +555,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bot_paused_until?: string | null
           created_at?: string
           etapa_pipeline?: Database["public"]["Enums"]["lead_stage"]
           id?: string
           interesse?: string | null
+          is_bot_active?: boolean
           loja_id?: string
           nome?: string | null
           origem?: string | null
@@ -605,6 +611,7 @@ export type Database = {
       lojas: {
         Row: {
           ativo: boolean
+          checkout_base_url: string | null
           clinic_id: string | null
           created_at: string
           desconto_carrinho_abandonado: number | null
@@ -617,7 +624,7 @@ export type Database = {
           horario_inicio: string | null
           id: string
           instance: string | null
-          link_google_maps: string | null
+          maps_link: string | null
           montagem_disponivel: boolean
           nome_assistente: string | null
           nome_assistente_ia: string | null
@@ -628,10 +635,10 @@ export type Database = {
           regras_personalidade: string | null
           tom_voz: string | null
           updated_at: string
-          url_base_checkout: string | null
         }
         Insert: {
           ativo?: boolean
+          checkout_base_url?: string | null
           clinic_id?: string | null
           created_at?: string
           desconto_carrinho_abandonado?: number | null
@@ -644,7 +651,7 @@ export type Database = {
           horario_inicio?: string | null
           id?: string
           instance?: string | null
-          link_google_maps?: string | null
+          maps_link?: string | null
           montagem_disponivel?: boolean
           nome_assistente?: string | null
           nome_assistente_ia?: string | null
@@ -655,10 +662,10 @@ export type Database = {
           regras_personalidade?: string | null
           tom_voz?: string | null
           updated_at?: string
-          url_base_checkout?: string | null
         }
         Update: {
           ativo?: boolean
+          checkout_base_url?: string | null
           clinic_id?: string | null
           created_at?: string
           desconto_carrinho_abandonado?: number | null
@@ -671,7 +678,7 @@ export type Database = {
           horario_inicio?: string | null
           id?: string
           instance?: string | null
-          link_google_maps?: string | null
+          maps_link?: string | null
           montagem_disponivel?: boolean
           nome_assistente?: string | null
           nome_assistente_ia?: string | null
@@ -682,7 +689,6 @@ export type Database = {
           regras_personalidade?: string | null
           tom_voz?: string | null
           updated_at?: string
-          url_base_checkout?: string | null
         }
         Relationships: [
           {
