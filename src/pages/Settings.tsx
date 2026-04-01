@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -10,25 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Upload, RotateCcw, Palette, WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, MessageSquare, Loader2, Target, History, Eye } from "lucide-react";
-import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
+import { WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, MessageSquare, Loader2, Target, History, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-const PRESET_COLORS = [
-  { name: "Laranja CUBO", value: "24 95% 53%" },
-  { name: "Azul Royal", value: "217 80% 55%" },
-  { name: "Verde Esmeralda", value: "152 60% 40%" },
-  { name: "Rosa Elegante", value: "340 65% 55%" },
-  { name: "Dourado", value: "38 92% 50%" },
-  { name: "Roxo Premium", value: "270 60% 55%" },
-  { name: "Turquesa", value: "174 60% 45%" },
-  { name: "Vermelho Intenso", value: "0 72% 51%" },
-];
 
 const ROLE_LABELS: Record<string, string> = {
   clinic_owner: "Proprietário",
