@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   children: React.ReactNode;
@@ -8,7 +9,7 @@ interface Props {
 }
 
 export default function ProtectedRoute({ children, requiredRole, requiredMode = 'authenticated' }: Props) {
-  const { session, loading, isPlatformAdmin, appMode, canAccessClientApp, defaultRoute } = useAuth();
+  const { session, loading, isPlatformAdmin, appMode, canAccessClientApp, defaultRoute, signOut } = useAuth();
 
   if (loading) {
     return (
@@ -35,7 +36,21 @@ export default function ProtectedRoute({ children, requiredRole, requiredMode = 
 
   if (requiredMode === 'client') {
     if (!canAccessClientApp) {
-      return <Navigate to="/admin" replace />;
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background px-6">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+            <h1 className="text-2xl font-semibold tracking-tight">Conta sem acesso liberado</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Seu usuário entrou com sucesso, mas ainda não foi vinculado a uma conta/loja ativa no CRM.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Button onClick={signOut} variant="outline" className="rounded-xl">
+                Sair da conta
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
     }
 
     if (appMode !== 'client') {
