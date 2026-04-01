@@ -277,7 +277,7 @@ export default function AdminDashboard() {
       {/* ========== DASHBOARD ========== */}
       {activeTab === "dashboard" && (
         <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-7">
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Contas Ativas</p><p className="text-2xl font-bold">{activeClinics}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Lojas Operacionais</p><p className="text-2xl font-bold">{operationalStores}</p></CardContent></Card>
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Contas sem Loja</p><p className="text-2xl font-bold">{clinicsWithoutStore}</p></CardContent></Card>
