@@ -67,7 +67,7 @@ export default function AdminLojaLeads() {
   });
 
   const stageMutation = useMutation({
-    mutationFn: async ({ leadId, etapa }: { leadId: string; etapa: string }) => {
+    mutationFn: async ({ leadId, etapa }: { leadId: string; etapa: (typeof LEAD_STAGE_OPTIONS)[number]["value"] }) => {
       const { error } = await supabase.from("leads").update({ etapa_pipeline: etapa }).eq("id", leadId);
       if (error) throw error;
     },

@@ -183,10 +183,10 @@ export default function PatientDetail() {
                 <span>{patient.email}</span>
               </div>
             )}
-            {patient.birth_date && (
+            {(patient as any).birth_date && (
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>{format(new Date(patient.birth_date), "dd/MM/yyyy")}</span>
+                <span>{format(new Date((patient as any).birth_date), "dd/MM/yyyy")}</span>
               </div>
             )}
             {patient.cpf && (

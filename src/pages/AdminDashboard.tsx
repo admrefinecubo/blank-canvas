@@ -125,7 +125,7 @@ export default function AdminDashboard() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: Clinic["status"] }) => {
       const { error } = await supabase.from("clinics").update({ status }).eq("id", id);
       if (error) throw error;
     },
