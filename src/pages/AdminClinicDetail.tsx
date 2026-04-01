@@ -67,8 +67,8 @@ export default function AdminClinicDetail() {
     enabled: !!id,
   });
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center bg-background"><p className="text-muted-foreground">Carregando...</p></div>;
-  if (!clinic) return <div className="flex h-screen items-center justify-center bg-background"><div className="text-center space-y-4"><p className="text-lg text-muted-foreground">Loja não encontrada</p><Button variant="outline" onClick={() => navigate("/admin")}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button></div></div>;
+  if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center"><p className="text-muted-foreground">Carregando...</p></div>;
+  if (!clinic) return <div className="flex min-h-[40vh] items-center justify-center"><div className="text-center space-y-4"><p className="text-lg text-muted-foreground">Loja não encontrada</p><Button variant="outline" onClick={() => navigate("/admin")}><ChevronLeft className="mr-2 h-4 w-4" />Voltar</Button></div></div>;
 
   const statusInfo = STATUS_MAP[clinic.status as string] || STATUS_MAP.ativa;
   const totalRevenue = budgets.filter(b => b.status === "aprovado").reduce((s, b) => s + Number(b.total || 0), 0);
@@ -77,45 +77,31 @@ export default function AdminClinicDetail() {
   const gcal = integrations.find((i: any) => i.provider === "google_calendar");
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
-      <aside className="flex w-60 flex-col border-r border-border bg-card">
-        <div className="flex h-14 items-center border-b border-border px-4">
-          <Link to="/admin" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary"><span className="text-sm font-bold text-primary-foreground">C</span></div>
-            <div><span className="text-lg font-bold tracking-tight">CUBO</span><span className="ml-1 text-xs text-muted-foreground">Admin</span></div>
-          </Link>
-        </div>
-        <div className="flex-1 px-2 py-3">
-          <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => navigate("/admin")}><ChevronLeft className="h-4 w-4" />Voltar para Lojas</Button>
-        </div>
-        <div className="border-t border-border px-4 py-3">
-          <Link to="/dashboard" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"><ChevronLeft className="h-3 w-3" />Voltar ao CRM</Link>
-        </div>
-      </aside>
-
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b border-border bg-card px-6">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Link to="/admin" className="hover:text-foreground">Admin</Link><span>/</span>
             <Link to="/admin" className="hover:text-foreground">Lojas</Link><span>/</span>
             <span className="text-foreground">{clinic.name}</span>
           </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="mx-auto max-w-5xl space-y-6">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10"><Building2 className="h-7 w-7 text-primary" /></div>
-                <div>
-                  <div className="flex items-center gap-3"><h1 className="text-2xl font-bold">{clinic.name}</h1><Badge variant="outline" className={statusInfo.className}>{statusInfo.label}</Badge></div>
-                  <p className="text-sm text-muted-foreground">{clinic.owner_name} · {clinic.city || "—"}{clinic.state ? `, ${clinic.state}` : ""}</p>
-                </div>
-              </div>
-              <Button onClick={() => { impersonateClinic(clinic.id); navigate("/dashboard"); }} className="gap-2"><Eye className="h-4 w-4" />Entrar no CRM</Button>
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10"><Building2 className="h-7 w-7 text-primary" /></div>
+            <div>
+              <div className="flex flex-wrap items-center gap-3"><h1 className="text-2xl font-bold">{clinic.name}</h1><Badge variant="outline" className={statusInfo.className}>{statusInfo.label}</Badge></div>
+              <p className="text-sm text-muted-foreground">{clinic.owner_name} · {clinic.city || "—"}{clinic.state ? `, ${clinic.state}` : ""}</p>
             </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => navigate("/admin")}><ChevronLeft className="mr-2 h-4 w-4" />Voltar para Lojas</Button>
+          <Button variant="ghost" asChild><Link to="/dashboard"><ChevronLeft className="mr-2 h-4 w-4" />Voltar ao CRM</Link></Button>
+          <Button onClick={() => { impersonateClinic(clinic.id); navigate("/dashboard"); }} className="gap-2"><Eye className="h-4 w-4" />Entrar no CRM</Button>
+        </div>
+      </div>
 
+      <div className="space-y-6">
+            {/* Header */}
             {/* KPIs */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
               <Card><CardContent className="pt-6"><div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /><span className="text-xs">Leads</span></div><p className="mt-1 text-2xl font-bold">{patients.length}</p></CardContent></Card>
@@ -190,8 +176,6 @@ export default function AdminClinicDetail() {
                 </CardContent>
               </Card>
             )}
-          </div>
-        </main>
       </div>
     </div>
   );
