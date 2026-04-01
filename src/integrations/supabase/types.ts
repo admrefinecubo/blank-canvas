@@ -566,6 +566,36 @@ export type Database = {
           },
         ]
       }
+      logs_execucao: {
+        Row: {
+          created_at: string | null
+          detalhes: Json | null
+          evento: string | null
+          execution_id: string | null
+          id: string
+          lead_id: string | null
+          loja_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          detalhes?: Json | null
+          evento?: string | null
+          execution_id?: string | null
+          id?: string
+          lead_id?: string | null
+          loja_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          detalhes?: Json | null
+          evento?: string | null
+          execution_id?: string | null
+          id?: string
+          lead_id?: string | null
+          loja_id?: string | null
+        }
+        Relationships: []
+      }
       lojas: {
         Row: {
           ativo: boolean
@@ -657,6 +687,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mensagens_processadas: {
+        Row: {
+          created_at: string | null
+          instance: string | null
+          message_id: string
+          remotejid: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          instance?: string | null
+          message_id: string
+          remotejid?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          instance?: string | null
+          message_id?: string
+          remotejid?: string | null
+        }
+        Relationships: []
       }
       midias_enviadas: {
         Row: {
@@ -1208,31 +1259,52 @@ export type Database = {
         }
         Returns: boolean
       }
-      match_produtos: {
-        Args: {
-          loja_id_param?: string
-          match_count?: number
-          match_threshold?: number
-          query_embedding: string
-        }
-        Returns: {
-          categoria: string
-          descricao: string
-          especificacoes: string
-          estoque_disponivel: boolean
-          foto_detalhe: string
-          foto_principal: string
-          id: string
-          loja_id: string
-          nome: string
-          preco_original: number
-          preco_promocional: number
-          similarity: number
-          tags: string
-          variacoes: string
-          video_url: string
-        }[]
-      }
+      match_produtos:
+        | {
+            Args: {
+              loja_id_param?: string
+              match_count?: number
+              match_threshold?: number
+              query_embedding: string
+            }
+            Returns: {
+              categoria: string
+              descricao: string
+              especificacoes: string
+              estoque_disponivel: boolean
+              foto_detalhe: string
+              foto_principal: string
+              id: string
+              loja_id: string
+              nome: string
+              preco_original: number
+              preco_promocional: number
+              similarity: number
+              tags: string
+              variacoes: string
+              video_url: string
+            }[]
+          }
+        | {
+            Args: {
+              loja_id_param: string
+              match_count?: number
+              match_threshold?: number
+              query_embedding: string
+            }
+            Returns: {
+              categoria: string
+              descricao: string
+              estoque_disponivel: boolean
+              foto_principal: string
+              id: string
+              nome: string
+              preco_original: number
+              preco_promocional: number
+              similarity: number
+              video_url: string
+            }[]
+          }
     }
     Enums: {
       app_role:
