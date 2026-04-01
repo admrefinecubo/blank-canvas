@@ -42,18 +42,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => localStorage.getItem('impersonated_clinic_id')
   );
 
-  const fetchRoles = async (userId: string) => {
+  const fetchRoles = async (userId: string): Promise<UserRole[]> => {
     const { data, error } = await supabase
       .from('user_roles')
       .select('role, clinic_id')
       .eq('user_id', userId);
 
     if (error) {
-      setRoles([]);
-      return;
+      return [];
     }
 
-    setRoles((data as UserRole[]) || []);
+    return (data as UserRole[]) || [];
+  };
+
+  const fetchRolesWithRetry = async (userId: string) => {
+    const retryDelays = [0, 150, 400];
+    let resolvedRoles: UserRole[] = [];
+
+    for (const delay of retryDelays) {
+      if (delay > 0) {
+        await new Promise((resolve) => window.setTimeout(resolve, delay));
+      }
+
+      resolvedRoles = await fetchRoles(userId);
+
+      if (resolvedRoles.length > 0) {
+        break;
+      }
+    }
+
+    return resolvedRoles;
   };
 
   const hydrateAuthState = async (nextSession: Session | null) => {
@@ -69,7 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    await fetchRoles(nextSession.user.id);
+    const nextRoles = await fetchRolesWithRetry(nextSession.user.id);
+    setRoles(nextRoles);
     setLoading(false);
   };
 
@@ -142,13 +161,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error, redirectTo: undefined };
 
     // Check if user's clinic is active
-    const { data: userRoles } = await supabase
-      .from('user_roles')
-      .select('role, clinic_id')
-      .eq('user_id', data.user.id);
+    const userRoles = await fetchRolesWithRetry(data.user.id);
 
-    const isAdmin = userRoles?.some(r => r.role === 'platform_admin');
-    if (!isAdmin && userRoles?.length) {
+    const isAdmin = userRoles.some(r => r.role === 'platform_admin');
+    if (!isAdmin && userRoles.length) {
       const clinicIds = [...new Set(userRoles.filter(r => r.clinic_id).map(r => r.clinic_id))];
       if (clinicIds.length > 0) {
         const { data: clinics } = await supabase
@@ -166,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return {
       error: null,
-      redirectTo: isAdmin ? '/admin' : '/dashboard',
+      redirectTo: '/',
     };
   };
 
