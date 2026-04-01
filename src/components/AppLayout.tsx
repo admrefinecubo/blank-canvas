@@ -29,7 +29,7 @@ const clientNavItems = [
 ];
 
 const adminNavItems = [
-  { title: "Dashboard Admin", url: "/admin", icon: ShieldCheck },
+  { title: "Visão geral", url: "/admin", icon: ShieldCheck },
   { title: "Lojas", url: "/admin/lojas", icon: Store },
   { title: "Estatísticas", url: "/admin/stats", icon: BarChart3 },
   { title: "Implantação / Equipe", url: "/settings", icon: Settings },
@@ -45,7 +45,7 @@ const breadcrumbMap: Record<string, string> = {
   "/settings": "Configurações",
   "/whatsapp": "WhatsApp",
   "/agenda": "Agenda / Visitas",
-  "/admin": "Dashboard Admin",
+  "/admin": "Visão geral",
   "/admin/lojas": "Lojas",
   "/admin/stats": "Estatísticas",
 };
@@ -120,7 +120,7 @@ export default function AppLayout() {
               </div>
               <div className="flex flex-col">
                 <span className="text-[15px] font-semibold tracking-tight">{settings.clinicName}</span>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-medium">{appMode === 'admin' ? 'Admin Console' : settings.clinicSubtitle}</span>
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-medium">{appMode === 'admin' ? 'Operação Multi-Tenant' : settings.clinicSubtitle}</span>
               </div>
             </Link>
           ) : (
