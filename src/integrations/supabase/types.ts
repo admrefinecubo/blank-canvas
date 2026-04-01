@@ -267,8 +267,10 @@ export type Database = {
       clinics: {
         Row: {
           city: string | null
+          clinic_subtitle: string | null
           created_at: string
           email: string | null
+          favicon_url: string | null
           id: string
           logo_url: string | null
           name: string
@@ -283,8 +285,10 @@ export type Database = {
         }
         Insert: {
           city?: string | null
+          clinic_subtitle?: string | null
           created_at?: string
           email?: string | null
+          favicon_url?: string | null
           id?: string
           logo_url?: string | null
           name: string
@@ -299,8 +303,10 @@ export type Database = {
         }
         Update: {
           city?: string | null
+          clinic_subtitle?: string | null
           created_at?: string
           email?: string | null
+          favicon_url?: string | null
           id?: string
           logo_url?: string | null
           name?: string
