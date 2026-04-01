@@ -29,7 +29,6 @@ type LojaRow = {
   clinic_id?: string | null;
   nome_loja: string;
   nome_assistente?: string | null;
-  nome_assistente_ia?: string | null;
   instance?: string | null;
   ativo?: boolean | null;
   created_at?: string | null;
@@ -103,7 +102,7 @@ export default function AdminLojas() {
         .insert({
           clinic_id: createForm.clinic_id,
           nome_loja: createForm.nome_loja,
-          nome_assistente_ia: createForm.nome_assistente,
+          nome_assistente: createForm.nome_assistente,
           instance: createForm.instance,
         } as any)
         .select("id")
@@ -237,7 +236,7 @@ export default function AdminLojas() {
                          )}
                        </div>
                      </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">{loja.nome_assistente || loja.nome_assistente_ia || "—"}</TableCell>
+                     <TableCell className="hidden md:table-cell text-muted-foreground">{loja.nome_assistente || "—"}</TableCell>
                     <TableCell className="hidden lg:table-cell">
                       <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{loja.instance || "—"}</code>
                     </TableCell>
