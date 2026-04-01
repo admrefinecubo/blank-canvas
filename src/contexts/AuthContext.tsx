@@ -3,10 +3,11 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 export type AppRole = 'platform_admin' | 'clinic_owner' | 'clinic_staff' | 'clinic_receptionist';
+export type AppMode = 'admin' | 'client';
 
 interface UserRole {
   role: AppRole;
-  clinic_id: string;
+  clinic_id: string | null;
 }
 
 interface AuthContextType {
@@ -14,12 +15,18 @@ interface AuthContextType {
   user: User | null;
   roles: UserRole[];
   loading: boolean;
+  appMode: AppMode;
   isPlatformAdmin: boolean;
+  isClientOwner: boolean;
   clinicId: string | null;
+  activeClinicId: string | null;
+  activeLojaId: string | null;
+  canAccessClientApp: boolean;
+  defaultRoute: string;
   impersonatedClinicId: string | null;
   impersonateClinic: (clinicId: string) => void;
   clearImpersonation: () => void;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any; redirectTo?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -30,15 +37,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeLojaId, setActiveLojaId] = useState<string | null>(null);
   const [impersonatedClinicId, setImpersonatedClinicId] = useState<string | null>(
     () => localStorage.getItem('impersonated_clinic_id')
   );
 
   const fetchRoles = async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_roles')
       .select('role, clinic_id')
       .eq('user_id', userId);
+
+    if (error) {
+      setRoles([]);
+      return;
+    }
+
     setRoles((data as UserRole[]) || []);
   };
 
@@ -71,10 +85,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isPlatformAdmin = roles.some(r => r.role === 'platform_admin');
-  const naturalClinicId = roles.find(r => r.clinic_id)?.clinic_id ?? null;
-  
-  // If platform_admin is impersonating a clinic, use that; otherwise use natural clinic_id
-  const clinicId = (isPlatformAdmin && impersonatedClinicId) ? impersonatedClinicId : naturalClinicId;
+  const isClientOwner = roles.some(r => r.role === 'clinic_owner');
+  const naturalClinicId = roles.find(r => r.role !== 'platform_admin' && r.clinic_id)?.clinic_id
+    ?? roles.find(r => r.clinic_id)?.clinic_id
+    ?? null;
+  const appMode: AppMode = isPlatformAdmin && !impersonatedClinicId ? 'admin' : 'client';
+  const activeClinicId = appMode === 'client'
+    ? ((isPlatformAdmin && impersonatedClinicId) ? impersonatedClinicId : naturalClinicId)
+    : null;
+  const clinicId = activeClinicId;
+  const canAccessClientApp = !!activeClinicId;
+  const defaultRoute = appMode === 'admin' ? '/admin' : '/dashboard';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchActiveLoja = async () => {
+      if (!activeClinicId) {
+        setActiveLojaId(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('lojas')
+        .select('id')
+        .eq('clinic_id', activeClinicId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (!cancelled) {
+        setActiveLojaId(error ? null : data?.id ?? null);
+      }
+    };
+
+    fetchActiveLoja();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeClinicId]);
 
   const impersonateClinic = (id: string) => {
     setImpersonatedClinicId(id);
@@ -88,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error };
+    if (error) return { error, redirectTo: undefined };
 
     // Check if user's clinic is active
     const { data: userRoles } = await supabase
@@ -108,23 +158,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const allInactive = clinics?.every(c => c.status === 'cancelada' || c.status === 'inativa');
         if (allInactive) {
           await supabase.auth.signOut();
-          return { error: { message: 'Sua conta foi desativada. Entre em contato com o administrador.' } };
+          return { error: { message: 'Sua conta foi desativada. Entre em contato com o administrador.' }, redirectTo: undefined };
         }
       }
     }
 
-    return { error: null };
+    return {
+      error: null,
+      redirectTo: isAdmin ? '/admin' : '/dashboard',
+    };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setRoles([]);
+    setActiveLojaId(null);
     setImpersonatedClinicId(null);
     localStorage.removeItem('impersonated_clinic_id');
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, roles, loading, isPlatformAdmin, clinicId, impersonatedClinicId, impersonateClinic, clearImpersonation, signIn, signOut }}>
+    <AuthContext.Provider value={{
+      session,
+      user,
+      roles,
+      loading,
+      appMode,
+      isPlatformAdmin,
+      isClientOwner,
+      clinicId,
+      activeClinicId,
+      activeLojaId,
+      canAccessClientApp,
+      defaultRoute,
+      impersonatedClinicId,
+      impersonateClinic,
+      clearImpersonation,
+      signIn,
+      signOut,
+    }}>
       {children}
     </AuthContext.Provider>
   );
