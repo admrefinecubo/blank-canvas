@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeLojaId, setActiveLojaId] = useState<string | null>(null);
+  const [lastHydratedUserId, setLastHydratedUserId] = useState<string | null>(null);
   const [impersonatedClinicId, setImpersonatedClinicId] = useState<string | null>(
     () => localStorage.getItem('impersonated_clinic_id')
   );
@@ -81,14 +82,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles([]);
 
     if (!nextSession?.user) {
+      setLastHydratedUserId(null);
       setImpersonatedClinicId(null);
       localStorage.removeItem('impersonated_clinic_id');
       setLoading(false);
       return;
     }
 
+    if (lastHydratedUserId !== nextSession.user.id) {
+      setImpersonatedClinicId(null);
+      localStorage.removeItem('impersonated_clinic_id');
+    }
+
     const nextRoles = await fetchRolesWithRetry(nextSession.user.id);
     setRoles(nextRoles);
+    setLastHydratedUserId(nextSession.user.id);
     setLoading(false);
   };
 
@@ -160,8 +168,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error, redirectTo: undefined };
 
+    setLoading(true);
+    setSession(data.session);
+    setUser(data.user);
+    setImpersonatedClinicId(null);
+    localStorage.removeItem('impersonated_clinic_id');
+
     // Check if user's clinic is active
     const userRoles = await fetchRolesWithRetry(data.user.id);
+    setRoles(userRoles);
+    setLastHydratedUserId(data.user.id);
 
     const isAdmin = userRoles.some(r => r.role === 'platform_admin');
     if (!isAdmin && userRoles.length) {
@@ -175,10 +191,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const allInactive = clinics?.every(c => c.status === 'cancelada' || c.status === 'inativa');
         if (allInactive) {
           await supabase.auth.signOut();
+          setLoading(false);
           return { error: { message: 'Sua conta foi desativada. Entre em contato com o administrador.' }, redirectTo: undefined };
         }
       }
     }
+
+    setLoading(false);
 
     return {
       error: null,
