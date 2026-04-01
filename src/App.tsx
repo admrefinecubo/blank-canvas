@@ -78,7 +78,9 @@ const App = () => (
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/nps" element={<NpsSatisfaction />} />
               </Route>
-              <Route path="/admin" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AppLayout /></ProtectedRoute>}>
+                <Route index element={<AdminDashboard />} />
+              </Route>
               <Route path="/admin/clinic/:id" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AdminClinicDetail /></ProtectedRoute>} />
               <Route path="/admin/stats" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AppLayout /></ProtectedRoute>}>
                 <Route index element={<AdminStats />} />
