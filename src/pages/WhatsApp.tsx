@@ -1,265 +1,277 @@
-import { useState } from "react";
-import { MessageSquare, Wifi, WifiOff, QrCode, Send, RefreshCw, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Loader2, MessageSquareText, Search, Store, UserRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
+import { formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
 
-const TEMPLATES = [
-  { category: "Atendimento", name: "Boas-vindas", text: "Olá, {{nome}}! Seja bem-vindo(a) à {{loja}}. Sou {{atendente}}, como posso ajudá-lo(a)?" },
-  { category: "Atendimento", name: "Solicitar dados", text: "{{nome}}, para darmos andamento, preciso de algumas informações. Pode me informar seu nome completo e data de nascimento?" },
-  { category: "Agenda", name: "Confirmação D-1", text: "{{nome}}, lembrando da sua consulta amanhã ({{data}}) às {{horário}} com {{profissional}}. Confirma sua presença? Responda SIM ou NÃO." },
-  { category: "Agenda", name: "Lembrete 2h", text: "{{nome}}, sua consulta é daqui a 2 horas, às {{horário}}. Estamos aguardando você!" },
-  { category: "Agenda", name: "Resgate no-show", text: "{{nome}}, sentimos sua falta hoje! Quer remarcar sua consulta? Temos horários disponíveis essa semana." },
-  { category: "Orçamento", name: "Envio de orçamento", text: "{{nome}}, segue o orçamento do(s) procedimento(s) que conversamos. Qualquer dúvida, estou à disposição." },
-  { category: "Orçamento", name: "Follow-up D+3", text: "{{nome}}, gostaria de saber se conseguiu analisar o orçamento que enviei. Posso esclarecer alguma dúvida?" },
-  { category: "Pós-procedimento", name: "Pós-procedimento", text: "{{nome}}, como está se sentindo após o procedimento? Lembre-se de seguir as orientações que passamos. Qualquer dúvida, estamos aqui!" },
-  { category: "NPS", name: "NPS", text: "{{nome}}, de 0 a 10, quanto recomendaria a {{loja}} para um amigo? Sua opinião é muito importante para nós." },
-];
+type ConversationSummary = {
+  id: string;
+  nome: string | null;
+  telefone: string;
+  etapa_pipeline: string;
+  is_bot_active?: boolean;
+  bot_paused_until?: string | null;
+  ultima_msg?: string | null;
+  ultima_data?: string | null;
+};
+
+function getAttendanceStatus(lead: ConversationSummary) {
+  if (lead.bot_paused_until) {
+    const pausedUntil = new Date(lead.bot_paused_until);
+    if (!Number.isNaN(pausedUntil.getTime()) && pausedUntil > new Date()) {
+      return {
+        label: `Pausado até ${format(pausedUntil, "HH:mm", { locale: ptBR })}`,
+        variant: "secondary" as const,
+      };
+    }
+  }
+
+  if (lead.is_bot_active === false) {
+    return { label: "Atendimento humano", variant: "destructive" as const };
+  }
+
+  return { label: "Bot ativo", variant: "default" as const };
+}
 
 export default function WhatsApp() {
-  const { clinicId } = useAuth();
-  const queryClient = useQueryClient();
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [showSetup, setShowSetup] = useState(false);
-  const [setupForm, setSetupForm] = useState({ api_url: "", api_key: "", instance_name: "" });
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [sendForm, setSendForm] = useState({ phone: "", message: "" });
+  const { activeLojaId } = useAuth();
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
-  const { data: connectionStatus, isLoading: statusLoading } = useQuery({
-    queryKey: ["evolution-status", clinicId],
+  const { data: lojaContext } = useQuery({
+    queryKey: ["whatsapp-loja-context", activeLojaId],
     queryFn: async () => {
-      if (!clinicId) return { status: "disconnected" };
-      const { data, error } = await supabase.functions.invoke("evolution-api", {
-        body: { action: "status", clinic_id: clinicId },
-      });
-      if (error) return { status: "disconnected" };
+      const { data, error } = await supabase
+        .from("lojas")
+        .select("nome_loja, nome_assistente")
+        .eq("id", activeLojaId!)
+        .maybeSingle();
+      if (error) throw error;
       return data;
     },
-    enabled: !!clinicId,
-    refetchInterval: (query) => {
-      const data = query.state.data as any;
-      return data?.status === "pending" ? 5000 : false;
-    },
+    enabled: !!activeLojaId,
   });
 
-  const isConnected = connectionStatus?.status === "connected";
-  const isPending = connectionStatus?.status === "pending";
-
-  const connectMutation = useMutation({
+  const { data: conversations = [], isLoading } = useQuery({
+    queryKey: ["whatsapp-conversations", activeLojaId],
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("evolution-api", {
-        body: { action: "connect", clinic_id: clinicId, ...setupForm },
+      const [leadsResult, messagesResult] = await Promise.all([
+        (supabase.from("leads") as any)
+          .select("id, nome, telefone, etapa_pipeline, is_bot_active, bot_paused_until")
+          .eq("loja_id", activeLojaId!),
+        supabase
+          .from("historico_mensagens")
+          .select("id, lead_id, content, created_at")
+          .eq("loja_id", activeLojaId!)
+          .order("created_at", { ascending: false })
+          .limit(500),
+      ]);
+
+      if (leadsResult.error) throw leadsResult.error;
+      if (messagesResult.error) throw messagesResult.error;
+
+      const latestByLead = new Map<string, { content: string; created_at: string }>();
+
+      (messagesResult.data ?? []).forEach((message) => {
+        if (!message.lead_id || latestByLead.has(message.lead_id)) return;
+        latestByLead.set(message.lead_id, {
+          content: message.content,
+          created_at: message.created_at,
+        });
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+
+      return ((leadsResult.data ?? []) as ConversationSummary[])
+        .map((lead) => ({
+          ...lead,
+          ultima_msg: latestByLead.get(lead.id)?.content ?? null,
+          ultima_data: latestByLead.get(lead.id)?.created_at ?? null,
+        }))
+        .sort((a, b) => {
+          const aTime = a.ultima_data ? new Date(a.ultima_data).getTime() : 0;
+          const bTime = b.ultima_data ? new Date(b.ultima_data).getTime() : 0;
+          return bTime - aTime;
+        });
     },
-    onSuccess: (data) => {
-      if (data?.qrcode) setQrCode(data.qrcode);
-      queryClient.invalidateQueries({ queryKey: ["evolution-status"] });
-      toast({ title: "Conexão iniciada! Escaneie o QR Code." });
-    },
-    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    queryFn: async () => [],
+    enabled: !!activeLojaId,
   });
 
-  const disconnectMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("evolution-api", {
-        body: { action: "disconnect", clinic_id: clinicId },
-      });
+  useEffect(() => {
+    if (!selectedLeadId && conversations.length) {
+      setSelectedLeadId(conversations[0].id);
+    }
+
+    if (selectedLeadId && !conversations.some((lead) => lead.id === selectedLeadId)) {
+      setSelectedLeadId(conversations[0]?.id ?? null);
+    }
+  }, [conversations, selectedLeadId]);
+
+  const filteredConversations = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return conversations;
+
+    return conversations.filter((lead) => {
+      const name = getLeadName(lead.nome, lead.telefone).toLowerCase();
+      return name.includes(term) || lead.telefone.toLowerCase().includes(term) || (lead.ultima_msg ?? "").toLowerCase().includes(term);
+    });
+  }, [conversations, search]);
+
+  const selectedLead = filteredConversations.find((lead) => lead.id === selectedLeadId)
+    || conversations.find((lead) => lead.id === selectedLeadId)
+    || null;
+
+  const { data: messages = [], isLoading: loadingMessages } = useQuery({
+    queryKey: ["whatsapp-chat-messages", selectedLead?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("historico_mensagens")
+        .select("id, role, content, created_at")
+        .eq("lead_id", selectedLead!.id)
+        .order("created_at", { ascending: true });
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      return data ?? [];
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["evolution-status"] });
-      setQrCode(null);
-      toast({ title: "WhatsApp desconectado" });
-    },
+    enabled: !!selectedLead?.id,
   });
 
-  const sendMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("evolution-api", {
-        body: { action: "send_message", clinic_id: clinicId, phone: sendForm.phone, message: sendForm.message },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-    },
-    onSuccess: () => {
-      toast({ title: "Mensagem enviada!" });
-      setSendForm({ phone: "", message: "" });
-    },
-    onError: (e: any) => toast({ title: "Erro ao enviar", description: e.message, variant: "destructive" }),
-  });
-
-  if (!clinicId) {
+  if (!activeLojaId) {
     return (
-      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
-        <p className="text-muted-foreground">Selecione uma conta para acessar o WhatsApp.</p>
-      </div>
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/60">
+            <Store className="h-8 w-8 text-muted-foreground/60" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold">Nenhuma loja operacional ativa</p>
+            <p className="mt-1 text-sm text-muted-foreground">Quando sua conta estiver vinculada, o inbox aparecerá aqui.</p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">WhatsApp</h1>
-        <div className="flex items-center gap-3">
-          <Badge variant={isConnected ? "default" : isPending ? "secondary" : "destructive"} className="gap-1.5">
-            {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-            {isConnected ? "Conectado" : isPending ? "Aguardando QR Code" : "Desconectado"}
-          </Badge>
-          <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)}>Templates</Button>
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">WhatsApp</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Inbox operacional da loja {lojaContext?.nome_loja || "ativa"}.</p>
         </div>
+        <Badge variant="outline">{filteredConversations.length} conversa(s)</Badge>
       </div>
 
-      {!isConnected && !isPending ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-2xl bg-primary/10">
-              <MessageSquare className="h-10 w-10 text-primary" />
+      <div className="grid gap-4 xl:grid-cols-[320px,minmax(0,1fr)]">
+        <Card className="overflow-hidden">
+          <CardHeader className="space-y-3 pb-3">
+            <CardTitle className="text-base">Conversas</CardTitle>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nome, telefone ou mensagem" className="pl-9" />
             </div>
-            <h2 className="mt-4 text-xl font-bold">Conectar WhatsApp</h2>
-            <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-              Configure a Evolution API para conectar o número da conta via QR Code e enviar mensagens automatizadas.
-            </p>
-            <Button className="mt-6" onClick={() => setShowSetup(true)}>
-              <QrCode className="mr-2 h-4 w-4" /> Configurar Conexão
-            </Button>
-          </CardContent>
-        </Card>
-      ) : isPending && qrCode ? (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Escaneie o QR Code</CardTitle></CardHeader>
-            <CardContent className="flex flex-col items-center gap-4">
-              <div className="rounded-xl border-2 border-dashed border-border p-4 bg-white">
-                <img src={qrCode} alt="QR Code WhatsApp" className="h-64 w-64" />
-              </div>
-              <p className="text-sm text-muted-foreground text-center">
-                Abra o WhatsApp no celular → Menu → Aparelhos conectados → Conectar um aparelho
-              </p>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => queryClient.invalidateQueries({ queryKey: ["evolution-status"] })}>
-                <RefreshCw className="h-3.5 w-3.5" /> Verificar conexão
-              </Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Status</CardTitle></CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : !filteredConversations.length ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                <MessageSquareText className="h-10 w-10 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">Aguardando leitura do QR Code...</p>
-                  <p className="text-sm text-muted-foreground">O status será atualizado automaticamente.</p>
+                  <p className="font-medium">Nenhuma conversa encontrada</p>
+                  <p className="text-sm text-muted-foreground">As conversas da sua loja aparecerão aqui automaticamente.</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Enviar Mensagem</CardTitle>
-                <Button variant="ghost" size="sm" className="text-destructive text-xs" onClick={() => disconnectMutation.mutate()}>
-                  Desconectar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Telefone (com DDD)</Label>
-                <Input placeholder="5511999999999" value={sendForm.phone} onChange={e => setSendForm(f => ({ ...f, phone: e.target.value }))} />
-              </div>
-              <div>
-                <Label>Mensagem</Label>
-                <Textarea rows={4} placeholder="Digite a mensagem..." value={sendForm.message} onChange={e => setSendForm(f => ({ ...f, message: e.target.value }))} />
-              </div>
-              <Button className="w-full gap-2" onClick={() => sendMutation.mutate()} disabled={!sendForm.phone || !sendForm.message || sendMutation.isPending}>
-                <Send className="h-4 w-4" />
-                {sendMutation.isPending ? "Enviando..." : "Enviar Mensagem"}
-              </Button>
-            </CardContent>
-          </Card>
+            ) : (
+              <ScrollArea className="h-[65vh]">
+                <div className="space-y-1 p-2">
+                  {filteredConversations.map((lead) => {
+                    const status = getAttendanceStatus(lead);
+                    const active = selectedLead?.id === lead.id;
 
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Templates Rápidos</CardTitle></CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[300px]">
-                <div className="space-y-2 pr-4">
-                  {TEMPLATES.slice(0, 5).map((t, i) => (
-                    <button key={i} className="w-full text-left rounded-lg border border-border p-3 hover:bg-accent transition-colors" onClick={() => setSendForm(f => ({ ...f, message: t.text }))}>
-                      <p className="text-sm font-medium">{t.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{t.text}</p>
-                    </button>
+                    return (
+                      <button
+                        key={lead.id}
+                        type="button"
+                        onClick={() => setSelectedLeadId(lead.id)}
+                        className={`w-full rounded-2xl border p-3 text-left transition-colors ${active ? "border-primary bg-primary/10" : "border-transparent hover:border-border hover:bg-accent/40"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{getLeadName(lead.nome, lead.telefone)}</p>
+                            <p className="truncate text-xs text-muted-foreground">{lead.telefone}</p>
+                          </div>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            {lead.ultima_data ? format(new Date(lead.ultima_data), "HH:mm", { locale: ptBR }) : "—"}
+                          </span>
+                        </div>
+                        <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{lead.ultima_msg || "Sem mensagens ainda"}</p>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <Badge variant={status.variant}>{status.label}</Badge>
+                          <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{lead.etapa_pipeline}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-border/60 pb-4">
+            {selectedLead ? (
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <CardTitle className="text-base">{getLeadName(selectedLead.nome, selectedLead.telefone)}</CardTitle>
+                  <p className="mt-1 text-sm text-muted-foreground">{selectedLead.telefone}</p>
+                </div>
+                <Badge variant={getAttendanceStatus(selectedLead).variant}>{getAttendanceStatus(selectedLead).label}</Badge>
+              </div>
+            ) : (
+              <CardTitle className="text-base">Selecione uma conversa</CardTitle>
+            )}
+          </CardHeader>
+          <CardContent className="p-0">
+            {!selectedLead ? (
+              <div className="flex h-[65vh] flex-col items-center justify-center gap-3 text-center">
+                <UserRound className="h-10 w-10 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Nenhuma conversa selecionada</p>
+                  <p className="text-sm text-muted-foreground">Escolha um lead na lateral para abrir o histórico.</p>
+                </div>
+              </div>
+            ) : loadingMessages ? (
+              <div className="flex h-[65vh] items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : !messages.length ? (
+              <div className="flex h-[65vh] items-center justify-center p-8 text-center text-sm text-muted-foreground">
+                Ainda não existem mensagens registradas para este lead.
+              </div>
+            ) : (
+              <ScrollArea className="h-[65vh]">
+                <div className="space-y-3 p-4 md:p-6">
+                  {messages.map((message) => (
+                    <WhatsAppChatBubble
+                      key={message.id}
+                      role={message.role}
+                      content={message.content}
+                      createdAt={formatDateTime(message.created_at)}
+                      title={message.role === "assistant" ? (lojaContext?.nome_assistente || "Assistente") : getLeadName(selectedLead.nome, selectedLead.telefone)}
+                    />
                   ))}
                 </div>
               </ScrollArea>
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
         </div>
-      )}
-
-      {/* Setup Dialog */}
-      <Dialog open={showSetup} onOpenChange={setShowSetup}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Configurar Evolution API</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>URL da API *</Label>
-              <Input placeholder="https://api.evolution.seudominio.com" value={setupForm.api_url} onChange={e => setSetupForm(f => ({ ...f, api_url: e.target.value }))} />
-              <p className="text-xs text-muted-foreground mt-1">URL da sua instância da Evolution API</p>
-            </div>
-            <div>
-              <Label>API Key *</Label>
-              <Input type="password" placeholder="Sua chave de API" value={setupForm.api_key} onChange={e => setSetupForm(f => ({ ...f, api_key: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Nome da Instância *</Label>
-              <Input placeholder="minha-loja" value={setupForm.instance_name} onChange={e => setSetupForm(f => ({ ...f, instance_name: e.target.value }))} />
-              <p className="text-xs text-muted-foreground mt-1">Identificador único para esta conexão</p>
-            </div>
-            <Button className="w-full" onClick={() => { connectMutation.mutate(); setShowSetup(false); }} disabled={!setupForm.api_url || !setupForm.api_key || !setupForm.instance_name || connectMutation.isPending}>
-              {connectMutation.isPending ? "Conectando..." : "Conectar e Gerar QR Code"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Templates Dialog */}
-      <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
-        <DialogContent className="max-w-lg max-h-[70vh] overflow-hidden flex flex-col">
-          <DialogHeader><DialogTitle>Templates de Mensagem</DialogTitle></DialogHeader>
-          <ScrollArea className="flex-1">
-            <div className="space-y-4 pr-4">
-              {Array.from(new Set(TEMPLATES.map(t => t.category))).map(category => (
-                <div key={category}>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">{category}</p>
-                  <div className="space-y-1.5">
-                    {TEMPLATES.filter(t => t.category === category).map((t, i) => (
-                      <div key={i} className="rounded-lg border border-border p-3">
-                        <p className="text-sm font-medium">{t.name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{t.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      </div>
     </div>
   );
 }
