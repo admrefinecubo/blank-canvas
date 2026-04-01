@@ -22,6 +22,7 @@ interface AuthContextType {
   activeClinicId: string | null;
   activeLojaId: string | null;
   canAccessClientApp: boolean;
+  hasOperationalStore: boolean;
   defaultRoute: string;
   impersonatedClinicId: string | null;
   impersonateClinic: (clinicId: string) => void;
@@ -123,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     : null;
   const clinicId = activeClinicId;
   const canAccessClientApp = !!activeClinicId;
+  const hasOperationalStore = !!activeLojaId;
   const defaultRoute = appMode === 'admin' ? '/admin' : '/dashboard';
 
   useEffect(() => {
@@ -226,6 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activeClinicId,
       activeLojaId,
       canAccessClientApp,
+      hasOperationalStore,
       defaultRoute,
       impersonatedClinicId,
       impersonateClinic,
