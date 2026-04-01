@@ -55,7 +55,7 @@ export default function PatientPipeline() {
         <h1 className="text-2xl font-bold">Pipeline de Clientes</h1>
         {isPlatformAdmin && !clinicId && (
           <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
-            <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar clínica" /></SelectTrigger>
+            <SelectTrigger className="w-48"><SelectValue placeholder="Selecionar conta" /></SelectTrigger>
             <SelectContent>{clinics?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
           </Select>
         )}

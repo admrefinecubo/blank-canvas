@@ -85,7 +85,7 @@ export default function Budgets() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!effectiveClinicId) throw new Error("Selecione uma clínica");
+      if (!effectiveClinicId) throw new Error("Selecione uma conta");
       const { error } = await supabase.from("budgets").insert({
         clinic_id: effectiveClinicId,
         patient_id: form.patient_id,

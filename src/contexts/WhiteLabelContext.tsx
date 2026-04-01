@@ -18,8 +18,6 @@ const DEFAULT_SETTINGS: WhiteLabelSettings = {
   faviconUrl: null,
 };
 
-const STORAGE_KEY = "cubo-whitelabel";
-
 interface WhiteLabelContextType {
   settings: WhiteLabelSettings;
   updateSettings: (updates: Partial<WhiteLabelSettings>) => void;
@@ -27,14 +25,6 @@ interface WhiteLabelContextType {
 }
 
 const WhiteLabelContext = createContext<WhiteLabelContextType | undefined>(undefined);
-
-function loadSettings(): WhiteLabelSettings {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-  } catch {}
-  return DEFAULT_SETTINGS;
-}
 
 function applyPrimaryColor(hsl: string) {
   document.documentElement.style.setProperty("--primary", hsl);
@@ -54,17 +44,13 @@ function applyFavicon(url: string | null) {
 }
 
 export function WhiteLabelProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<WhiteLabelSettings>(loadSettings);
+  const [settings, setSettings] = useState<WhiteLabelSettings>(DEFAULT_SETTINGS);
   const { clinicId, isPlatformAdmin } = useAuth();
 
-  // When impersonating a clinic, update sidebar name/color from database
   useEffect(() => {
     if (!clinicId) {
-      // Reset to defaults when no clinic is selected
       if (isPlatformAdmin) {
         setSettings(DEFAULT_SETTINGS);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
-        return;
       }
       return;
     }
@@ -72,21 +58,21 @@ export function WhiteLabelProvider({ children }: { children: React.ReactNode }) 
     const fetchClinic = async () => {
       const { data } = await supabase
         .from("clinics")
-        .select("name, primary_color, logo_url")
+        .select("name, clinic_subtitle, primary_color, logo_url, favicon_url")
         .eq("id", clinicId)
         .single();
+
       if (data) {
-        const updates: Partial<WhiteLabelSettings> = {
+        setSettings({
           clinicName: data.name,
+          clinicSubtitle: data.clinic_subtitle || DEFAULT_SETTINGS.clinicSubtitle,
           primaryColor: data.primary_color || DEFAULT_SETTINGS.primaryColor,
           logoUrl: data.logo_url || null,
-        };
-        const next = { ...DEFAULT_SETTINGS, ...updates };
-        setSettings(next);
-        // Cache to localStorage so refresh doesn't flicker
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          faviconUrl: data.favicon_url || null,
+        });
       }
     };
+
     fetchClinic();
   }, [clinicId, isPlatformAdmin]);
 
@@ -97,15 +83,10 @@ export function WhiteLabelProvider({ children }: { children: React.ReactNode }) 
   }, [settings]);
 
   const updateSettings = useCallback((updates: Partial<WhiteLabelSettings>) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...updates };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
+    setSettings((prev) => ({ ...prev, ...updates }));
   }, []);
 
   const resetSettings = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
     setSettings(DEFAULT_SETTINGS);
   }, []);
 
