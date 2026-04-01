@@ -149,6 +149,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-lojas-summary"] });
       setNewClinicOpen(false);
       setNewClinic({ name: "", city: "", state: "", phone: "", email: "", ownerName: "", ownerEmail: "", ownerPassword: "", primaryColor: "24 95% 53%", notes: "" });
       setLogoPreview(null);
@@ -173,6 +174,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-lojas-summary"] });
       setEditingClinic(null);
       toast.success("Conta atualizada!");
     },
@@ -189,6 +191,7 @@ export default function AdminDashboard() {
     },
     onSuccess: (data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-lojas-summary"] });
       toast.success(vars.ban
         ? `Conta bloqueada! ${data.banned_count} usuário(s) banido(s).`
         : `Conta desbloqueada! ${data.unbanned_count} usuário(s) reativado(s).`
