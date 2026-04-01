@@ -1,96 +1,155 @@
 
-Objetivo: corrigir os 2 problemas juntos:
-1. a dashboard mostra uma “loja” mas `/admin/lojas` fica vazia
-2. o usuário `teste@gmail.com` entra, mas o app cliente trata como sem acesso/liberação
+Objetivo: remover completamente o white label, fixar a marca LojaADS em toda a aplicação, reduzir remount/reload visual na navegação, padronizar scroll de modais e alinhar o detalhe da loja com os nomes reais das colunas da tabela `lojas`.
 
-Diagnóstico confirmado
-- Hoje existem dados em `public.clinics`:
-  - `Conforto` com `owner_email = teste@gmail.com`
-- Mas não existe registro correspondente em `public.lojas`.
-- O admin dashboard está chamando isso de “loja”, porém na prática ele lista `clinics`, não `lojas`.
-- A página `/admin/lojas` consulta `public.lojas`, por isso aparece vazia.
-- No auth, `admin@gmail.com` tem `platform_admin`, mas `teste@gmail.com` não tem linha em `public.user_roles`.
-- Sem `user_roles.clinic_id`, o app não resolve `activeClinicId`; por isso cai na tela de “Conta sem acesso liberado”.
-- Mesmo quando existir clínica, as páginas do app cliente dependem de `activeLojaId`; se não houver loja vinculada à clínica, o usuário entra e continua sem operação real.
+1. Remover white label e fixar a marca LojaADS
+- Excluir o `WhiteLabelProvider` do `App.tsx`.
+- Remover `src/contexts/WhiteLabelContext.tsx` do fluxo e parar de usar dados de branding vindos de `clinics`.
+- Atualizar `AppLayout.tsx` e `Login.tsx` para usar branding fixo:
+  - logo: bloco azul com “L”
+  - título: `LojaADS`
+  - subtítulo: `CRM`
+- No cliente, adicionar abaixo da marca um bloco de contexto da loja:
+  - `Loja: {nome_da_loja}`
+- Parar de usar `clinicName`, `clinicSubtitle`, `logoUrl`, `faviconUrl`, `primaryColor` no frontend.
+- Ajustar `document.title` para algo fixo/coerente com LojaADS.
 
-O que vou ajustar
-1. Corrigir a origem dos dados no admin
-- Parar de misturar “clínica/conta” com “loja operacional”.
-- Ajustar o `AdminDashboard` para rotular corretamente o que vem de `clinics`.
-- Se houver resumo de operação, separar visualmente:
-  - Contas/tenants (`clinics`)
-  - Lojas operacionais (`lojas`)
+2. Limpar a tela Configurações
+- Remover totalmente a aba “White Label” e toda a UI de logo, favicon, cor primária, nome da marca e subtítulo.
+- Remover uploads para `clinic-assets` dessa área.
+- No modo cliente, deixar apenas:
+  - nome da loja
+  - telefone
+  - e-mail
+  - horário de funcionamento
+- Aplicar sua decisão:
+  - nome/telefone/e-mail em somente leitura
+  - horário editável
+- No modo admin, manter configurações operacionais e equipe, mas sem qualquer personalização visual da plataforma.
 
-2. Corrigir `/admin/lojas`
-- Fazer a página refletir a realidade do banco:
-  - mostrar lojas reais de `public.lojas`
-  - deixar explícito quando uma conta existe mas ainda não tem loja operacional
-- Opcionalmente cruzar `clinics` + `lojas` para exibir “Conta sem loja criada” em vez de parecer que sumiu tudo.
+3. Corrigir o “recarregamento” ao trocar de abas/rotas
+Diagnóstico encontrado no código:
+- `AppLayout` ainda anima o conteúdo do `<Outlet />` com wrapper próprio (`animate-fade-in`), o que reforça sensação de reload a cada troca.
+- React Query está sem `staleTime`, então várias páginas refazem fetch imediatamente ao remount.
+- Há navegação com `window.location.href` em `Settings.tsx`, causando navegação dura.
+Plano:
+- Remover o wrapper animado ao redor do `<Outlet />` em `AppLayout.tsx`.
+- Configurar `QueryClient` com defaults mais estáveis (`staleTime`, possivelmente `refetchOnWindowFocus: false`) para reduzir refetch agressivo.
+- Trocar `window.location.href = "/whatsapp"` por navegação do router.
+- Revisar queries críticas de admin/cliente para manter cache entre trocas de rota.
+- Onde houver abas internas importantes, usar estado controlado/estável para não reinicializar desnecessariamente.
 
-3. Corrigir o provisionamento de acesso do cliente
-- Revisar o fluxo de criação no admin para garantir que, ao criar uma conta:
-  - exista `user_roles` para o owner
-  - exista `clinic_id` vinculado corretamente
-- Revisar o edge function `manage-team` no fluxo atual para evitar conta criada sem role.
+4. Garantir scroll em modais
+Diagnóstico encontrado:
+- Vários `DialogContent` ainda estão sem altura máxima e sem overflow.
+Plano:
+- Padronizar `DialogContent` base em `src/components/ui/dialog.tsx` para já nascer com comportamento seguro:
+  - `max-h-[85vh]`
+  - `overflow-y-auto`
+- Revisar modais maiores que usam layout interno flex/scroll para não quebrar.
+- Ajustar ocorrências mais críticas já mapeadas:
+  - edição no `AdminDashboard`
+  - criação/vínculo em `AdminLojas`
+  - formulários em `LojaCatalogo`, `Procedures`, `NpsSatisfaction`, `Automations`, `Agenda`, `Settings`, `WhatsApp`
 
-4. Backfill dos dados já quebrados
-- Criar plano de reparo para os registros existentes:
-  - vincular `teste@gmail.com` à clínica `Conforto` em `user_roles`
-  - criar a `loja` operacional ausente para essa clínica, se esse for o comportamento esperado do produto
-- Isso corrige o estado atual sem depender só de novos cadastros.
+5. Expandir detalhe da loja admin com os campos reais do banco
+Diagnóstico encontrado:
+- `AdminLojaDetail.tsx` já cobre parte dos campos, mas está usando nomes errados em alguns pontos:
+  - usa `maps_link`, mas a coluna real é `link_google_maps`
+  - usa `checkout_base_url`, mas a coluna real é `url_base_checkout`
+- Há campos extras não pedidos e ausência de foco na estrutura para n8n.
+Plano:
+- Reorganizar `AdminLojaDetail.tsx` em 4 abas:
+  - Identidade
+  - Operação
+  - Integrações
+  - Automações
+- Garantir edição dos campos com nomes exatos da tabela `lojas`:
+  - `nome_loja`
+  - `nome_assistente`
+  - `tom_voz`
+  - `especialidades`
+  - `regras_personalidade`
+  - `instance`
+  - `horario_inicio`
+  - `horario_fim`
+  - `endereco`
+  - `link_google_maps`
+  - `formas_pagamento`
+  - `politica_troca`
+  - `prazo_entrega`
+  - `frete_gratis_acima`
+  - `montagem_disponivel`
+  - `plataforma_ecommerce`
+  - `url_base_checkout`
+  - `desconto_carrinho_abandonado`
+  - `desconto_promocao_nao_respondida`
+- Corrigir labels para os nomes que você quer mostrar, mas persistindo exatamente nas colunas do Supabase.
+- Remover ou rebaixar campos não citados por você se não forem essenciais nessa tela.
 
-5. Endurecer o acesso no frontend
-- Ajustar `AuthContext` e guards para separar claramente:
-  - usuário autenticado
-  - usuário com clínica vinculada
-  - usuário com loja operacional ativa
-- Evitar mensagem genérica de “sem login” quando na verdade falta vínculo de role/loja.
-- Gatilhar queries do app cliente somente quando auth e contexto operacional estiverem prontos.
+6. Ajustar a experiência visual do cliente
+- Em `AppLayout.tsx`, usar a mesma marca fixa LojaADS para admin e cliente.
+- Exibir contexto da loja do cliente abaixo da marca, sem substituir a marca da plataforma.
+- Garantir que a cor principal e destaques permaneçam azuis do tema global do `index.css`.
+- Revisar se algo ainda está puxando cor/nome da clínica e eliminar essa dependência.
 
-Resultado esperado
-- `/admin` não vai mais sugerir que existe “loja” quando só existe `clinic`.
-- `/admin/lojas` vai mostrar corretamente a loja criada, ou indicar claramente que a conta ainda não tem loja operacional.
-- `teste@gmail.com` vai entrar no sistema com vínculo válido.
-- O app cliente vai deixar de parecer “deslogado” quando o problema real for ausência de vínculo operacional.
+7. Alinhar a página Admin Lojas com o detalhe/configuração
+- Manter a listagem de lojas operacionais em `AdminLojas.tsx`.
+- Atualizar criação rápida para usar campos coerentes com o detalhe da loja.
+- Ajustar o modal de criação para scroll seguro.
+- Se útil, mostrar um resumo dos campos de integração principais na tabela/lista sem expor configuração demais.
 
-Arquivos e áreas a revisar
-- `src/pages/AdminDashboard.tsx`
-- `src/pages/AdminLojas.tsx`
-- `src/contexts/AuthContext.tsx`
-- `src/components/ProtectedRoute.tsx`
-- `supabase/functions/manage-team/index.ts`
-- banco:
-  - `public.user_roles`
-  - `public.clinics`
-  - `public.lojas`
+8. Validação após implementação
+- Login admin:
+  - conferir sidebar com `LojaADS / CRM`
+  - entrar em `/admin/lojas`
+  - abrir `/admin/lojas/:id`
+  - editar todos os campos e confirmar persistência
+- Login cliente:
+  - conferir sidebar com `LojaADS / CRM`
+  - conferir bloco `Loja: Conforto`
+  - conferir que nome/telefone/e-mail ficam somente leitura
+  - conferir que horário pode ser editado
+- Navegação:
+  - trocar entre `/admin`, `/admin/lojas`, `/admin/stats`, detalhe da loja e páginas do cliente
+  - confirmar ausência de flash branco/reload perceptível
+- Modais:
+  - abrir modais longos em viewport menor e validar scroll até o final
+- Integração n8n:
+  - confirmar que o frontend salva nas colunas exatas de `lojas`, especialmente `link_google_maps` e `url_base_checkout`
 
 Detalhes técnicos
 ```text
-Estado atual:
-clinics: 1 registro (Conforto)
-lojas: 0 registros
-user_roles:
-- admin@gmail.com -> platform_admin
-- teste@gmail.com -> sem role
-
-Efeito:
-AdminDashboard lê clinics -> parece haver "loja"
-AdminLojas lê lojas -> vazio
-Auth do cliente depende de role + clinic_id -> falha
-Páginas operacionais dependem de activeLojaId -> falham também
+Problemas concretos encontrados no código:
+- White label ativo em:
+  - src/App.tsx
+  - src/contexts/WhiteLabelContext.tsx
+  - src/components/AppLayout.tsx
+  - src/pages/Login.tsx
+  - src/pages/Settings.tsx
+- Sensação de reload reforçada por:
+  - wrapper animate-fade-in no Outlet em AppLayout
+  - QueryClient sem staleTime global
+  - uso de window.location.href em Settings
+- Nomes incorretos no detalhe da loja:
+  - maps_link -> correto: link_google_maps
+  - checkout_base_url -> correto: url_base_checkout
+- Dialog base sem proteção global de max-height/overflow
 ```
 
-Implementação proposta
-1. alinhar nomenclatura e fonte de dados no dashboard admin
-2. corrigir a modelagem exibida em `/admin/lojas`
-3. reparar o provisionamento de owner/role
-4. aplicar backfill dos registros existentes
-5. reforçar os guards de auth/contexto operacional
-
-Validação
-- Logar com `admin@gmail.com`
-- Verificar `/admin` e `/admin/lojas` com dados consistentes
-- Logar com `teste@gmail.com`
-- Confirmar que não cai mais em “Conta sem acesso liberado”
-- Abrir dashboard, leads, catálogo e follow-ups do app cliente
-- Confirmar que o contexto operacional da loja está resolvido sem parecer logout
+Arquivos principais a ajustar
+- `src/App.tsx`
+- `src/contexts/WhiteLabelContext.tsx`
+- `src/components/AppLayout.tsx`
+- `src/pages/Login.tsx`
+- `src/pages/Settings.tsx`
+- `src/pages/AdminLojas.tsx`
+- `src/pages/AdminLojaDetail.tsx`
+- `src/components/ui/dialog.tsx`
+- possivelmente páginas com modais longos:
+  - `src/pages/LojaCatalogo.tsx`
+  - `src/pages/AdminDashboard.tsx`
+  - `src/pages/Procedures.tsx`
+  - `src/pages/NpsSatisfaction.tsx`
+  - `src/pages/Automations.tsx`
+  - `src/pages/Agenda.tsx`
+  - `src/pages/WhatsApp.tsx`
