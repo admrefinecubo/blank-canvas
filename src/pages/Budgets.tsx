@@ -57,7 +57,7 @@ export default function Budgets() {
   const { data: procedures = [] } = useQuery({
     queryKey: ["procedures-select", effectiveClinicId],
     queryFn: async () => {
-      let q = supabase.from("procedures").select("id, name, price").eq("active", true);
+      let q = (supabase.from("procedures").select("id, name, price") as any).eq("active", true);
       if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
       const { data } = await q;
       return data || [];

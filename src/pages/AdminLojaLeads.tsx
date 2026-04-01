@@ -67,7 +67,7 @@ export default function AdminLojaLeads() {
   });
 
   const stageMutation = useMutation({
-    mutationFn: async ({ leadId, etapa }: { leadId: string; etapa: string }) => {
+    mutationFn: async ({ leadId, etapa }: { leadId: string; etapa: (typeof LEAD_STAGE_OPTIONS)[number]["value"] }) => {
       const { error } = await supabase.from("leads").update({ etapa_pipeline: etapa }).eq("id", leadId);
       if (error) throw error;
     },
@@ -130,7 +130,7 @@ export default function AdminLojaLeads() {
                       <div className="w-[180px]" onClick={(event) => event.stopPropagation()}>
                         <Select
                           value={lead.etapa_pipeline ?? "novo"}
-                          onValueChange={(value) => stageMutation.mutate({ leadId: lead.id, etapa: value })}
+                          onValueChange={(value) => stageMutation.mutate({ leadId: lead.id, etapa: value as (typeof LEAD_STAGE_OPTIONS)[number]["value"] })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione" />

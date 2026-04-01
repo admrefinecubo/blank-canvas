@@ -568,6 +568,7 @@ export type Database = {
       }
       lojas: {
         Row: {
+          ativo: boolean
           clinic_id: string | null
           created_at: string
           desconto_carrinho_abandonado: number | null
@@ -579,8 +580,10 @@ export type Database = {
           horario_fim: string | null
           horario_inicio: string | null
           id: string
+          instance: string | null
           link_google_maps: string | null
           montagem_disponivel: boolean
+          nome_assistente: string | null
           nome_assistente_ia: string | null
           nome_loja: string
           plataforma_ecommerce: string | null
@@ -592,6 +595,7 @@ export type Database = {
           url_base_checkout: string | null
         }
         Insert: {
+          ativo?: boolean
           clinic_id?: string | null
           created_at?: string
           desconto_carrinho_abandonado?: number | null
@@ -603,8 +607,10 @@ export type Database = {
           horario_fim?: string | null
           horario_inicio?: string | null
           id?: string
+          instance?: string | null
           link_google_maps?: string | null
           montagem_disponivel?: boolean
+          nome_assistente?: string | null
           nome_assistente_ia?: string | null
           nome_loja: string
           plataforma_ecommerce?: string | null
@@ -616,6 +622,7 @@ export type Database = {
           url_base_checkout?: string | null
         }
         Update: {
+          ativo?: boolean
           clinic_id?: string | null
           created_at?: string
           desconto_carrinho_abandonado?: number | null
@@ -627,8 +634,10 @@ export type Database = {
           horario_fim?: string | null
           horario_inicio?: string | null
           id?: string
+          instance?: string | null
           link_google_maps?: string | null
           montagem_disponivel?: boolean
+          nome_assistente?: string | null
           nome_assistente_ia?: string | null
           nome_loja?: string
           plataforma_ecommerce?: string | null
@@ -799,6 +808,7 @@ export type Database = {
       }
       patients: {
         Row: {
+          birth_date: string | null
           clinic_id: string
           cpf: string | null
           created_at: string
@@ -817,6 +827,7 @@ export type Database = {
           utm_source: string | null
         }
         Insert: {
+          birth_date?: string | null
           clinic_id: string
           cpf?: string | null
           created_at?: string
@@ -835,6 +846,7 @@ export type Database = {
           utm_source?: string | null
         }
         Update: {
+          birth_date?: string | null
           clinic_id?: string
           cpf?: string | null
           created_at?: string
@@ -915,6 +927,7 @@ export type Database = {
       }
       procedures: {
         Row: {
+          active: boolean
           category: string | null
           clinic_id: string
           created_at: string
@@ -926,6 +939,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active?: boolean
           category?: string | null
           clinic_id: string
           created_at?: string
@@ -937,6 +951,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active?: boolean
           category?: string | null
           clinic_id?: string
           created_at?: string

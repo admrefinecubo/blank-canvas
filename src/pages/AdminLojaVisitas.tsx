@@ -55,7 +55,7 @@ export default function AdminLojaVisitas() {
   const leadMap = useMemo(() => new Map((leads ?? []).map((lead) => [lead.id, lead])), [leads]);
 
   const statusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: (typeof VISITA_STATUS_OPTIONS)[number]["value"] }) => {
       const { error } = await supabase.from("visitas").update({ status }).eq("id", id);
       if (error) throw error;
     },
@@ -102,7 +102,7 @@ export default function AdminLojaVisitas() {
                         <div className="w-[180px]">
                           <Select
                             value={visita.status ?? "agendada"}
-                            onValueChange={(value) => statusMutation.mutate({ id: visita.id, status: value })}
+                            onValueChange={(value) => statusMutation.mutate({ id: visita.id, status: value as (typeof VISITA_STATUS_OPTIONS)[number]["value"] })}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione" />
