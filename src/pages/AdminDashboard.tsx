@@ -224,42 +224,41 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
-      {/* Admin Sidebar */}
-      <aside className="flex w-60 flex-col border-r border-border bg-card">
-        <div className="flex h-14 items-center border-b border-border px-4">
-          <Link to="/admin" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary"><span className="text-sm font-bold text-primary-foreground">C</span></div>
-            <div><span className="text-lg font-bold tracking-tight">CUBO</span><span className="ml-1 text-xs text-muted-foreground">Admin</span></div>
-          </Link>
-        </div>
-        <nav className="flex-1 px-2 py-3">
-          <div className="flex flex-col gap-0.5">{adminNavItems.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)}
-              className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors", activeTab === item.id ? "bg-accent text-foreground border-l-2 border-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>
-              <item.icon className="h-4 w-4" /><span>{item.label}</span>
-            </button>
-          ))}</div>
-        </nav>
-        <div className="border-t border-border px-4 py-3">
-          <Link to="/dashboard" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"><ChevronLeft className="h-3 w-3" />Voltar ao CRM</Link>
-        </div>
-      </aside>
-
-      {/* Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b border-border bg-card px-6">
-          <span className="text-sm text-muted-foreground">Admin / {adminNavItems.find(i => i.id === activeTab)?.label}</span>
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">PA</div>
-            <span className="text-sm font-medium">Platform Admin</span>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Admin Console</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Painel Administrativo</h1>
+            <Badge variant="outline">{adminNavItems.find(i => i.id === activeTab)?.label}</Badge>
           </div>
-        </header>
+          <p className="text-sm text-muted-foreground">Gerencie lojas, acompanhe métricas e entre no CRM sem abrir um segundo layout.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {adminNavItems.map(item => (
+            <Button
+              key={item.id}
+              variant={activeTab === item.id ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+              onClick={() => setActiveTab(item.id)}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Button>
+          ))}
+          <Button asChild variant="ghost" size="sm" className="gap-2">
+            <Link to="/dashboard">
+              <ChevronLeft className="h-4 w-4" />
+              Voltar ao CRM
+            </Link>
+          </Button>
+        </div>
+      </div>
 
-        <main className="flex-1 overflow-y-auto p-6">
-          {/* ========== DASHBOARD ========== */}
-          {activeTab === "dashboard" && (
-            <div className="space-y-6">
+      {/* ========== DASHBOARD ========== */}
+      {activeTab === "dashboard" && (
+        <div className="space-y-6">
                <h1 className="text-2xl font-bold">Painel Administrativo CUBO</h1>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
                 <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Lojas Ativas</p><p className="text-2xl font-bold">{activeClinics}</p></CardContent></Card>
@@ -317,12 +316,12 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               )}
-            </div>
-          )}
+        </div>
+      )}
 
-          {/* ========== CLINICS ========== */}
-          {activeTab === "clinics" && (
-            <div className="space-y-6">
+      {/* ========== CLINICS ========== */}
+      {activeTab === "clinics" && (
+        <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Gestão de Lojas</h1>
                 <Dialog open={newClinicOpen} onOpenChange={setNewClinicOpen}>
@@ -436,12 +435,12 @@ export default function AdminDashboard() {
                   );
                 })}</tbody>
               </table></CardContent></Card>
-            </div>
-          )}
+        </div>
+      )}
 
-          {/* ========== METRICS ========== */}
-          {activeTab === "metrics" && (
-            <div className="space-y-6">
+      {/* ========== METRICS ========== */}
+      {activeTab === "metrics" && (
+        <div className="space-y-6">
               <h1 className="text-2xl font-bold">Métricas de Uso</h1>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-2"><Users className="h-4 w-4 text-primary" /><p className="text-sm text-muted-foreground">Total Leads</p></div><p className="text-2xl font-bold">{totalLeads}</p></CardContent></Card>
@@ -504,12 +503,12 @@ export default function AdminDashboard() {
                   )}
                 </CardContent>
               </Card>
-            </div>
-          )}
+        </div>
+      )}
 
-          {/* ========== ACTIVITY ========== */}
-          {activeTab === "activity" && (
-            <div className="space-y-6">
+      {/* ========== ACTIVITY ========== */}
+      {activeTab === "activity" && (
+        <div className="space-y-6">
               <h1 className="text-2xl font-bold">Atividade Recente — Todas as Lojas</h1>
               {auditLogs.length === 0 ? (
                 <Card><CardContent className="py-16 text-center"><History className="mx-auto h-12 w-12 text-muted-foreground/30" /><p className="mt-4 text-muted-foreground">Nenhuma atividade registrada.</p></CardContent></Card>
@@ -541,10 +540,8 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent></Card>
               )}
-            </div>
-          )}
-        </main>
-      </div>
+        </div>
+      )}
 
       {/* Edit Clinic Dialog */}
       <Dialog open={!!editingClinic} onOpenChange={open => !open && setEditingClinic(null)}>
