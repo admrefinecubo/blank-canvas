@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* LojaADS — Light theme */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+    --primary: 195 100% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 15% 93%;
+    --secondary-foreground: 215 25% 25%;
+    --muted: 210 15% 95%;
+    --muted-foreground: 215 12% 50%;
+    --accent: 210 15% 93%;
+    --accent-foreground: 215 25% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 15% 88%;
+    --input: 210 15% 90%;
+    --ring: 195 100% 40%;
+    --radius: 0.75rem;
+    --success: 152 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 215 25% 15%;
+    --info: 195 100% 40%;
+    --info-foreground: 0 0% 100%;
+    --sidebar-background: 210 18% 96%;
+    --sidebar-foreground: 215 25% 15%;
+    --sidebar-primary: 195 100% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 91%;
+    --sidebar-accent-foreground: 215 25% 20%;
+    --sidebar-border: 210 15% 88%;
+    --sidebar-ring: 195 100% 40%;
+    --surface: 210 15% 96%;
+  }
+
+  .dark {
+    /* LojaADS — Dark navy tech theme */
+    --background: 215 45% 8%;
+    --foreground: 210 20% 95%;
+    --card: 215 40% 11%;
+    --card-foreground: 210 20% 95%;
+    --popover: 215 40% 11%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 195 100% 50%;
+    --primary-foreground: 215 45% 8%;
+    --secondary: 215 30% 15%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 215 25% 14%;
+    --muted-foreground: 210 15% 55%;
+    --accent: 215 25% 16%;
+    --accent-foreground: 210 20% 92%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 20% 18%;
+    --input: 215 25% 14%;
+    --ring: 195 100% 50%;
+    --success: 152 60% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 215 45% 8%;
+    --info: 195 100% 50%;
+    --info-foreground: 215 45% 8%;
+    --sidebar-background: 215 42% 9%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 195 100% 50%;
+    --sidebar-primary-foreground: 215 45% 8%;
+    --sidebar-accent: 215 25% 14%;
+    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-border: 215 20% 16%;
+    --sidebar-ring: 195 100% 50%;
+    --surface: 215 30% 12%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  h1, h2, h3 {
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  h4, h5, h6 {
+    letter-spacing: -0.015em;
+  }
+}
+
+/* Refined scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.12);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.25);
+}
+
+/* Tech utility classes */
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-xl;
+    background: hsl(var(--card) / 0.85);
+  }
+  .subtle-ring {
+    box-shadow: 0 0 0 1px hsl(var(--border));
+  }
+  .luxury-shadow {
+    box-shadow:
+      0 1px 3px hsl(var(--foreground) / 0.03),
+      0 6px 20px hsl(var(--foreground) / 0.04);
+  }
+  .luxury-shadow-lg {
+    box-shadow:
+      0 2px 6px hsl(var(--foreground) / 0.03),
+      0 12px 40px hsl(var(--foreground) / 0.06);
+  }
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary) / 0.1);
+  }
+  .font-display {
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+  }
+}
