@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,7 @@ function LgpdTab({ clinicId }: { clinicId: string }) {
 // ===================== Integrations Tab =====================
 function IntegrationsTab({ clinicId }: { clinicId: string }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [gcalForm, setGcalForm] = useState({ api_key: "", calendar_id: "" });
   const [showGcalSetup, setShowGcalSetup] = useState(false);
 
@@ -147,7 +149,7 @@ function IntegrationsTab({ clinicId }: { clinicId: string }) {
               {evConnected ? <Wifi className="h-5 w-5 text-primary" /> : <WifiOff className="h-5 w-5 text-destructive" />}
               <div><p className="text-sm font-medium">WhatsApp (Evolution API)</p><p className="text-xs text-muted-foreground">{evConnected ? `Conectado — ${evolutionStatus?.instance || ""}` : "Não conectado"}</p></div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => window.location.href = "/whatsapp"}>{evConnected ? "Gerenciar" : "Configurar"}</Button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/whatsapp")}>{evConnected ? "Gerenciar" : "Configurar"}</Button>
           </div>
           <div className="flex items-center justify-between rounded-lg border border-border p-4">
             <div className="flex items-center gap-3">
