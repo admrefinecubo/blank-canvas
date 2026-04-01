@@ -1,69 +1,67 @@
 
-Objetivo: corrigir o problema de “2 admin juntas” removendo a duplicidade de layout no fluxo admin.
+Objetivo: eliminar a duplicidade visual no admin e parar o “recarregamento” do app ao trocar de abas/seções administrativas.
 
 Diagnóstico
-- O problema não está no login em si.
-- A rota `/admin` já renderiza `AppLayout`.
-- Dentro dessa rota, `AdminDashboard` também renderiza outro layout completo próprio, com sidebar + header + conteúdo.
-- Resultado: a interface mostra o shell global do app e, dentro dele, um segundo shell admin.
-- O mesmo padrão duplicado existe em `AdminClinicDetail`, então ele também precisa ser alinhado.
+- O shell global admin já mostra:
+  - logo + “Admin Console” na sidebar
+  - breadcrumb “Dashboard Admin” no header
+- `AdminDashboard.tsx` ainda renderiza mais um cabeçalho interno com:
+  - “Admin Console”
+  - “Painel Administrativo”
+  - e títulos extras por aba
+- Isso não cria mais um layout inteiro, mas mantém a sensação de “admin dentro do admin”.
+- O recarregamento ao trocar de aba/seção acontece porque `App.tsx` cria um `ProtectedRoute + AppLayout` separado para cada rota `/admin*`. Ao navegar entre elas, o shell inteiro desmonta e monta de novo.
 
 O que vou ajustar
-1. Unificar o layout do admin
-- Manter `AppLayout` como shell principal para páginas administrativas protegidas.
-- Remover de `AdminDashboard` a estrutura full-screen própria:
-  - sidebar lateral interna
-  - header interno redundante
-  - wrappers `h-screen`, `overflow-hidden`, etc.
-- Transformar `AdminDashboard` em conteúdo de página normal dentro do `<Outlet />`.
+1. Unificar as rotas admin sob um único shell
+- Reestruturar `App.tsx` para ter um único grupo:
+  - `/admin` com `ProtectedRoute + AppLayout`
+  - filhas: index, `clinic/:id`, `stats`, `lojas`, `lojas/:id`, etc.
+- Resultado:
+  - sidebar/header do admin permanecem montados
+  - navegação entre seções fica fluida
+  - reduz sensação de refresh/reload
 
-2. Preservar a navegação admin sem duplicar shell
-- Migrar a navegação interna do dashboard admin para componentes de conteúdo da própria página:
-  - abas/seções (“Dashboard”, “Lojas”, “Métricas”, “Atividade”) continuam existindo
-  - mas sem criar uma segunda sidebar estrutural
-- Manter os links principais do admin no menu do `AppLayout`.
+2. Limpar o cabeçalho interno do `AdminDashboard`
+- Remover textos redundantes como:
+  - “Admin Console”
+  - “Painel Administrativo”
+  - “Painel Administrativo CUBO”
+- Manter só um topo de conteúdo simples, orientado por seção:
+  - resumo curto
+  - tabs/botões internos se ainda fizer sentido
+- Evitar repetir informação que já está no `AppLayout`
 
-3. Corrigir páginas admin fora do padrão
-- Refatorar `AdminClinicDetail` para também usar o shell principal em vez de desenhar uma tela administrativa separada.
-- Revisar se a experiência de “Entrar no CRM” e “Voltar” continua funcionando após a padronização.
+3. Deixar a troca de abas do dashboard mais estável
+- Manter as abas internas (`dashboard`, `clinics`, `metrics`, `activity`) locais ao componente, sem navegação que remonte shell.
+- Se necessário, sincronizar a aba com query param para preservar estado sem parecer reload, mas só se isso ficar simples e consistente com o projeto.
 
-4. Revisar rotas administrativas
-- Validar a organização atual das rotas `/admin`, `/admin/stats`, `/admin/lojas` e `/admin/clinic/:id`.
-- Se necessário, consolidar mais rotas sob um padrão único com layout compartilhado, para evitar novos casos de tela duplicada.
+4. Revisar páginas admin relacionadas
+- Garantir que `AdminClinicDetail` continue usando apenas conteúdo de página.
+- Validar que `AdminStats` e `AdminLojas` funcionem bem como filhas do mesmo layout compartilhado.
 
 Resultado esperado
-- Ao entrar como admin, haverá apenas:
-  - 1 sidebar principal
-  - 1 header principal
-  - 1 área de conteúdo
-- A página `/admin` deixará de parecer “uma tela dentro de outra”.
-- O fluxo admin ficará consistente com o restante do app.
-
-Detalhes técnicos
-```text
-Hoje:
-ProtectedRoute(admin)
-  -> AppLayout
-      -> AdminDashboard
-          -> Sidebar própria
-          -> Header próprio
-          -> Conteúdo
-
-Depois:
-ProtectedRoute(admin)
-  -> AppLayout
-      -> AdminDashboard
-          -> Conteúdo/abas/cards apenas
-```
+- Só haverá um contexto visual de admin por vez.
+- O topo não vai repetir “Dashboard Admin” + “Admin Console” + “Painel Administrativo” de forma confusa.
+- Ao navegar entre `/admin`, `/admin/stats`, `/admin/lojas` e detalhes, a sidebar e o header não serão recriados.
+- A experiência ficará mais parecida com troca de seção do que recarregamento da aplicação.
 
 Arquivos a ajustar
+- `src/App.tsx`
 - `src/pages/AdminDashboard.tsx`
-- `src/pages/AdminClinicDetail.tsx`
-- possivelmente `src/App.tsx` para consolidar melhor as rotas admin, se necessário
+- possível revisão leve em:
+  - `src/pages/AdminClinicDetail.tsx`
+  - `src/pages/AdminStats.tsx`
+  - `src/pages/AdminLojas.tsx`
 
 Validação após implementação
 - Login com `admin@gmail.com`
 - Abrir `/admin`
-- Confirmar que só existe um layout admin visível
-- Navegar para lojas, detalhe da loja e stats
-- Testar responsividade básica para garantir que nada quebrou no mobile
+- Confirmar que não há duplicidade de títulos admin
+- Navegar entre:
+  - `/admin`
+  - `/admin/stats`
+  - `/admin/lojas`
+  - `/admin/clinic/:id`
+- Confirmar que sidebar/header permanecem estáveis sem “reload”
+- Testar também no mobile para garantir que o menu lateral não pisque nem feche de forma estranha
