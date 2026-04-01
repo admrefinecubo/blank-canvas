@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 import NotificationsDropdown from "@/components/NotificationsDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
 import GlobalSearch from "@/components/GlobalSearch";
-import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogOut, Eye } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -62,8 +61,7 @@ export default function AppLayout() {
   }, [currentPath, isMobile]);
 
   const breadcrumb = breadcrumbMap[currentPath] || currentPath.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" / ");
-  const { settings } = useWhiteLabel();
-  const { user, roles, isPlatformAdmin, appMode, defaultRoute, impersonatedClinicId, clearImpersonation, signOut } = useAuth();
+  const { user, roles, isPlatformAdmin, appMode, defaultRoute, impersonatedClinicId, clearImpersonation, signOut, activeLojaId } = useAuth();
   const userInitials = user?.email?.substring(0, 2).toUpperCase() || 'U';
   const userRole = roles[0]?.role;
   const navItems = appMode === 'admin' ? adminNavItems : clientNavItems;
@@ -76,6 +74,17 @@ export default function AppLayout() {
       return data;
     },
     enabled: !!impersonatedClinicId,
+  });
+
+  const { data: activeLoja } = useQuery({
+    queryKey: ["active-loja-branding", activeLojaId],
+    queryFn: async () => {
+      if (!activeLojaId) return null;
+      const { data, error } = await supabase.from("lojas").select("nome_loja").eq("id", activeLojaId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: appMode === "client" && !!activeLojaId,
   });
 
   const ImpersonationBanner = () => (
@@ -108,32 +117,24 @@ export default function AppLayout() {
         <div className="flex h-[72px] items-center px-5">
           {!collapsed ? (
             <Link to={defaultRoute} className="flex items-center gap-3 group">
-              <div className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-2xl transition-transform group-hover:scale-105 overflow-hidden shadow-sm",
-                settings.logoUrl ? "bg-transparent" : "bg-primary"
-              )}>
-                {settings.logoUrl ? (
-                  <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-cover" />
-                ) : (
-                  <span className="text-base font-bold text-primary-foreground">{settings.clinicName.charAt(0)}</span>
-                )}
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground transition-transform group-hover:scale-105 overflow-hidden shadow-sm">
+                <span className="text-base font-bold">L</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[15px] font-semibold tracking-tight">{settings.clinicName}</span>
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-medium">{appMode === 'admin' ? 'Operação Multi-Tenant' : settings.clinicSubtitle}</span>
+                <span className="text-[15px] font-semibold tracking-tight">LojaADS</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-medium">CRM</span>
+                {!isPlatformAdmin && appMode === "client" && activeLoja?.nome_loja ? (
+                  <>
+                    <span className="mt-2 h-px w-full bg-border/60" />
+                    <span className="pt-2 text-[11px] font-medium text-muted-foreground">🏪 Loja: {activeLoja.nome_loja}</span>
+                  </>
+                ) : null}
               </div>
             </Link>
           ) : (
             <Link to={defaultRoute} className="mx-auto">
-              <div className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden shadow-sm",
-                settings.logoUrl ? "bg-transparent" : "bg-primary"
-              )}>
-                {settings.logoUrl ? (
-                  <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-cover" />
-                ) : (
-                  <span className="text-base font-bold text-primary-foreground">{settings.clinicName.charAt(0)}</span>
-                )}
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden bg-primary text-primary-foreground shadow-sm">
+                <span className="text-base font-bold">L</span>
               </div>
             </Link>
           )}
@@ -183,7 +184,7 @@ export default function AppLayout() {
         {!collapsed && (
           <div className="px-5 py-4">
             <p className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/25 font-medium">
-              {appMode === 'admin' ? 'Operação Multi-Tenant' : 'LojaADS — IA de Vendas'}
+              {appMode === 'admin' ? 'LojaADS — Admin' : 'LojaADS — CRM'}
             </p>
           </div>
         )}
@@ -258,9 +259,7 @@ export default function AppLayout() {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-5 md:p-8">
-          <div className="animate-fade-in">
-            <Outlet />
-          </div>
+          <Outlet />
         </main>
       </div>
 
