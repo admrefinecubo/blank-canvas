@@ -1,10 +1,10 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { WhiteLabelProvider } from "@/contexts/WhiteLabelContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "@/pages/Login";
@@ -37,7 +37,24 @@ import LojaCatalogo from "@/pages/LojaCatalogo";
 import LojaFollowups from "@/pages/LojaFollowups";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 300_000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
+
+function AppBrandingEffect() {
+  useEffect(() => {
+    document.title = "LojaADS CRM";
+  }, []);
+
+  return null;
+}
 
 function RootRedirect() {
   const { loading, session, defaultRoute } = useAuth();
@@ -50,54 +67,53 @@ function RootRedirect() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <WhiteLabelProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/" element={<RootRedirect />} />
-              <Route element={<ProtectedRoute requiredMode="client"><AppLayout /></ProtectedRoute>}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/leads" element={<LojaLeads />} />
-                <Route path="/catalogo" element={<LojaCatalogo />} />
-                <Route path="/followups" element={<LojaFollowups />} />
-                <Route path="/configuracoes" element={<SettingsPage />} />
-                <Route path="/patients" element={<Patients />} />
-                <Route path="/patients/:id" element={<PatientDetail />} />
-                <Route path="/pipeline/patients" element={<PatientPipeline />} />
-                <Route path="/pipeline/budgets" element={<BudgetPipeline />} />
-                <Route path="/budgets" element={<Budgets />} />
-                <Route path="/procedures" element={<Procedures />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/whatsapp" element={<WhatsApp />} />
-                <Route path="/agenda" element={<Agenda />} />
-                <Route path="/automations" element={<Automations />} />
-                <Route path="/financial" element={<Financial />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/nps" element={<NpsSatisfaction />} />
-              </Route>
-              <Route path="/admin" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AppLayout /></ProtectedRoute>}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="clinic/:id" element={<AdminClinicDetail />} />
-                <Route path="stats" element={<AdminStats />} />
-                <Route path="lojas" element={<AdminLojas />} />
-                <Route path="lojas/:id" element={<AdminLojaDetail />} />
-                <Route path="lojas/:id/catalogo" element={<AdminLojaCatalogo />} />
-                <Route path="lojas/:id/leads" element={<AdminLojaLeads />} />
-                <Route path="lojas/:id/conversas" element={<AdminLojaConversas />} />
-                <Route path="lojas/:id/followups" element={<AdminLojaFollowups />} />
-                <Route path="lojas/:id/visitas" element={<AdminLojaVisitas />} />
-              </Route>
-              <Route path="/settings" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                <Route index element={<SettingsPage />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </WhiteLabelProvider>
+      <TooltipProvider>
+        <AppBrandingEffect />
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<RootRedirect />} />
+            <Route element={<ProtectedRoute requiredMode="client"><AppLayout /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/leads" element={<LojaLeads />} />
+              <Route path="/catalogo" element={<LojaCatalogo />} />
+              <Route path="/followups" element={<LojaFollowups />} />
+              <Route path="/configuracoes" element={<SettingsPage />} />
+              <Route path="/patients" element={<Patients />} />
+              <Route path="/patients/:id" element={<PatientDetail />} />
+              <Route path="/pipeline/patients" element={<PatientPipeline />} />
+              <Route path="/pipeline/budgets" element={<BudgetPipeline />} />
+              <Route path="/budgets" element={<Budgets />} />
+              <Route path="/procedures" element={<Procedures />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/whatsapp" element={<WhatsApp />} />
+              <Route path="/agenda" element={<Agenda />} />
+              <Route path="/automations" element={<Automations />} />
+              <Route path="/financial" element={<Financial />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/nps" element={<NpsSatisfaction />} />
+            </Route>
+            <Route path="/admin" element={<ProtectedRoute requiredMode="admin" requiredRole="platform_admin"><AppLayout /></ProtectedRoute>}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="clinic/:id" element={<AdminClinicDetail />} />
+              <Route path="stats" element={<AdminStats />} />
+              <Route path="lojas" element={<AdminLojas />} />
+              <Route path="lojas/:id" element={<AdminLojaDetail />} />
+              <Route path="lojas/:id/catalogo" element={<AdminLojaCatalogo />} />
+              <Route path="lojas/:id/leads" element={<AdminLojaLeads />} />
+              <Route path="lojas/:id/conversas" element={<AdminLojaConversas />} />
+              <Route path="lojas/:id/followups" element={<AdminLojaFollowups />} />
+              <Route path="lojas/:id/visitas" element={<AdminLojaVisitas />} />
+            </Route>
+            <Route path="/settings" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route index element={<SettingsPage />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
