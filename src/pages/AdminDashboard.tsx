@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
   const [newClinic, setNewClinic] = useState({
     name: "", city: "", state: "", phone: "", email: "",
-    ownerName: "", ownerEmail: "", primaryColor: "24 95% 53%", notes: "",
+    ownerName: "", ownerEmail: "", ownerPassword: "", primaryColor: "24 95% 53%", notes: "",
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -105,21 +105,40 @@ export default function AdminDashboard() {
   // ===== Mutations =====
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!newClinic.name || !newClinic.ownerName || !newClinic.ownerEmail) throw new Error("Preencha os campos obrigatórios");
-      const { error } = await supabase.from("clinics").insert({
+      if (!newClinic.name || !newClinic.ownerName || !newClinic.ownerEmail || !newClinic.ownerPassword) {
+        throw new Error("Preencha os campos obrigatórios");
+      }
+
+      const { data: clinic, error } = await supabase.from("clinics").insert({
         name: newClinic.name, city: newClinic.city || null, state: newClinic.state || null,
         phone: newClinic.phone || null, email: newClinic.email || null,
         owner_name: newClinic.ownerName, owner_email: newClinic.ownerEmail,
         primary_color: newClinic.primaryColor || null, notes: newClinic.notes || null,
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      const { data: provisionData, error: provisionError } = await supabase.functions.invoke("manage-team", {
+        body: {
+          action: "create",
+          email: newClinic.ownerEmail,
+          password: newClinic.ownerPassword,
+          role: "clinic_owner",
+          clinic_id: clinic.id,
+          display_name: newClinic.ownerName,
+        },
+      });
+
+      if (provisionError || provisionData?.error) {
+        await supabase.from("clinics").delete().eq("id", clinic.id);
+        throw new Error(provisionData?.error || provisionError?.message || "Falha ao criar acesso do proprietário");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
       setNewClinicOpen(false);
-      setNewClinic({ name: "", city: "", state: "", phone: "", email: "", ownerName: "", ownerEmail: "", primaryColor: "24 95% 53%", notes: "" });
+      setNewClinic({ name: "", city: "", state: "", phone: "", email: "", ownerName: "", ownerEmail: "", ownerPassword: "", primaryColor: "24 95% 53%", notes: "" });
       setLogoPreview(null);
-      toast.success("Loja criada com sucesso!");
+      toast.success("Loja e acesso do proprietário criados com sucesso!");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -329,6 +348,7 @@ export default function AdminDashboard() {
                           <div><Label>Nome *</Label><Input placeholder="Fulano da Silva" value={newClinic.ownerName} onChange={e => setNewClinic(p => ({ ...p, ownerName: e.target.value }))} /></div>
                           <div><Label>E-mail de Acesso *</Label><Input type="email" placeholder="fulano@loja.com" value={newClinic.ownerEmail} onChange={e => setNewClinic(p => ({ ...p, ownerEmail: e.target.value }))} /></div>
                         </div>
+                        <div><Label>Senha Inicial *</Label><Input type="password" placeholder="Mínimo 6 caracteres" value={newClinic.ownerPassword} onChange={e => setNewClinic(p => ({ ...p, ownerPassword: e.target.value }))} /></div>
                       </div>
                       <div className="space-y-3">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Identidade Visual</p>
