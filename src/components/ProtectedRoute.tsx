@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function ProtectedRoute({ children, requiredRole, requiredMode = 'authenticated' }: Props) {
-  const { session, loading, isPlatformAdmin, appMode, canAccessClientApp, defaultRoute, signOut } = useAuth();
+  const { session, loading, isPlatformAdmin, appMode, canAccessClientApp, hasOperationalStore, defaultRoute, signOut } = useAuth();
 
   if (loading) {
     return (
@@ -42,6 +42,24 @@ export default function ProtectedRoute({ children, requiredRole, requiredMode = 
             <h1 className="text-2xl font-semibold tracking-tight">Conta sem acesso liberado</h1>
             <p className="mt-3 text-sm text-muted-foreground">
               Seu usuário entrou com sucesso, mas ainda não foi vinculado a uma conta/loja ativa no CRM.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Button onClick={signOut} variant="outline" className="rounded-xl">
+                Sair da conta
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!hasOperationalStore) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background px-6">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+            <h1 className="text-2xl font-semibold tracking-tight">Conta vinculada, loja não configurada</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Seu acesso está ativo, mas ainda não existe uma loja operacional vinculada para carregar catálogo, leads e follow-ups.
             </p>
             <div className="mt-6 flex justify-center">
               <Button onClick={signOut} variant="outline" className="rounded-xl">
