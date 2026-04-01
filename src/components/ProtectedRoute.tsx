@@ -4,10 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 interface Props {
   children: React.ReactNode;
   requiredRole?: 'platform_admin';
+  requiredMode?: 'authenticated' | 'admin' | 'client';
 }
 
-export default function ProtectedRoute({ children, requiredRole }: Props) {
-  const { session, loading, isPlatformAdmin } = useAuth();
+export default function ProtectedRoute({ children, requiredRole, requiredMode = 'authenticated' }: Props) {
+  const { session, loading, isPlatformAdmin, appMode, canAccessClientApp, defaultRoute } = useAuth();
 
   if (loading) {
     return (
@@ -24,8 +25,22 @@ export default function ProtectedRoute({ children, requiredRole }: Props) {
     return <Navigate to="/login" replace />;
   }
 
+  if (requiredMode === 'admin' && !isPlatformAdmin) {
+    return <Navigate to={defaultRoute} replace />;
+  }
+
   if (requiredRole === 'platform_admin' && !isPlatformAdmin) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={defaultRoute} replace />;
+  }
+
+  if (requiredMode === 'client') {
+    if (!canAccessClientApp) {
+      return <Navigate to="/admin" replace />;
+    }
+
+    if (appMode !== 'client') {
+      return <Navigate to={defaultRoute} replace />;
+    }
   }
 
   return <>{children}</>;

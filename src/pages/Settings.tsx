@@ -519,7 +519,7 @@ function PostProcedureTab({ clinicId }: { clinicId: string }) {
 // ===================== Main Settings Page =====================
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useWhiteLabel();
-  const { clinicId, isPlatformAdmin } = useAuth();
+  const { clinicId, isPlatformAdmin, appMode } = useAuth();
   const queryClient = useQueryClient();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
@@ -528,6 +528,7 @@ export default function SettingsPage() {
   const [brandForm, setBrandForm] = useState({ clinicName: "", clinicSubtitle: "CRM", primaryColor: PRESET_COLORS[0].value, logoUrl: null as string | null, faviconUrl: null as string | null });
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
   const [newMember, setNewMember] = useState({ email: "", password: "", role: "clinic_staff" });
+  const showAdminControls = isPlatformAdmin && appMode === "admin";
 
   const { data: clinic } = useQuery({
     queryKey: ["clinic-settings", clinicId],
@@ -649,19 +650,19 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Configurações</h1>
 
-      <Tabs defaultValue={isPlatformAdmin ? "whitelabel" : "clinic"}>
+      <Tabs defaultValue={showAdminControls ? "whitelabel" : "clinic"}>
         <TabsList className="bg-accent flex-wrap h-auto gap-1">
-          {isPlatformAdmin && <TabsTrigger value="whitelabel" className="gap-1.5"><Palette className="h-3.5 w-3.5" /> White Label</TabsTrigger>}
+          {showAdminControls && <TabsTrigger value="whitelabel" className="gap-1.5"><Palette className="h-3.5 w-3.5" /> White Label</TabsTrigger>}
           <TabsTrigger value="clinic">Conta</TabsTrigger>
-          {isPlatformAdmin && <TabsTrigger value="team">Equipe</TabsTrigger>}
-          <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>
-          <TabsTrigger value="post-procedure">Pós-Venda</TabsTrigger>
-          <TabsTrigger value="integrations">Integrações</TabsTrigger>
-          <TabsTrigger value="lgpd">LGPD</TabsTrigger>
-          <TabsTrigger value="audit"><History className="h-3.5 w-3.5 mr-1" />Auditoria</TabsTrigger>
+          {showAdminControls && <TabsTrigger value="team">Equipe</TabsTrigger>}
+          {showAdminControls && <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>}
+          {showAdminControls && <TabsTrigger value="post-procedure">Pós-Venda</TabsTrigger>}
+          {showAdminControls && <TabsTrigger value="integrations">Integrações</TabsTrigger>}
+          {showAdminControls && <TabsTrigger value="lgpd">LGPD</TabsTrigger>}
+          {showAdminControls && <TabsTrigger value="audit"><History className="h-3.5 w-3.5 mr-1" />Auditoria</TabsTrigger>}
         </TabsList>
 
-        {isPlatformAdmin && <TabsContent value="whitelabel" className="mt-4 space-y-4">
+        {showAdminControls && <TabsContent value="whitelabel" className="mt-4 space-y-4">
           <Card className="bg-card">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -749,7 +750,7 @@ export default function SettingsPage() {
         </TabsContent>}
 
         <TabsContent value="clinic" className="mt-4 space-y-4">
-          {isPlatformAdmin && !clinicId && adminClinics && adminClinics.length > 0 && (
+          {showAdminControls && !clinicId && adminClinics && adminClinics.length > 0 && (
             <div className="flex gap-2">{adminClinics.map(c => (<Button key={c.id} variant={selectedClinicId === c.id ? "default" : "outline"} size="sm" onClick={() => setSelectedClinicId(c.id)}>{c.name}</Button>))}</div>
           )}
           <Card className="bg-card">
@@ -760,7 +761,7 @@ export default function SettingsPage() {
                 <div><Label>Telefone</Label><Input value={clinicForm.phone} onChange={e => setClinicForm(f => ({ ...f, phone: e.target.value }))} /></div>
                 <div><Label>E-mail</Label><Input value={clinicForm.email} onChange={e => setClinicForm(f => ({ ...f, email: e.target.value }))} /></div>
               </div>
-              {isPlatformAdmin ? (
+              {showAdminControls ? (
                 <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>{saveMutation.isPending ? "Salvando..." : "Salvar Alterações"}</Button>
               ) : (
                 <p className="text-sm text-muted-foreground">Os dados da conta e a identidade visual são gerenciados pelo administrador da plataforma.</p>
@@ -779,7 +780,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {isPlatformAdmin && <TabsContent value="team" className="mt-4 space-y-4">
+        {showAdminControls && <TabsContent value="team" className="mt-4 space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">

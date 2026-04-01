@@ -32,13 +32,13 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    const { error } = await signIn(email, password);
+    const { error, redirectTo } = await signIn(email, password);
     if (error) {
       setError(error.message === 'Invalid login credentials'
         ? 'Email ou senha incorretos'
         : error.message);
     } else {
-      navigate('/dashboard');
+      navigate(redirectTo || '/dashboard');
     }
     setLoading(false);
   };
