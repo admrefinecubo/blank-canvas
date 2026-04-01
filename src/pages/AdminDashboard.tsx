@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import {
   Building2, TrendingDown, AlertTriangle,
   Search, Eye, ChevronRight, Users, BarChart3,
-  LayoutDashboard, ChevronLeft, Plus, Upload,
+  LayoutDashboard, ChevronLeft, Plus,
   Calendar, DollarSign, TrendingUp, Wifi, WifiOff, History,
   Edit, CheckCircle, XCircle, Loader2, Ban, ShieldCheck,
 } from "lucide-react";
@@ -28,8 +28,7 @@ import {
 interface Clinic {
   id: string; name: string; status: "ativa" | "inativa" | "cancelada";
   city: string | null; state: string | null; owner_name: string; owner_email: string;
-  phone: string | null; email: string | null; primary_color: string | null;
-  logo_url: string | null; notes: string | null; created_at: string;
+  phone: string | null; email: string | null; notes: string | null; created_at: string;
 }
 
 interface LojaSummary {
@@ -51,10 +50,8 @@ export default function AdminDashboard() {
   const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
   const [newClinic, setNewClinic] = useState({
     name: "", city: "", state: "", phone: "", email: "",
-    ownerName: "", ownerEmail: "", ownerPassword: "", primaryColor: "24 95% 53%", notes: "",
+    ownerName: "", ownerEmail: "", ownerPassword: "", notes: "",
   });
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // ===== Queries =====
   const { data: clinics = [], isLoading: loadingClinics } = useQuery({
@@ -127,7 +124,7 @@ export default function AdminDashboard() {
         name: newClinic.name, city: newClinic.city || null, state: newClinic.state || null,
         phone: newClinic.phone || null, email: newClinic.email || null,
         owner_name: newClinic.ownerName, owner_email: newClinic.ownerEmail,
-        primary_color: newClinic.primaryColor || null, notes: newClinic.notes || null,
+          notes: newClinic.notes || null,
       }).select("id").single();
       if (error) throw error;
 
@@ -151,8 +148,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
       queryClient.invalidateQueries({ queryKey: ["admin-lojas-summary"] });
       setNewClinicOpen(false);
-      setNewClinic({ name: "", city: "", state: "", phone: "", email: "", ownerName: "", ownerEmail: "", ownerPassword: "", primaryColor: "24 95% 53%", notes: "" });
-      setLogoPreview(null);
+      setNewClinic({ name: "", city: "", state: "", phone: "", email: "", ownerName: "", ownerEmail: "", ownerPassword: "", notes: "" });
       toast.success("Conta criada com acesso do proprietário liberado.");
     },
     onError: (e: any) => toast.error(e.message),
@@ -236,11 +232,6 @@ export default function AdminDashboard() {
     { id: "metrics" as const, label: "Métricas de Uso", icon: BarChart3 },
     { id: "activity" as const, label: "Atividade", icon: History },
   ];
-
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) { const reader = new FileReader(); reader.onloadend = () => setLogoPreview(reader.result as string); reader.readAsDataURL(file); }
-  };
 
   return (
     <div className="space-y-6">
@@ -367,20 +358,6 @@ export default function AdminDashboard() {
                           <div><Label>E-mail de Acesso *</Label><Input type="email" placeholder="fulano@empresa.com" value={newClinic.ownerEmail} onChange={e => setNewClinic(p => ({ ...p, ownerEmail: e.target.value }))} /></div>
                         </div>
                         <div><Label>Senha Inicial *</Label><Input type="password" placeholder="Mínimo 6 caracteres" value={newClinic.ownerPassword} onChange={e => setNewClinic(p => ({ ...p, ownerPassword: e.target.value }))} /></div>
-                      </div>
-                      <div className="space-y-3">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Identidade Visual</p>
-                        <div className="flex items-center gap-4">
-                          <div onClick={() => logoInputRef.current?.click()} className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-accent/30 overflow-hidden hover:border-primary/50">
-                            {logoPreview ? <img src={logoPreview} alt="Logo" className="h-full w-full object-contain" /> : <div className="flex flex-col items-center gap-1"><Upload className="h-5 w-5 text-muted-foreground" /><span className="text-[10px] text-muted-foreground">Logo</span></div>}
-                          </div>
-                          <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
-                          <div className="flex-1 space-y-2">
-                            <Label>Cor Primária (HSL)</Label>
-                            <Input placeholder="24 95% 53%" value={newClinic.primaryColor} onChange={e => setNewClinic(p => ({ ...p, primaryColor: e.target.value }))} />
-                            <div className="flex items-center gap-2"><div className="h-6 w-6 rounded-md border border-border" style={{ backgroundColor: `hsl(${newClinic.primaryColor})` }} /><span className="text-[11px] text-muted-foreground">Preview</span></div>
-                          </div>
-                        </div>
                       </div>
                       <div className="space-y-3"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Observações</p><Textarea placeholder="Notas internas..." rows={3} value={newClinic.notes} onChange={e => setNewClinic(p => ({ ...p, notes: e.target.value }))} /></div>
                     </div>

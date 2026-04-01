@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -10,25 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Upload, RotateCcw, Palette, WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, MessageSquare, Loader2, Target, History, Eye } from "lucide-react";
-import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
+import { WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, MessageSquare, Loader2, Target, History, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-const PRESET_COLORS = [
-  { name: "Laranja CUBO", value: "24 95% 53%" },
-  { name: "Azul Royal", value: "217 80% 55%" },
-  { name: "Verde Esmeralda", value: "152 60% 40%" },
-  { name: "Rosa Elegante", value: "340 65% 55%" },
-  { name: "Dourado", value: "38 92% 50%" },
-  { name: "Roxo Premium", value: "270 60% 55%" },
-  { name: "Turquesa", value: "174 60% 45%" },
-  { name: "Vermelho Intenso", value: "0 72% 51%" },
-];
 
 const ROLE_LABELS: Record<string, string> = {
   clinic_owner: "Proprietário",
@@ -120,6 +109,7 @@ function LgpdTab({ clinicId }: { clinicId: string }) {
 // ===================== Integrations Tab =====================
 function IntegrationsTab({ clinicId }: { clinicId: string }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [gcalForm, setGcalForm] = useState({ api_key: "", calendar_id: "" });
   const [showGcalSetup, setShowGcalSetup] = useState(false);
 
@@ -159,7 +149,7 @@ function IntegrationsTab({ clinicId }: { clinicId: string }) {
               {evConnected ? <Wifi className="h-5 w-5 text-primary" /> : <WifiOff className="h-5 w-5 text-destructive" />}
               <div><p className="text-sm font-medium">WhatsApp (Evolution API)</p><p className="text-xs text-muted-foreground">{evConnected ? `Conectado — ${evolutionStatus?.instance || ""}` : "Não conectado"}</p></div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => window.location.href = "/whatsapp"}>{evConnected ? "Gerenciar" : "Configurar"}</Button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/whatsapp")}>{evConnected ? "Gerenciar" : "Configurar"}</Button>
           </div>
           <div className="flex items-center justify-between rounded-lg border border-border p-4">
             <div className="flex items-center gap-3">
@@ -518,14 +508,11 @@ function PostProcedureTab({ clinicId }: { clinicId: string }) {
 
 // ===================== Main Settings Page =====================
 export default function SettingsPage() {
-  const { settings, updateSettings, resetSettings } = useWhiteLabel();
-  const { clinicId, isPlatformAdmin, appMode } = useAuth();
+  const { clinicId, isPlatformAdmin, appMode, activeLojaId } = useAuth();
   const queryClient = useQueryClient();
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const faviconInputRef = useRef<HTMLInputElement>(null);
 
   const [clinicForm, setClinicForm] = useState({ name: "", phone: "", email: "" });
-  const [brandForm, setBrandForm] = useState({ clinicName: "", clinicSubtitle: "CRM", primaryColor: PRESET_COLORS[0].value, logoUrl: null as string | null, faviconUrl: null as string | null });
+  const [storeForm, setStoreForm] = useState({ nome_loja: "", horario_inicio: "08:00", horario_fim: "18:00" });
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
   const [newMember, setNewMember] = useState({ email: "", password: "", role: "clinic_staff" });
   const showAdminControls = isPlatformAdmin && appMode === "admin";
@@ -546,18 +533,33 @@ export default function SettingsPage() {
   const effectiveClinic = clinic || adminClinics?.find(c => c.id === selectedClinicId);
   const effectiveClinicId = clinicId || selectedClinicId;
 
+  const { data: activeLoja } = useQuery({
+    queryKey: ["settings-loja", activeLojaId],
+    queryFn: async () => {
+      if (!activeLojaId) return null;
+      const { data, error } = await supabase
+        .from("lojas")
+        .select("id, nome_loja, horario_inicio, horario_fim")
+        .eq("id", activeLojaId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !showAdminControls && !!activeLojaId,
+  });
+
   useEffect(() => { if (effectiveClinic) setClinicForm({ name: effectiveClinic.name || "", phone: effectiveClinic.phone || "", email: effectiveClinic.email || "" }); }, [effectiveClinic]);
-  useEffect(() => {
-    if (!effectiveClinic) return;
-    setBrandForm({
-      clinicName: effectiveClinic.name || settings.clinicName,
-      clinicSubtitle: effectiveClinic.clinic_subtitle || "CRM",
-      primaryColor: effectiveClinic.primary_color || settings.primaryColor,
-      logoUrl: effectiveClinic.logo_url || null,
-      faviconUrl: effectiveClinic.favicon_url || null,
-    });
-  }, [effectiveClinic, settings.clinicName, settings.primaryColor]);
   useEffect(() => { if (adminClinics?.length && !selectedClinicId) setSelectedClinicId(adminClinics[0].id); }, [adminClinics, selectedClinicId]);
+  useEffect(() => {
+    if (!activeLoja) return;
+
+    setStoreForm({
+      nome_loja: activeLoja.nome_loja || "",
+      horario_inicio: activeLoja.horario_inicio || "08:00",
+      horario_fim: activeLoja.horario_fim || "18:00",
+    });
+  }, [activeLoja]);
 
   const { data: teamMembers, isLoading: teamLoading } = useQuery({
     queryKey: ["team-members", effectiveClinicId],
@@ -589,70 +591,33 @@ export default function SettingsPage() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const saveBrandingMutation = useMutation({
+  const saveStoreHoursMutation = useMutation({
     mutationFn: async () => {
-      if (!effectiveClinicId) throw new Error("Nenhuma conta selecionada");
+      if (!activeLojaId) throw new Error("Nenhuma loja selecionada");
 
       const { error } = await supabase
-        .from("clinics")
+        .from("lojas")
         .update({
-          name: brandForm.clinicName,
-          clinic_subtitle: brandForm.clinicSubtitle || null,
-          primary_color: brandForm.primaryColor,
-          logo_url: brandForm.logoUrl,
-          favicon_url: brandForm.faviconUrl,
+          horario_inicio: storeForm.horario_inicio || null,
+          horario_fim: storeForm.horario_fim || null,
         })
-        .eq("id", effectiveClinicId);
+        .eq("id", activeLojaId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinic-settings"] });
-      queryClient.invalidateQueries({ queryKey: ["clinics-for-settings"] });
-      updateSettings(brandForm);
-      setClinicForm((prev) => ({ ...prev, name: brandForm.clinicName }));
-      toast({ title: "Identidade visual salva!" });
+      queryClient.invalidateQueries({ queryKey: ["settings-loja"] });
+      toast({ title: "Horários salvos!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: "logoUrl" | "faviconUrl") => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { toast({ title: "Arquivo inválido", description: "Selecione uma imagem", variant: "destructive" }); return; }
-
-    if (!effectiveClinicId) {
-      toast({ title: "Selecione uma conta", variant: "destructive" });
-      return;
-    }
-
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${field === "logoUrl" ? "logos" : "favicons"}/${effectiveClinicId}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("clinic-assets")
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
-      return;
-    }
-
-    const { data: urlData } = supabase.storage.from("clinic-assets").getPublicUrl(filePath);
-    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-
-    setBrandForm((prev) => ({ ...prev, [field]: publicUrl }));
-    updateSettings({ [field]: publicUrl });
-    toast({ title: field === "logoUrl" ? "Logo atualizada!" : "Favicon atualizado!" });
-  };
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Configurações</h1>
 
-      <Tabs defaultValue={showAdminControls ? "whitelabel" : "clinic"}>
+      <Tabs defaultValue="clinic">
         <TabsList className="bg-accent flex-wrap h-auto gap-1">
-          {showAdminControls && <TabsTrigger value="whitelabel" className="gap-1.5"><Palette className="h-3.5 w-3.5" /> White Label</TabsTrigger>}
           <TabsTrigger value="clinic">Conta</TabsTrigger>
           {showAdminControls && <TabsTrigger value="team">Equipe</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>}
@@ -662,120 +627,37 @@ export default function SettingsPage() {
           {showAdminControls && <TabsTrigger value="audit"><History className="h-3.5 w-3.5 mr-1" />Auditoria</TabsTrigger>}
         </TabsList>
 
-        {showAdminControls && <TabsContent value="whitelabel" className="mt-4 space-y-4">
-          <Card className="bg-card">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Identidade Visual</CardTitle>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-muted-foreground" onClick={() => {
-                  resetSettings();
-                  setBrandForm({
-                    clinicName: effectiveClinic?.name || "Loja",
-                    clinicSubtitle: effectiveClinic?.clinic_subtitle || "CRM",
-                    primaryColor: effectiveClinic?.primary_color || "195 100% 50%",
-                    logoUrl: effectiveClinic?.logo_url || null,
-                    faviconUrl: effectiveClinic?.favicon_url || null,
-                  });
-                  toast({ title: "Pré-visualização restaurada!" });
-                }}><RotateCcw className="h-3.5 w-3.5" /> Restaurar</Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div><Label>Nome da Marca</Label><Input value={brandForm.clinicName} onChange={(e) => setBrandForm(prev => ({ ...prev, clinicName: e.target.value }))} placeholder="Nome que aparecerá no CRM do cliente" /></div>
-                <div><Label>Subtítulo</Label><Input value={brandForm.clinicSubtitle} onChange={(e) => setBrandForm(prev => ({ ...prev, clinicSubtitle: e.target.value }))} placeholder="Ex: CRM, Loja, Studio" /></div>
-              </div>
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-3">
-                  <Label>Logo (Sidebar)</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 overflow-hidden">
-                      {brandForm.logoUrl ? <img src={brandForm.logoUrl} alt="Logo" className="h-full w-full object-contain p-1" /> : <span className="text-lg font-bold text-primary">{brandForm.clinicName.charAt(0)}</span>}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => logoInputRef.current?.click()}><Upload className="h-3.5 w-3.5" /> Enviar logo</Button>
-                      {brandForm.logoUrl && <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setBrandForm(prev => ({ ...prev, logoUrl: null }))}>Remover</Button>}
-                    </div>
-                  </div>
-                  <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, "logoUrl")} />
-                </div>
-                <div className="space-y-3">
-                  <Label>Favicon</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 overflow-hidden">
-                      {brandForm.faviconUrl ? <img src={brandForm.faviconUrl} alt="Favicon" className="h-full w-full object-contain p-0.5" /> : <span className="text-xs font-bold text-primary">{brandForm.clinicName.charAt(0)}</span>}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => faviconInputRef.current?.click()}><Upload className="h-3.5 w-3.5" /> Enviar favicon</Button>
-                      {brandForm.faviconUrl && <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setBrandForm(prev => ({ ...prev, faviconUrl: null }))}>Remover</Button>}
-                    </div>
-                  </div>
-                  <input ref={faviconInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, "faviconUrl")} />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <Label>Cor Primária</Label>
-                <div className="flex flex-wrap gap-3">
-                  {PRESET_COLORS.map(color => (
-                    <button key={color.value} onClick={() => setBrandForm(prev => ({ ...prev, primaryColor: color.value }))} className="group flex flex-col items-center gap-1.5" type="button">
-                      <div className="h-10 w-10 rounded-xl border-2 transition-all hover:scale-110" style={{ backgroundColor: `hsl(${color.value})`, borderColor: brandForm.primaryColor === color.value ? `hsl(${color.value})` : "transparent", boxShadow: brandForm.primaryColor === color.value ? `0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(${color.value})` : "none" }} />
-                      <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">{color.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-xl border border-border bg-muted/20 p-6 space-y-3">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pré-visualização</p>
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden ${brandForm.logoUrl ? '' : ''}`} style={brandForm.logoUrl ? {} : { backgroundColor: `hsl(${brandForm.primaryColor})` }}>
-                    {brandForm.logoUrl ? <img src={brandForm.logoUrl} alt="Logo" className="h-full w-full object-cover" /> : <span className="text-sm font-bold text-white">{brandForm.clinicName.charAt(0)}</span>}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-base font-semibold tracking-tight">{brandForm.clinicName}</span>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{brandForm.clinicSubtitle}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-2">
-                  <Button size="sm" style={{ backgroundColor: `hsl(${brandForm.primaryColor})` }} className="text-white">Botão Primário</Button>
-                  <Button size="sm" variant="outline" style={{ borderColor: `hsl(${brandForm.primaryColor})`, color: `hsl(${brandForm.primaryColor})` }}>Botão Outline</Button>
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={() => saveBrandingMutation.mutate()} disabled={saveBrandingMutation.isPending || !effectiveClinicId}>
-                  {saveBrandingMutation.isPending ? "Salvando..." : "Salvar identidade visual"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>}
-
         <TabsContent value="clinic" className="mt-4 space-y-4">
           {showAdminControls && !clinicId && adminClinics && adminClinics.length > 0 && (
             <div className="flex gap-2">{adminClinics.map(c => (<Button key={c.id} variant={selectedClinicId === c.id ? "default" : "outline"} size="sm" onClick={() => setSelectedClinicId(c.id)}>{c.name}</Button>))}</div>
           )}
           <Card className="bg-card">
-            <CardHeader><CardTitle className="text-sm">Informações da Conta</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">{showAdminControls ? "Informações da Conta" : "Dados da Loja"}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div><Label>Nome da Loja</Label><Input value={clinicForm.name} onChange={e => setClinicForm(f => ({ ...f, name: e.target.value }))} /></div>
-                <div><Label>Telefone</Label><Input value={clinicForm.phone} onChange={e => setClinicForm(f => ({ ...f, phone: e.target.value }))} /></div>
-                <div><Label>E-mail</Label><Input value={clinicForm.email} onChange={e => setClinicForm(f => ({ ...f, email: e.target.value }))} /></div>
+                <div><Label>Nome da Loja</Label><Input value={showAdminControls ? clinicForm.name : storeForm.nome_loja} onChange={e => setClinicForm(f => ({ ...f, name: e.target.value }))} readOnly={!showAdminControls} /></div>
+                <div><Label>Telefone</Label><Input value={clinicForm.phone} onChange={e => setClinicForm(f => ({ ...f, phone: e.target.value }))} readOnly={!showAdminControls} /></div>
+                <div><Label>E-mail</Label><Input value={clinicForm.email} onChange={e => setClinicForm(f => ({ ...f, email: e.target.value }))} readOnly={!showAdminControls} /></div>
               </div>
               {showAdminControls ? (
                 <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>{saveMutation.isPending ? "Salvando..." : "Salvar Alterações"}</Button>
               ) : (
-                <p className="text-sm text-muted-foreground">Os dados da conta e a identidade visual são gerenciados pelo administrador da plataforma.</p>
+                <p className="text-sm text-muted-foreground">Nome da loja, telefone e e-mail são somente leitura para o cliente.</p>
               )}
             </CardContent>
           </Card>
           <Card className="bg-card">
             <CardHeader><CardTitle className="text-sm">Horário de Funcionamento</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"].map((day, i) => (
-                  <div key={day} className="flex items-center gap-4 text-sm"><span className="w-20">{day}</span><Switch defaultChecked={i < 6} /><Input className="w-24" placeholder="08:00" disabled={i === 6} /><span>até</span><Input className="w-24" placeholder="18:00" disabled={i === 6} /></div>
-                ))}
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div><Label>Horário de abertura</Label><Input type="time" value={showAdminControls ? (activeLoja?.horario_inicio || "08:00") : storeForm.horario_inicio} onChange={e => setStoreForm(f => ({ ...f, horario_inicio: e.target.value }))} disabled={showAdminControls} /></div>
+                <div><Label>Horário de fechamento</Label><Input type="time" value={showAdminControls ? (activeLoja?.horario_fim || "18:00") : storeForm.horario_fim} onChange={e => setStoreForm(f => ({ ...f, horario_fim: e.target.value }))} disabled={showAdminControls} /></div>
               </div>
+              {showAdminControls ? (
+                <p className="text-sm text-muted-foreground">Os horários operacionais da loja são editados no detalhe da loja em Admin &gt; Lojas.</p>
+              ) : (
+                <Button onClick={() => saveStoreHoursMutation.mutate()} disabled={saveStoreHoursMutation.isPending || !activeLojaId}>{saveStoreHoursMutation.isPending ? "Salvando..." : "Salvar horários"}</Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

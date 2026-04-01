@@ -26,12 +26,11 @@ const TOM_VOZ_OPTIONS = [
 ];
 
 const PLATAFORMA_OPTIONS = [
+  { value: "manual", label: "Manual" },
   { value: "shopify", label: "Shopify" },
   { value: "nuvemshop", label: "Nuvemshop" },
   { value: "tray", label: "Tray" },
   { value: "vtex", label: "VTEX" },
-  { value: "vendizap", label: "VendiZap" },
-  { value: "manual", label: "Manual/Outro" },
 ];
 
 export default function AdminLojaDetail() {
@@ -134,19 +133,23 @@ export default function AdminLojaDetail() {
       {/* Tabs */}
       <Tabs defaultValue="identidade" className="space-y-6">
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="identidade">Identidade da IA</TabsTrigger>
-          <TabsTrigger value="regras">Regras de Negócio</TabsTrigger>
-          <TabsTrigger value="followup">Follow-up</TabsTrigger>
-          <TabsTrigger value="integracao">Integração</TabsTrigger>
+          <TabsTrigger value="identidade">Identidade</TabsTrigger>
+          <TabsTrigger value="operacao">Operação</TabsTrigger>
+          <TabsTrigger value="integracoes">Integrações</TabsTrigger>
+          <TabsTrigger value="automacoes">Automações</TabsTrigger>
         </TabsList>
 
-        {/* Tab 1 - Identidade da IA */}
+        {/* Tab 1 - Identidade */}
         <TabsContent value="identidade">
           <Card>
             <CardContent className="space-y-5 pt-6">
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label>Nome do Assistente</Label>
+                  <Label>Nome da loja</Label>
+                  <Input placeholder="Ex: Conforto" value={form.nome_loja || ""} onChange={(e) => set("nome_loja", e.target.value)} />
+                </div>
+                <div>
+                  <Label>Nome da IA</Label>
                   <Input placeholder="Ex: Sofia" value={form.nome_assistente || ""} onChange={(e) => set("nome_assistente", e.target.value)} />
                 </div>
                 <div>
@@ -179,8 +182,8 @@ export default function AdminLojaDetail() {
           </Card>
         </TabsContent>
 
-        {/* Tab 2 - Regras de Negócio */}
-        <TabsContent value="regras">
+        {/* Tab 2 - Operação */}
+        <TabsContent value="operacao">
           <Card>
             <CardContent className="space-y-5 pt-6">
               <div className="grid gap-5 md:grid-cols-2">
@@ -198,8 +201,8 @@ export default function AdminLojaDetail() {
                 <Input placeholder="Rua, número, bairro, cidade - UF" value={form.endereco || ""} onChange={(e) => set("endereco", e.target.value)} />
               </div>
               <div>
-                <Label>Link Google Maps</Label>
-                <Input type="url" placeholder="https://maps.google.com/..." value={form.maps_link || ""} onChange={(e) => set("maps_link", e.target.value)} />
+                <Label>Link do Google Maps</Label>
+                <Input type="url" placeholder="https://maps.google.com/..." value={form.link_google_maps || ""} onChange={(e) => set("link_google_maps", e.target.value)} />
               </div>
               <div>
                 <Label>Formas de Pagamento</Label>
@@ -234,65 +237,32 @@ export default function AdminLojaDetail() {
                 </div>
                 <Switch checked={form.montagem_disponivel ?? false} onCheckedChange={(v) => set("montagem_disponivel", v)} />
               </div>
-              <div className="grid gap-5 md:grid-cols-2">
-                <div>
-                  <Label>Plataforma de e-commerce</Label>
-                  <Select value={form.plataforma_ecommerce || "manual"} onValueChange={(v) => set("plataforma_ecommerce", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PLATAFORMA_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>URL base de checkout</Label>
-                  <Input type="url" placeholder="https://loja.nuvemshop.com.br/checkout" value={form.checkout_base_url || ""} onChange={(e) => set("checkout_base_url", e.target.value)} />
-                  <p className="mt-1 text-xs text-muted-foreground">Prefixo do link de pagamento</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab 3 - Follow-up */}
-        <TabsContent value="followup">
-          <Card>
-            <CardContent className="space-y-5 pt-6">
-              <div>
-                <Label>Desconto para carrinho abandonado</Label>
-                <div className="relative max-w-xs">
-                  <Input type="number" value={form.desconto_carrinho_abandonado ?? 5} onChange={(e) => set("desconto_carrinho_abandonado", e.target.value ? Number(e.target.value) : null)} />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">Aplicado automaticamente no follow-up 24h após envio do link de checkout</p>
-              </div>
-              <div>
-                <Label>Desconto para promoção não respondida</Label>
-                <div className="relative max-w-xs">
-                  <Input type="number" value={form.desconto_promocao_nao_respondida ?? 10} onChange={(e) => set("desconto_promocao_nao_respondida", e.target.value ? Number(e.target.value) : null)} />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">Aplicado quando cliente não responde após follow-up de promoção</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab 4 - Integração */}
-        <TabsContent value="integracao">
+        {/* Tab 3 - Integrações */}
+        <TabsContent value="integracoes">
           <Card>
             <CardContent className="space-y-5 pt-6">
               <div>
                 <Label>Instance Evolution API</Label>
                 <Input value={form.instance || ""} onChange={(e) => set("instance", e.target.value)} />
-                <p className="mt-1 text-xs text-muted-foreground">Nome exato da instância WhatsApp no servidor Evolution. Ex: agencia-sdr</p>
               </div>
               <div>
-                <Label>Webhook de atualização do catálogo</Label>
-                <Input type="url" placeholder={`https://seu-n8n.com/webhook/catalogo-${id?.slice(0, 8)}`} value={form.webhook_catalogo_url || ""} onChange={(e) => set("webhook_catalogo_url", e.target.value)} />
-                <p className="mt-1 text-xs text-muted-foreground">O e-commerce chama esta URL para sincronizar produtos em tempo real</p>
+                <Label>Plataforma de e-commerce</Label>
+                <Select value={form.plataforma_ecommerce || "manual"} onValueChange={(v) => set("plataforma_ecommerce", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PLATAFORMA_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>URL base do checkout</Label>
+                <Input type="url" placeholder="https://loja.nuvemshop.com.br/checkout" value={form.url_base_checkout || ""} onChange={(e) => set("url_base_checkout", e.target.value)} />
               </div>
 
               <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
@@ -311,6 +281,30 @@ export default function AdminLojaDetail() {
                   <p className="text-xs text-muted-foreground">Criado em</p>
                   <p className="text-sm">{loja.created_at ? format(new Date(loja.created_at), "dd/MM/yyyy 'às' HH:mm") : "—"}</p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 4 - Automações */}
+        <TabsContent value="automacoes">
+          <Card>
+            <CardContent className="space-y-5 pt-6">
+              <div>
+                <Label>Desconto para carrinho abandonado</Label>
+                <div className="relative max-w-xs">
+                  <Input type="number" value={form.desconto_carrinho_abandonado ?? 5} onChange={(e) => set("desconto_carrinho_abandonado", e.target.value ? Number(e.target.value) : null)} />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Aplicado automaticamente no follow-up 24h após envio do link de checkout</p>
+              </div>
+              <div>
+                <Label>Desconto para promoção não respondida</Label>
+                <div className="relative max-w-xs">
+                  <Input type="number" value={form.desconto_promocao_nao_respondida ?? 10} onChange={(e) => set("desconto_promocao_nao_respondida", e.target.value ? Number(e.target.value) : null)} />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Aplicado quando cliente não responde após follow-up de promoção</p>
               </div>
             </CardContent>
           </Card>

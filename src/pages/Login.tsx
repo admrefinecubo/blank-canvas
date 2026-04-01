@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useWhiteLabel } from '@/contexts/WhiteLabelContext';
 import { Eye, EyeOff, ArrowRight, Users, TrendingUp, FileText, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +24,6 @@ export default function Login() {
   const [focused, setFocused] = useState<string | null>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const { settings } = useWhiteLabel();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,27 +92,17 @@ export default function Login() {
 
       {/* Right Panel — Login Form */}
       <div className="relative flex flex-1 flex-col items-center justify-center bg-background px-6 py-12">
-        {settings.logoUrl && (
-          <img src={settings.logoUrl} alt="Logo" className="absolute top-6 right-6 h-10 hidden lg:block rounded-xl" />
-        )}
         <div className="w-full max-w-[400px] space-y-8">
           {/* Mobile-only brand */}
           <div className="flex flex-col items-center gap-4 lg:hidden">
             <div className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden glow-primary",
-              settings.logoUrl ? "" : "bg-primary"
+              "flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground glow-primary"
             )}>
-              {settings.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-2xl font-bold text-primary-foreground">{settings.clinicName.charAt(0)}</span>
-              )}
+              <span className="text-2xl font-bold">L</span>
             </div>
             <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight font-display">
-                {settings.clinicName}<span className="text-primary">ADS</span>
-              </h1>
-              <p className="text-sm text-muted-foreground">{settings.clinicSubtitle}</p>
+              <h1 className="text-2xl font-bold tracking-tight font-display">LojaADS</h1>
+              <p className="text-sm text-muted-foreground">CRM</p>
             </div>
           </div>
 
