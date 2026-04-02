@@ -429,6 +429,7 @@ export type Database = {
       follow_ups: {
         Row: {
           agendado_para: string
+          campaign_id: string | null
           created_at: string
           enviado: boolean
           enviado_em: string | null
@@ -441,6 +442,7 @@ export type Database = {
         }
         Insert: {
           agendado_para: string
+          campaign_id?: string | null
           created_at?: string
           enviado?: boolean
           enviado_em?: string | null
@@ -453,6 +455,7 @@ export type Database = {
         }
         Update: {
           agendado_para?: string
+          campaign_id?: string | null
           created_at?: string
           enviado?: boolean
           enviado_em?: string | null
@@ -464,6 +467,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "follow_ups_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "promotional_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "follow_ups_lead_id_fkey"
             columns: ["lead_id"]
@@ -1212,6 +1222,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      promotional_campaigns: {
+        Row: {
+          created_at: string
+          discount_percent: number | null
+          id: string
+          launched_at: string
+          loja_id: string
+          message_template: string
+          name: string
+          segment_config: Json
+          segment_type: string
+          status: string
+          targeted_leads_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_percent?: number | null
+          id?: string
+          launched_at?: string
+          loja_id: string
+          message_template: string
+          name: string
+          segment_config?: Json
+          segment_type: string
+          status?: string
+          targeted_leads_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_percent?: number | null
+          id?: string
+          launched_at?: string
+          loja_id?: string
+          message_template?: string
+          name?: string
+          segment_config?: Json
+          segment_type?: string
+          status?: string
+          targeted_leads_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotional_campaigns_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       revenue_goals: {
         Row: {
