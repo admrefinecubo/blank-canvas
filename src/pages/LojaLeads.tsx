@@ -96,11 +96,10 @@ export default function LojaLeads() {
   const { data: leads, isLoading } = useQuery({
     queryKey: ["loja-leads", activeLojaId],
     queryFn: async () => {
-      const { data, error } = await (supabase.from("leads") as any)
-        .from("leads")
+      const { data, error } = await ((supabase.from("leads") as any)
         .select("id, nome, telefone, etapa_pipeline, interesse, ultima_interacao, origem, canal_origem, ultima_mensagem, is_bot_active")
         .eq("loja_id", activeLojaId!)
-        .order("ultima_interacao", { ascending: false });
+        .order("ultima_interacao", { ascending: false }));
       if (error) throw error;
       return (data || []) as LeadRow[];
     },
