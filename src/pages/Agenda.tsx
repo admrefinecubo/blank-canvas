@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +31,7 @@ export default function Agenda() {
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showForm, setShowForm] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [form, setForm] = useState({ patient_id: "", procedure_id: "", date: "", time: "", duration_minutes: "60", notes: "", professional_name: "" });
   const [selectedClinicId, setSelectedClinicId] = useState("");
   const effectiveClinicId = clinicId || selectedClinicId;
@@ -76,15 +77,66 @@ export default function Agenda() {
 
   const dateStr = currentDate.toISOString().split("T")[0];
 
+  const monthRange = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const start = new Date(year, month, 1);
+    const end = new Date(year, month + 1, 0);
+
+    return {
+      start: start.toISOString().split("T")[0],
+      end: end.toISOString().split("T")[0],
+    };
+  }, [currentDate]);
+
   const { data: appointments = [] } = useQuery({
-    queryKey: ["appointments", effectiveClinicId, dateStr],
+    queryKey: ["appointments", effectiveClinicId, viewMode, dateStr, monthRange.start, monthRange.end],
     queryFn: async () => {
-      let q = supabase.from("appointments").select("*, patients(name), procedures(name)").eq("date", dateStr).order("time");
+      let q = supabase.from("appointments").select("*, patients(name), procedures(name)").order("date").order("time");
       if (effectiveClinicId) q = q.eq("clinic_id", effectiveClinicId);
+      if (viewMode === "month") q = q.gte("date", monthRange.start).lte("date", monthRange.end);
+      else q = q.eq("date", dateStr);
       const { data } = await q;
       return data || [];
     },
   });
+
+  const appointmentsByDate = useMemo(() => {
+    return appointments.reduce((acc: Record<string, any[]>, appointment: any) => {
+      const key = appointment.date;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(appointment);
+      return acc;
+    }, {});
+  }, [appointments]);
+
+  const monthDays = useMemo(() => {
+    if (viewMode !== "month") return [] as Date[];
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+    const startOffset = firstDayOfMonth.getDay();
+    const totalDays = lastDayOfMonth.getDate();
+    const totalCells = Math.ceil((startOffset + totalDays) / 7) * 7;
+
+    return Array.from({ length: totalCells }, (_, index) => new Date(year, month, index - startOffset + 1));
+  }, [currentDate, viewMode]);
+
+  const selectedDayKey = selectedDay?.toISOString().split("T")[0] ?? "";
+  const selectedDayAppointments = selectedDayKey ? appointmentsByDate[selectedDayKey] || [] : [];
+
+  const openDayDetails = (date: Date) => {
+    setSelectedDay(date);
+  };
+
+  const openCreateForDate = (date: Date) => {
+    const formattedDate = date.toISOString().split("T")[0];
+    setForm((prev) => ({ ...prev, date: formattedDate }));
+    setSelectedDay(null);
+    setShowForm(true);
+  };
 
   const navigate = (dir: number) => {
     const d = new Date(currentDate);
@@ -161,7 +213,71 @@ export default function Agenda() {
         </div>
       </div>
 
-      {appointments.length === 0 ? (
+      {viewMode === "month" ? (
+        <Card>
+          <CardContent className="p-0">
+            <div className="grid grid-cols-7 border-b border-border bg-muted/30 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
+                <div key={day} className="border-r border-border p-3 last:border-r-0">
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7">
+              {monthDays.map((day) => {
+                const dayKey = day.toISOString().split("T")[0];
+                const dayAppointments = appointmentsByDate[dayKey] || [];
+                const isCurrentMonth = day.getMonth() === currentDate.getMonth();
+                const isToday = dayKey === new Date().toISOString().split("T")[0];
+
+                return (
+                  <button
+                    key={dayKey}
+                    type="button"
+                    onClick={() => openDayDetails(day)}
+                    className={cn(
+                      "min-h-[148px] border-b border-r border-border p-2 text-left align-top transition-colors hover:bg-muted/40",
+                      !isCurrentMonth && "bg-muted/20 text-muted-foreground",
+                      isToday && "bg-primary/5"
+                    )}
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold",
+                          isToday && "bg-primary text-primary-foreground"
+                        )}
+                      >
+                        {day.getDate()}
+                      </span>
+                      {dayAppointments.length > 0 && (
+                        <Badge variant="outline" className="text-[10px]">
+                          {dayAppointments.length}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {dayAppointments.slice(0, 3).map((appointment: any) => (
+                        <div
+                          key={appointment.id}
+                          className="rounded-md border border-border bg-card px-2 py-1 text-xs leading-tight"
+                        >
+                          <div className="font-medium">{appointment.time?.slice(0, 5) || "--:--"}</div>
+                          <div className="truncate text-muted-foreground">{appointment.patients?.name || "Cliente"}</div>
+                        </div>
+                      ))}
+                      {dayAppointments.length > 3 && (
+                        <p className="text-xs text-muted-foreground">+{dayAppointments.length - 3} agendamento(s)</p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      ) : appointments.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
             <Calendar className="mx-auto h-12 w-12 text-muted-foreground/30" />
@@ -247,6 +363,48 @@ export default function Agenda() {
             <div><Label>Observações</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
             <Button className="w-full" onClick={() => createMutation.mutate()} disabled={!form.patient_id || !form.date || !form.time || createMutation.isPending}>
               {createMutation.isPending ? "Salvando..." : "Agendar Visita"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedDay} onOpenChange={(open) => !open && setSelectedDay(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedDay?.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {selectedDayAppointments.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                Nenhum agendamento neste dia.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {selectedDayAppointments.map((appointment: any) => (
+                  <div key={appointment.id} className="rounded-lg border border-border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold">{appointment.time?.slice(0, 5) || "--:--"} · {appointment.patients?.name || "Cliente"}</p>
+                        <p className="text-sm text-muted-foreground">{appointment.procedures?.name || "Sem produto"}</p>
+                        {appointment.professional_name && (
+                          <p className="text-xs text-muted-foreground">Vendedor: {appointment.professional_name}</p>
+                        )}
+                      </div>
+                      <Badge variant="outline" className={cn(STATUS_COLORS[appointment.status || "agendado"])}>
+                        {appointment.status || "agendado"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Button className="w-full" onClick={() => selectedDay && openCreateForDate(selectedDay)}>
+              <Plus className="h-4 w-4" />
+              Novo agendamento neste dia
             </Button>
           </div>
         </DialogContent>
