@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, Building2, MessageSquareText, Settings2, Store, Users, Workflow } from "lucide-react";
+import { AlertTriangle, BarChart3, Building2, MessageSquareText, Settings2, Store, TrendingUp, Users, Workflow } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 function AdminStatCard({ title, value, icon: Icon }: { title: string; value: string; icon: React.ElementType }) {
   return (
@@ -60,6 +62,38 @@ export default function AdminDashboard() {
         followUps: followUpsResult.data ?? [],
         integrations: integrationsResult.data ?? [],
         clinics: clinicsResult.data ?? [],
+      };
+    },
+  });
+
+  const { data: globalMetrics, isLoading: globalLoading } = useQuery({
+    queryKey: ["platform-metrics"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("platform-metrics", { body: {} });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as {
+        summary: {
+          total_lojas_ativas: number;
+          total_leads_mes: number;
+          total_mensagens_processadas: number;
+        };
+        ranking: Array<{
+          id: string;
+          nome_loja: string;
+          leads_mes: number;
+          conversas_ativas: number;
+          bot_status: "conectado" | "desconectado";
+          ativo: boolean;
+          clinic_id: string | null;
+        }>;
+        growth: Array<{ semana: string; leads: number }>;
+        alerts: Array<{
+          loja_id: string;
+          nome_loja: string;
+          status: string;
+          horas_desconectado: number;
+        }>;
       };
     },
   });
@@ -140,6 +174,126 @@ export default function AdminDashboard() {
         <AdminStatCard title="Total leads" value={String(summary.totalLeads)} icon={Users} />
         <AdminStatCard title="Conversas hoje" value={String(summary.conversasHoje)} icon={MessageSquareText} />
         <AdminStatCard title="Follow-ups enviados" value={summary.followUpsResumo} icon={Workflow} />
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">Plataforma</Badge>
+          <Badge variant="secondary">Service role</Badge>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <AdminStatCard
+            title="Total de lojas ativas"
+            value={globalLoading ? "..." : String(globalMetrics?.summary.total_lojas_ativas || 0)}
+            icon={Store}
+          />
+          <AdminStatCard
+            title="Leads do mês"
+            value={globalLoading ? "..." : String(globalMetrics?.summary.total_leads_mes || 0)}
+            icon={Users}
+          />
+          <AdminStatCard
+            title="Mensagens processadas"
+            value={globalLoading ? "..." : String(globalMetrics?.summary.total_mensagens_processadas || 0)}
+            icon={MessageSquareText}
+          />
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Ranking das lojas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {globalLoading ? (
+                <div className="py-12 text-center text-sm text-muted-foreground">Carregando métricas globais...</div>
+              ) : !globalMetrics?.ranking.length ? (
+                <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                  Nenhuma loja encontrada para o ranking.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Loja</TableHead>
+                      <TableHead>Leads do mês</TableHead>
+                      <TableHead>Conversas ativas</TableHead>
+                      <TableHead>Status do bot</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {globalMetrics.ranking.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-medium">{row.nome_loja}</TableCell>
+                        <TableCell>{row.leads_mes}</TableCell>
+                        <TableCell>{row.conversas_ativas}</TableCell>
+                        <TableCell>
+                          <Badge variant={row.bot_status === "conectado" ? "default" : "secondary"}>
+                            {row.bot_status === "conectado" ? "Conectado" : "Desconectado"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Alertas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {globalLoading ? (
+                <div className="py-12 text-center text-sm text-muted-foreground">Carregando alertas...</div>
+              ) : globalMetrics?.alerts.length ? (
+                globalMetrics.alerts.map((alert) => (
+                  <div key={alert.loja_id} className="rounded-2xl border border-border p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{alert.nome_loja}</p>
+                        <p className="text-sm text-muted-foreground">Bot {alert.status} há {alert.horas_desconectado}h.</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                  Nenhum bot desconectado há mais de 24h.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Crescimento de leads por semana · últimos 3 meses
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {globalLoading ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">Carregando crescimento...</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={globalMetrics?.growth || []}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="semana" className="text-xs" />
+                  <YAxis allowDecimals={false} className="text-xs" />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="leads" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
