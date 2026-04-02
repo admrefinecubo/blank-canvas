@@ -327,7 +327,7 @@ export default function LojaCatalogo() {
           <p className="mt-1 text-sm text-muted-foreground">Gerencie os produtos que alimentam a operação comercial da sua loja.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => reindexMutation.mutate()} disabled={reindexMutation.isPending}>
+          <Button variant="outline" className="gap-2" onClick={() => reindexMutation.mutate(null)} disabled={reindexMutation.isPending}>
             <RefreshCw className={`h-4 w-4 ${reindexMutation.isPending ? "animate-spin" : ""}`} />
             Re-indexar Embeddings
           </Button>
