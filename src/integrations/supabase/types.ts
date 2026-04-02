@@ -1053,6 +1053,7 @@ export type Database = {
       produtos: {
         Row: {
           categoria: string | null
+          checkout_url: string | null
           created_at: string
           descricao: string | null
           embedding: string | null
@@ -1072,6 +1073,7 @@ export type Database = {
         }
         Insert: {
           categoria?: string | null
+          checkout_url?: string | null
           created_at?: string
           descricao?: string | null
           embedding?: string | null
@@ -1091,6 +1093,7 @@ export type Database = {
         }
         Update: {
           categoria?: string | null
+          checkout_url?: string | null
           created_at?: string
           descricao?: string | null
           embedding?: string | null
