@@ -512,7 +512,22 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
 
   const [clinicForm, setClinicForm] = useState({ name: "", phone: "", email: "" });
-  const [storeForm, setStoreForm] = useState({ nome_loja: "", horario_inicio: "08:00", horario_fim: "18:00" });
+  const [storeForm, setStoreForm] = useState({
+    nome_loja: "",
+    nome_assistente: "",
+    tom_voz: "amigável",
+    especialidades: "",
+    regras_personalidade: "",
+    horario_inicio: "08:00",
+    horario_fim: "18:00",
+    formas_pagamento: "",
+    politica_troca: "",
+    prazo_entrega: "",
+    frete_gratis_acima: "",
+    montagem_disponivel: false,
+    desconto_carrinho_abandonado: "",
+    desconto_promocao_nao_respondida: "",
+  });
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
   const [newMember, setNewMember] = useState({ email: "", password: "", role: "clinic_staff" });
   const showAdminControls = isPlatformAdmin && appMode === "admin";
@@ -539,7 +554,7 @@ export default function SettingsPage() {
       if (!activeLojaId) return null;
       const { data, error } = await supabase
         .from("lojas")
-        .select("id, nome_loja, horario_inicio, horario_fim")
+        .select("id, nome_loja, nome_assistente, tom_voz, especialidades, regras_personalidade, horario_inicio, horario_fim, formas_pagamento, politica_troca, prazo_entrega, frete_gratis_acima, montagem_disponivel, desconto_carrinho_abandonado, desconto_promocao_nao_respondida")
         .eq("id", activeLojaId)
         .single();
 
@@ -556,10 +571,28 @@ export default function SettingsPage() {
 
     setStoreForm({
       nome_loja: activeLoja.nome_loja || "",
+      nome_assistente: activeLoja.nome_assistente || "",
+      tom_voz: activeLoja.tom_voz || "amigável",
+      especialidades: activeLoja.especialidades || "",
+      regras_personalidade: activeLoja.regras_personalidade || "",
       horario_inicio: activeLoja.horario_inicio || "08:00",
       horario_fim: activeLoja.horario_fim || "18:00",
+      formas_pagamento: activeLoja.formas_pagamento || "",
+      politica_troca: activeLoja.politica_troca || "",
+      prazo_entrega: activeLoja.prazo_entrega || "",
+      frete_gratis_acima: activeLoja.frete_gratis_acima?.toString() || "",
+      montagem_disponivel: !!activeLoja.montagem_disponivel,
+      desconto_carrinho_abandonado: activeLoja.desconto_carrinho_abandonado?.toString() || "",
+      desconto_promocao_nao_respondida: activeLoja.desconto_promocao_nao_respondida?.toString() || "",
     });
   }, [activeLoja]);
+
+  const parseOptionalNumber = (value: string, fieldLabel: string) => {
+    if (!value.trim()) return null;
+    const parsedValue = Number(value);
+    if (Number.isNaN(parsedValue)) throw new Error(`${fieldLabel} inválido`);
+    return parsedValue;
+  };
 
   const { data: teamMembers, isLoading: teamLoading } = useQuery({
     queryKey: ["team-members", effectiveClinicId],
@@ -591,15 +624,38 @@ export default function SettingsPage() {
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const saveStoreHoursMutation = useMutation({
+  const saveAiAgentMutation = useMutation({
     mutationFn: async () => {
       if (!activeLojaId) throw new Error("Nenhuma loja selecionada");
+
+      const descontoCarrinho = parseOptionalNumber(storeForm.desconto_carrinho_abandonado, "Desconto de carrinho abandonado");
+      const descontoPromocao = parseOptionalNumber(storeForm.desconto_promocao_nao_respondida, "Desconto de promoção não respondida");
+      const freteGratis = parseOptionalNumber(storeForm.frete_gratis_acima, "Frete grátis acima de");
+
+      if (descontoCarrinho !== null && (descontoCarrinho < 0 || descontoCarrinho > 100)) {
+        throw new Error("Desconto de carrinho abandonado deve estar entre 0 e 100");
+      }
+
+      if (descontoPromocao !== null && (descontoPromocao < 0 || descontoPromocao > 100)) {
+        throw new Error("Desconto de promoção não respondida deve estar entre 0 e 100");
+      }
 
       const { error } = await supabase
         .from("lojas")
         .update({
+          nome_assistente: storeForm.nome_assistente.trim() || null,
+          tom_voz: storeForm.tom_voz,
+          especialidades: storeForm.especialidades.trim() || null,
+          regras_personalidade: storeForm.regras_personalidade.trim() || null,
           horario_inicio: storeForm.horario_inicio || null,
           horario_fim: storeForm.horario_fim || null,
+          formas_pagamento: storeForm.formas_pagamento.trim() || null,
+          politica_troca: storeForm.politica_troca.trim() || null,
+          prazo_entrega: storeForm.prazo_entrega.trim() || null,
+          frete_gratis_acima: freteGratis,
+          montagem_disponivel: storeForm.montagem_disponivel,
+          desconto_carrinho_abandonado: descontoCarrinho,
+          desconto_promocao_nao_respondida: descontoPromocao,
         })
         .eq("id", activeLojaId);
 
@@ -607,7 +663,7 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings-loja"] });
-      toast({ title: "Horários salvos!" });
+      toast({ title: "Configurações do agente salvas!" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -619,6 +675,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="clinic">
         <TabsList className="bg-accent flex-wrap h-auto gap-1">
           <TabsTrigger value="clinic">Conta</TabsTrigger>
+          {!showAdminControls && <TabsTrigger value="ai-agent"><MessageSquare className="h-3.5 w-3.5 mr-1" />Agente de IA</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="team">Equipe</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="post-procedure">Pós-Venda</TabsTrigger>}
@@ -650,17 +707,119 @@ export default function SettingsPage() {
             <CardHeader><CardTitle className="text-sm">Horário de Funcionamento</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div><Label>Horário de abertura</Label><Input type="time" value={showAdminControls ? (activeLoja?.horario_inicio || "08:00") : storeForm.horario_inicio} onChange={e => setStoreForm(f => ({ ...f, horario_inicio: e.target.value }))} disabled={showAdminControls} /></div>
-                <div><Label>Horário de fechamento</Label><Input type="time" value={showAdminControls ? (activeLoja?.horario_fim || "18:00") : storeForm.horario_fim} onChange={e => setStoreForm(f => ({ ...f, horario_fim: e.target.value }))} disabled={showAdminControls} /></div>
+                <div><Label>Horário de abertura</Label><Input type="time" value={showAdminControls ? (activeLoja?.horario_inicio || "08:00") : storeForm.horario_inicio} onChange={e => setStoreForm(f => ({ ...f, horario_inicio: e.target.value }))} disabled /></div>
+                <div><Label>Horário de fechamento</Label><Input type="time" value={showAdminControls ? (activeLoja?.horario_fim || "18:00") : storeForm.horario_fim} onChange={e => setStoreForm(f => ({ ...f, horario_fim: e.target.value }))} disabled /></div>
               </div>
-              {showAdminControls ? (
-                <p className="text-sm text-muted-foreground">Os horários operacionais da loja são editados no detalhe da loja em Admin &gt; Lojas.</p>
-              ) : (
-                <Button onClick={() => saveStoreHoursMutation.mutate()} disabled={saveStoreHoursMutation.isPending || !activeLojaId}>{saveStoreHoursMutation.isPending ? "Salvando..." : "Salvar horários"}</Button>
-              )}
+              <p className="text-sm text-muted-foreground">{showAdminControls ? "Os horários operacionais da loja são editados no detalhe da loja em Admin > Lojas." : "Os horários da loja agora são editados na aba Agente de IA."}</p>
             </CardContent>
           </Card>
         </TabsContent>
+
+        {!showAdminControls && <TabsContent value="ai-agent" className="mt-4 space-y-4">
+          {!activeLojaId ? (
+            <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhuma loja ativa encontrada para este usuário.</CardContent></Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader><CardTitle className="text-sm">Identidade</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label>Nome do assistente</Label>
+                      <Input value={storeForm.nome_assistente} onChange={e => setStoreForm(f => ({ ...f, nome_assistente: e.target.value }))} placeholder="Ex: Clara" />
+                    </div>
+                    <div>
+                      <Label>Tom de voz</Label>
+                      <Select value={storeForm.tom_voz} onValueChange={value => setStoreForm(f => ({ ...f, tom_voz: value }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="amigável">Amigável</SelectItem>
+                          <SelectItem value="formal">Formal</SelectItem>
+                          <SelectItem value="descontraído">Descontraído</SelectItem>
+                          <SelectItem value="consultivo">Consultivo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Especialidades</Label>
+                    <Textarea value={storeForm.especialidades} onChange={e => setStoreForm(f => ({ ...f, especialidades: e.target.value }))} placeholder="Descreva em que o agente é especialista." className="min-h-[110px]" />
+                  </div>
+                  <div>
+                    <Label>Regras de personalidade</Label>
+                    <Textarea value={storeForm.regras_personalidade} onChange={e => setStoreForm(f => ({ ...f, regras_personalidade: e.target.value }))} placeholder="Ex: nunca prometer prazo sem confirmar estoque." className="min-h-[110px]" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-sm">Horário de Funcionamento</CardTitle></CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>Horário início</Label>
+                    <Input type="time" value={storeForm.horario_inicio} onChange={e => setStoreForm(f => ({ ...f, horario_inicio: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Horário fim</Label>
+                    <Input type="time" value={storeForm.horario_fim} onChange={e => setStoreForm(f => ({ ...f, horario_fim: e.target.value }))} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-sm">Regras Comerciais</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Formas de pagamento aceitas</Label>
+                    <Textarea value={storeForm.formas_pagamento} onChange={e => setStoreForm(f => ({ ...f, formas_pagamento: e.target.value }))} placeholder="Ex: Pix, cartão em até 12x, boleto." className="min-h-[90px]" />
+                  </div>
+                  <div>
+                    <Label>Política de troca</Label>
+                    <Textarea value={storeForm.politica_troca} onChange={e => setStoreForm(f => ({ ...f, politica_troca: e.target.value }))} placeholder="Explique as condições de troca." className="min-h-[90px]" />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <Label>Prazo de entrega</Label>
+                      <Input value={storeForm.prazo_entrega} onChange={e => setStoreForm(f => ({ ...f, prazo_entrega: e.target.value }))} placeholder="Ex: 5 a 7 dias úteis" />
+                    </div>
+                    <div>
+                      <Label>Frete grátis acima de R$</Label>
+                      <Input type="number" min="0" step="0.01" value={storeForm.frete_gratis_acima} onChange={e => setStoreForm(f => ({ ...f, frete_gratis_acima: e.target.value }))} placeholder="999.90" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <p className="text-sm font-medium">Serviço de montagem disponível</p>
+                      <p className="text-xs text-muted-foreground">Informe ao agente se a loja oferece montagem ao cliente.</p>
+                    </div>
+                    <Switch checked={storeForm.montagem_disponivel} onCheckedChange={checked => setStoreForm(f => ({ ...f, montagem_disponivel: checked }))} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-sm">Descontos Automáticos</CardTitle></CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>Desconto carrinho abandonado %</Label>
+                    <Input type="number" min="0" max="100" step="0.01" value={storeForm.desconto_carrinho_abandonado} onChange={e => setStoreForm(f => ({ ...f, desconto_carrinho_abandonado: e.target.value }))} placeholder="10" />
+                  </div>
+                  <div>
+                    <Label>Desconto promoção não respondida %</Label>
+                    <Input type="number" min="0" max="100" step="0.01" value={storeForm.desconto_promocao_nao_respondida} onChange={e => setStoreForm(f => ({ ...f, desconto_promocao_nao_respondida: e.target.value }))} placeholder="5" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                <Button onClick={() => saveAiAgentMutation.mutate()} disabled={saveAiAgentMutation.isPending}>
+                  {saveAiAgentMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Salvar configurações
+                </Button>
+              </div>
+            </>
+          )}
+        </TabsContent>}
 
         {showAdminControls && <TabsContent value="team" className="mt-4 space-y-4">
           <Card>
