@@ -527,45 +527,60 @@ export type Database = {
       }
       leads: {
         Row: {
+          agente_pausado: boolean | null
           bot_paused_until: string | null
           created_at: string
+          email: string | null
           etapa_pipeline: Database["public"]["Enums"]["lead_stage"]
           id: string
+          instance: string | null
           interesse: string | null
           is_bot_active: boolean
           loja_id: string
           nome: string | null
+          orcamento_faixa: string | null
           origem: string | null
           telefone: string
           ultima_interacao: string | null
+          ultima_mensagem: string | null
           updated_at: string
         }
         Insert: {
+          agente_pausado?: boolean | null
           bot_paused_until?: string | null
           created_at?: string
+          email?: string | null
           etapa_pipeline?: Database["public"]["Enums"]["lead_stage"]
           id?: string
+          instance?: string | null
           interesse?: string | null
           is_bot_active?: boolean
           loja_id: string
           nome?: string | null
+          orcamento_faixa?: string | null
           origem?: string | null
           telefone: string
           ultima_interacao?: string | null
+          ultima_mensagem?: string | null
           updated_at?: string
         }
         Update: {
+          agente_pausado?: boolean | null
           bot_paused_until?: string | null
           created_at?: string
+          email?: string | null
           etapa_pipeline?: Database["public"]["Enums"]["lead_stage"]
           id?: string
+          instance?: string | null
           interesse?: string | null
           is_bot_active?: boolean
           loja_id?: string
           nome?: string | null
+          orcamento_faixa?: string | null
           origem?: string | null
           telefone?: string
           ultima_interacao?: string | null
+          ultima_mensagem?: string | null
           updated_at?: string
         }
         Relationships: [
