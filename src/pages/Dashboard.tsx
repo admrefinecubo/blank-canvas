@@ -49,13 +49,30 @@ function StatCard({ title, value, icon: Icon, href }: { title: string; value: st
 }
 
 export default function Dashboard() {
-  const { activeLojaId } = useAuth();
+  const { activeLojaId, activeClinicId } = useAuth();
 
   const startOfToday = useMemo(() => {
     const value = new Date();
     value.setHours(0, 0, 0, 0);
     return value.toISOString();
   }, []);
+
+  const todayDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const last24Hours = useMemo(() => {
+    const value = new Date();
+    value.setHours(value.getHours() - 24);
+    return value.toISOString();
+  }, []);
+
+  const startOfMonth = useMemo(() => {
+    const value = new Date();
+    value.setDate(1);
+    value.setHours(0, 0, 0, 0);
+    return value.toISOString();
+  }, []);
+
+  const nowIso = useMemo(() => new Date().toISOString(), []);
 
   const { data: lojaContext } = useQuery({
     queryKey: ["dashboard-loja-context", activeLojaId],
@@ -72,35 +89,47 @@ export default function Dashboard() {
   });
 
   const { data: kpis } = useQuery({
-    queryKey: ["dashboard-kpis", activeLojaId, startOfToday],
+    queryKey: ["dashboard-kpis", activeLojaId, activeClinicId, startOfToday, todayDate, last24Hours, nowIso],
     queryFn: async () => {
-      const [leadsResult, messagesResult, followUpsResult, visitasResult, produtosResult] = await Promise.all([
+      const [leadsResult, activeConversationsResult, followUpsResult, visitasResult, produtosResult] = await Promise.all([
         supabase.from("leads").select("id", { count: "exact", head: true }).eq("loja_id", activeLojaId!).gte("created_at", startOfToday),
-        supabase.from("historico_mensagens").select("lead_id, created_at").eq("loja_id", activeLojaId!).gte("created_at", startOfToday),
-        supabase.from("follow_ups").select("id", { count: "exact", head: true }).eq("loja_id", activeLojaId!).eq("enviado", false),
-        supabase.from("visitas").select("id", { count: "exact", head: true }).eq("loja_id", activeLojaId!).eq("status", "agendada"),
-        supabase.from("produtos").select("id", { count: "exact", head: true }).eq("loja_id", activeLojaId!),
+        supabase.from("leads").select("id", { count: "exact", head: true }).eq("loja_id", activeLojaId!).eq("is_bot_active", true).gte("ultima_interacao", last24Hours),
+        supabase.from("follow_ups").select("id", { count: "exact", head: true }).eq("loja_id", activeLojaId!).eq("enviado", false).lte("agendado_para", nowIso),
+        activeClinicId
+          ? supabase.from("appointments").select("id", { count: "exact", head: true }).eq("clinic_id", activeClinicId).eq("date", todayDate).eq("status", "agendado")
+          : Promise.resolve({ count: 0, error: null }),
+        supabase.from("produtos").select("id", { count: "exact", head: true }).eq("loja_id", activeLojaId!).eq("estoque_disponivel", true),
       ]);
 
       if (leadsResult.error) throw leadsResult.error;
-      if (messagesResult.error) throw messagesResult.error;
+      if (activeConversationsResult.error) throw activeConversationsResult.error;
       if (followUpsResult.error) throw followUpsResult.error;
       if (visitasResult.error) throw visitasResult.error;
       if (produtosResult.error) throw produtosResult.error;
 
-      const uniqueConversationLeads = new Set(
-        (messagesResult.data ?? [])
-          .map((item) => item.lead_id)
-          .filter((leadId): leadId is string => Boolean(leadId)),
-      );
-
       return {
         leadsHoje: leadsResult.count ?? 0,
-        conversasAtivas: uniqueConversationLeads.size,
+        conversasAtivas: activeConversationsResult.count ?? 0,
         followUpsPendentes: followUpsResult.count ?? 0,
         visitasAgendadas: visitasResult.count ?? 0,
         produtosCatalogo: produtosResult.count ?? 0,
       };
+    },
+    enabled: !!activeLojaId,
+  });
+
+  const { data: monthlyConversions } = useQuery({
+    queryKey: ["dashboard-monthly-conversions", activeLojaId, startOfMonth],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("id")
+        .eq("loja_id", activeLojaId!)
+        .eq("etapa_pipeline", "fechado_ganho")
+        .gte("created_at", startOfMonth);
+
+      if (error) throw error;
+      return data ?? [];
     },
     enabled: !!activeLojaId,
   });
@@ -186,9 +215,9 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <StatCard title="Leads hoje" value={String(kpis?.leadsHoje ?? 0)} icon={Users} href="/leads" />
         <StatCard title="Conversas ativas" value={String(kpis?.conversasAtivas ?? 0)} icon={MessageSquareText} href="/whatsapp" />
-        <StatCard title="Follow-ups" value={String(kpis?.followUpsPendentes ?? 0)} icon={Workflow} href="/followups" />
-        <StatCard title="Visitas" value={String(kpis?.visitasAgendadas ?? 0)} icon={CalendarDays} href="/agenda" />
-        <StatCard title="Produtos" value={String(kpis?.produtosCatalogo ?? 0)} icon={Package} href="/catalogo" />
+        <StatCard title="Follow-ups pendentes" value={String(kpis?.followUpsPendentes ?? 0)} icon={Workflow} href="/followups" />
+        <StatCard title="Visitas agendadas" value={String(kpis?.visitasAgendadas ?? 0)} icon={CalendarDays} href="/agenda" />
+        <StatCard title="Produtos no catálogo" value={String(kpis?.produtosCatalogo ?? 0)} icon={Package} href="/catalogo" />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.6fr,1fr]">
@@ -230,27 +259,44 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Resumo operacional</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-2xl border border-border p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Loja</p>
-              <p className="mt-2 text-lg font-semibold">{lojaContext?.nome_loja || "—"}</p>
-            </div>
-            <div className="rounded-2xl border border-border p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Assistente</p>
-              <p className="mt-2 text-lg font-semibold">{assistantName}</p>
-            </div>
-            <div className="rounded-2xl border border-border p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Próximo foco</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Priorize os {kpis?.followUpsPendentes ?? 0} follow-ups pendentes e acompanhe as conversas abertas no inbox.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-5">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Resumo operacional</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-2xl border border-border p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Loja</p>
+                <p className="mt-2 text-lg font-semibold">{lojaContext?.nome_loja || "—"}</p>
+              </div>
+              <div className="rounded-2xl border border-border p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Assistente</p>
+                <p className="mt-2 text-lg font-semibold">{assistantName}</p>
+              </div>
+              <div className="rounded-2xl border border-border p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Próximo foco</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Priorize os {kpis?.followUpsPendentes ?? 0} follow-ups pendentes e acompanhe as conversas ativas do inbox.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Ranking de vendedores</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-2xl border border-border p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Conversões no mês</p>
+                <p className="mt-2 text-2xl font-semibold">{monthlyConversions?.length ?? 0}</p>
+              </div>
+              <div className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                O sistema já mede conversões da loja no mês, mas ainda não atribui um vendedor diretamente ao lead na tabela <code>leads</code>. Por isso, o ranking individual não é exibido para evitar números incorretos.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
