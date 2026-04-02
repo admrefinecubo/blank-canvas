@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Loader2, UserRound } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Facebook, Instagram, Loader2, MessageCircle, PencilLine, Search, UserRound, Users, Bot, BotOff, PauseCircle } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Drawer,
   DrawerContent,
@@ -31,21 +33,55 @@ import {
 } from "@/components/ui/table";
 import { LEAD_STAGE_OPTIONS, formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
 
+type LeadRow = {
+  id: string;
+  nome: string | null;
+  telefone: string;
+  etapa_pipeline: string | null;
+  interesse: string | null;
+  ultima_interacao: string | null;
+  origem: string | null;
+  ultima_mensagem: string | null;
+  is_bot_active: boolean;
+};
+
+type SelectedLead = {
+  id: string;
+  nome: string;
+  telefone: string;
+  origem: string | null;
+  is_bot_active: boolean;
+  ultima_mensagem: string | null;
+};
+
+const ORIGIN_OPTIONS = ["all", "whatsapp", "instagram", "facebook", "google", "indicacao", "manual"] as const;
+
+const ORIGIN_META: Record<string, { label: string; icon: typeof MessageCircle }> = {
+  whatsapp: { label: "WhatsApp", icon: MessageCircle },
+  instagram: { label: "Instagram", icon: Instagram },
+  facebook: { label: "Facebook", icon: Facebook },
+  google: { label: "Google", icon: Search },
+  indicacao: { label: "Indicação", icon: Users },
+  manual: { label: "Manual", icon: PencilLine },
+};
+
 export default function LojaLeads() {
   const queryClient = useQueryClient();
   const { activeLojaId } = useAuth();
-  const [selectedLead, setSelectedLead] = useState<{ id: string; nome: string; telefone: string } | null>(null);
+  const [selectedLead, setSelectedLead] = useState<SelectedLead | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterOrigin, setFilterOrigin] = useState<(typeof ORIGIN_OPTIONS)[number]>("all");
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["loja-leads", activeLojaId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
-        .select("id, nome, telefone, etapa_pipeline, interesse, ultima_interacao, origem")
+        .select("id, nome, telefone, etapa_pipeline, interesse, ultima_interacao, origem, ultima_mensagem, is_bot_active")
         .eq("loja_id", activeLojaId!)
         .order("ultima_interacao", { ascending: false });
       if (error) throw error;
-      return data;
+      return (data || []) as LeadRow[];
     },
     enabled: !!activeLojaId,
   });
@@ -76,6 +112,34 @@ export default function LojaLeads() {
     onError: (error: Error) => toast.error("Erro ao atualizar etapa", { description: error.message }),
   });
 
+  const pauseBotMutation = useMutation({
+    mutationFn: async (leadId: string) => {
+      const { error } = await supabase.from("leads").update({ is_bot_active: false }).eq("id", leadId);
+      if (error) throw error;
+    },
+    onSuccess: (_, leadId) => {
+      queryClient.invalidateQueries({ queryKey: ["loja-leads", activeLojaId] });
+      setSelectedLead((current) => current && current.id === leadId ? { ...current, is_bot_active: false } : current);
+      toast.success("Bot pausado para este lead");
+    },
+    onError: (error: Error) => toast.error("Erro ao pausar bot", { description: error.message }),
+  });
+
+  const filteredLeads = useMemo(() => {
+    return (leads || []).filter((lead) => {
+      const normalizedSearch = search.toLowerCase();
+      const leadName = getLeadName(lead.nome, lead.telefone).toLowerCase();
+      const matchesSearch = !normalizedSearch
+        || leadName.includes(normalizedSearch)
+        || lead.telefone.includes(search)
+        || (lead.ultima_mensagem || "").toLowerCase().includes(normalizedSearch);
+      const matchesOrigin = filterOrigin === "all" || (lead.origem || "manual") === filterOrigin;
+      return matchesSearch && matchesOrigin;
+    });
+  }, [filterOrigin, leads, search]);
+
+  const getOriginMeta = (origin: string | null) => ORIGIN_META[origin || "manual"] || { label: origin || "Manual", icon: UserRound };
+
   if (!activeLojaId) {
     return <div className="rounded-2xl border border-dashed border-border p-8 text-sm text-muted-foreground">Nenhuma loja operacional vinculada a esta conta.</div>;
   }
@@ -88,31 +152,67 @@ export default function LojaLeads() {
       </div>
 
       <Card>
+        <CardContent className="flex flex-wrap items-center gap-3 p-4">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar por nome, telefone ou última mensagem..."
+              className="pl-9"
+            />
+          </div>
+
+          <Select value={filterOrigin} onValueChange={(value) => setFilterOrigin(value as (typeof ORIGIN_OPTIONS)[number])}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Origem" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as origens</SelectItem>
+              <SelectItem value="whatsapp">WhatsApp</SelectItem>
+              <SelectItem value="instagram">Instagram</SelectItem>
+              <SelectItem value="facebook">Facebook</SelectItem>
+              <SelectItem value="google">Google</SelectItem>
+              <SelectItem value="indicacao">Indicação</SelectItem>
+              <SelectItem value="manual">Manual</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Badge variant="secondary">{filteredLeads.length} lead(s)</Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : !leads?.length ? (
+          ) : !filteredLeads.length ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
               <UserRound className="h-10 w-10 text-muted-foreground" />
               <div>
                 <p className="font-medium">Nenhum lead encontrado</p>
-                <p className="text-sm text-muted-foreground">Os leads da sua loja aparecerão aqui.</p>
+                <p className="text-sm text-muted-foreground">Ajuste os filtros ou aguarde novos leads da sua loja.</p>
               </div>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
+                  <TableHead>Lead</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Etapa</TableHead>
+                  <TableHead className="hidden md:table-cell">Bot</TableHead>
                   <TableHead className="hidden lg:table-cell">Interesse</TableHead>
                   <TableHead className="hidden md:table-cell">Última interação</TableHead>
                   <TableHead className="hidden md:table-cell">Origem</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leads.map((lead) => (
+                {filteredLeads.map((lead) => {
+                  const origin = getOriginMeta(lead.origem);
+                  const OriginIcon = origin.icon;
+
+                  return (
                   <TableRow
                     key={lead.id}
                     className="cursor-pointer"
@@ -120,9 +220,30 @@ export default function LojaLeads() {
                       id: lead.id,
                       nome: getLeadName(lead.nome, lead.telefone),
                       telefone: lead.telefone,
+                      origem: lead.origem,
+                      is_bot_active: lead.is_bot_active,
+                      ultima_mensagem: lead.ultima_mensagem,
                     })}
                   >
-                    <TableCell className="font-medium">{getLeadName(lead.nome, lead.telefone)}</TableCell>
+                    <TableCell className="min-w-[280px]">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                          <OriginIcon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 space-y-1">
+                          <div className="font-medium">{getLeadName(lead.nome, lead.telefone)}</div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="secondary">{origin.label}</Badge>
+                            <Badge variant="outline" className={lead.is_bot_active ? "" : "text-muted-foreground"}>
+                              {lead.is_bot_active ? "Bot ativo" : "Bot pausado"}
+                            </Badge>
+                          </div>
+                          <p className="max-w-[320px] truncate text-sm text-muted-foreground">
+                            {lead.ultima_mensagem || "Sem mensagens recentes."}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
                     <TableCell>{lead.telefone}</TableCell>
                     <TableCell>
                       <div className="w-[180px]" onClick={(event) => event.stopPropagation()}>
@@ -139,11 +260,17 @@ export default function LojaLeads() {
                         </Select>
                       </div>
                     </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Badge variant={lead.is_bot_active ? "default" : "secondary"} className="gap-1">
+                        {lead.is_bot_active ? <Bot className="h-3.5 w-3.5" /> : <BotOff className="h-3.5 w-3.5" />}
+                        {lead.is_bot_active ? "Ativo" : "Pausado"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="hidden max-w-[220px] truncate lg:table-cell">{lead.interesse || "—"}</TableCell>
                     <TableCell className="hidden md:table-cell">{formatDateTime(lead.ultima_interacao)}</TableCell>
-                    <TableCell className="hidden md:table-cell"><Badge variant="secondary">{lead.origem || "WhatsApp"}</Badge></TableCell>
+                    <TableCell className="hidden md:table-cell"><Badge variant="secondary">{origin.label}</Badge></TableCell>
                   </TableRow>
-                ))}
+                )})}
               </TableBody>
             </Table>
           )}
@@ -157,6 +284,30 @@ export default function LojaLeads() {
             <DrawerDescription>{selectedLead ? `${selectedLead.nome} • ${selectedLead.telefone}` : ""}</DrawerDescription>
           </DrawerHeader>
           <div className="space-y-3 overflow-y-auto px-4 pb-6">
+            {selectedLead && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">{getOriginMeta(selectedLead.origem).label}</Badge>
+                    <Badge variant="outline">{selectedLead.is_bot_active ? "Bot ativo" : "Bot pausado"}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedLead.ultima_mensagem || "Sem mensagem recente para este lead."}
+                  </p>
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={!selectedLead.is_bot_active || pauseBotMutation.isPending}
+                  onClick={() => pauseBotMutation.mutate(selectedLead.id)}
+                >
+                  <PauseCircle className="h-4 w-4" />
+                  {pauseBotMutation.isPending ? "Pausando..." : "Pausar bot"}
+                </Button>
+              </div>
+            )}
+
             {isLoadingMensagens ? (
               <div className="flex items-center justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : !mensagens?.length ? (
