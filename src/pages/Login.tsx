@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -24,6 +24,10 @@ export default function Login() {
   const [focused, setFocused] = useState<string | null>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = 'LojaADS CRM';
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
