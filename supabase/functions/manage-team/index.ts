@@ -27,14 +27,21 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    // Check if caller is platform_admin
-    const { data: callerRoles } = await supabaseAdmin
+    const { action, ...params } = await req.json();
+
+    const { data: callerRoles, error: callerRolesError } = await supabaseAdmin
       .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "platform_admin");
-    
-    if (!callerRoles?.length) throw new Error("Only platform admins can manage team members");
+      .select("role, clinic_id")
+      .eq("user_id", user.id);
+
+    if (callerRolesError) throw callerRolesError;
+
+    const isPlatformAdmin = !!callerRoles?.some((roleItem) => roleItem.role === "platform_admin");
+    const hasClinicAccess = (clinicId: string) =>
+      isPlatformAdmin || !!callerRoles?.some((roleItem) => roleItem.clinic_id === clinicId);
+    const requirePlatformAdmin = () => {
+      if (!isPlatformAdmin) throw new Error("Only platform admins can manage team members");
+    };
 
     const listAllUsers = async () => {
       const users: any[] = [];
@@ -145,11 +152,10 @@ serve(async (req) => {
       return newLoja.id;
     };
 
-    const { action, ...params } = await req.json();
-
     if (action === "list") {
       const { clinic_id } = params;
       if (!clinic_id) throw new Error("clinic_id required");
+      if (!hasClinicAccess(clinic_id)) throw new Error("You do not have access to this clinic");
 
       const { data: roles } = await supabaseAdmin
         .from("user_roles")
@@ -186,6 +192,8 @@ serve(async (req) => {
     }
 
     if (action === "create") {
+      requirePlatformAdmin();
+
       const { email, password, role, clinic_id, display_name } = params;
       if (!email || !password || !role || !clinic_id) throw new Error("email, password, role, clinic_id required");
       if (String(password).length < 6) throw new Error("password must be at least 6 characters");
@@ -230,6 +238,8 @@ serve(async (req) => {
     }
 
     if (action === "update_role") {
+      requirePlatformAdmin();
+
       const { role_id, new_role } = params;
       if (!role_id || !new_role) throw new Error("role_id, new_role required");
 
@@ -242,6 +252,8 @@ serve(async (req) => {
     }
 
     if (action === "delete") {
+      requirePlatformAdmin();
+
       const { user_id, role_id } = params;
       if (!role_id) throw new Error("role_id required");
 
@@ -255,6 +267,8 @@ serve(async (req) => {
 
     // ===== BAN: block a user from logging in =====
     if (action === "ban_user") {
+      requirePlatformAdmin();
+
       const { user_id } = params;
       if (!user_id) throw new Error("user_id required");
 
@@ -271,6 +285,8 @@ serve(async (req) => {
 
     // ===== UNBAN: restore login access =====
     if (action === "unban_user") {
+      requirePlatformAdmin();
+
       const { user_id } = params;
       if (!user_id) throw new Error("user_id required");
 
@@ -286,6 +302,8 @@ serve(async (req) => {
 
     // ===== BAN ALL CLINIC USERS =====
     if (action === "ban_clinic") {
+      requirePlatformAdmin();
+
       const { clinic_id } = params;
       if (!clinic_id) throw new Error("clinic_id required");
 
@@ -316,6 +334,8 @@ serve(async (req) => {
 
     // ===== UNBAN ALL CLINIC USERS =====
     if (action === "unban_clinic") {
+      requirePlatformAdmin();
+
       const { clinic_id } = params;
       if (!clinic_id) throw new Error("clinic_id required");
 

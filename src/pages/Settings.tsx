@@ -564,7 +564,7 @@ export default function SettingsPage() {
   const { data: teamMembers, isLoading: teamLoading } = useQuery({
     queryKey: ["team-members", effectiveClinicId],
     queryFn: async () => { if (!effectiveClinicId) return []; const { data, error } = await supabase.functions.invoke("manage-team", { body: { action: "list", clinic_id: effectiveClinicId } }); if (error) throw error; return data?.users || []; },
-    enabled: !!effectiveClinicId,
+    enabled: showAdminControls && !!effectiveClinicId,
   });
 
   const createMemberMutation = useMutation({
