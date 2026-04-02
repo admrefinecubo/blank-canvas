@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Facebook, Instagram, Loader2, MessageCircle, PencilLine, Search, UserRound, Users, Bot, BotOff, PauseCircle } from "lucide-react";
+import { Facebook, Instagram, Loader2, MessageCircle, PencilLine, Search, UserRound, Users, Bot, BotOff, PauseCircle, Plus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Drawer,
   DrawerContent,
@@ -16,6 +17,13 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -41,6 +49,7 @@ type LeadRow = {
   interesse: string | null;
   ultima_interacao: string | null;
   origem: string | null;
+  canal_origem?: string | null;
   ultima_mensagem: string | null;
   is_bot_active: boolean;
 };
@@ -54,7 +63,17 @@ type SelectedLead = {
   ultima_mensagem: string | null;
 };
 
-const ORIGIN_OPTIONS = ["all", "whatsapp", "instagram", "facebook", "google", "indicacao", "manual"] as const;
+const CREATE_ORIGIN_OPTIONS = ["whatsapp", "instagram", "facebook", "google", "indicacao", "manual"] as const;
+const ORIGIN_OPTIONS = ["all", ...CREATE_ORIGIN_OPTIONS] as const;
+
+type LeadOrigin = (typeof CREATE_ORIGIN_OPTIONS)[number];
+
+const EMPTY_CREATE_FORM = {
+  nome: "",
+  telefone: "",
+  interesse: "",
+  canal_origem: "manual" as LeadOrigin,
+};
 
 const ORIGIN_META: Record<string, { label: string; icon: typeof MessageCircle }> = {
   whatsapp: { label: "WhatsApp", icon: MessageCircle },
@@ -71,13 +90,15 @@ export default function LojaLeads() {
   const [selectedLead, setSelectedLead] = useState<SelectedLead | null>(null);
   const [search, setSearch] = useState("");
   const [filterOrigin, setFilterOrigin] = useState<(typeof ORIGIN_OPTIONS)[number]>("all");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["loja-leads", activeLojaId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase.from("leads") as any)
         .from("leads")
-        .select("id, nome, telefone, etapa_pipeline, interesse, ultima_interacao, origem, ultima_mensagem, is_bot_active")
+        .select("id, nome, telefone, etapa_pipeline, interesse, ultima_interacao, origem, canal_origem, ultima_mensagem, is_bot_active")
         .eq("loja_id", activeLojaId!)
         .order("ultima_interacao", { ascending: false });
       if (error) throw error;
@@ -125,6 +146,36 @@ export default function LojaLeads() {
     onError: (error: Error) => toast.error("Erro ao pausar bot", { description: error.message }),
   });
 
+  const createLeadMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeLojaId) throw new Error("Nenhuma loja ativa encontrada");
+
+      const telefone = createForm.telefone.trim();
+      if (!telefone) throw new Error("Informe o telefone do lead");
+
+      const payload = {
+        loja_id: activeLojaId,
+        nome: createForm.nome.trim() || null,
+        telefone,
+        interesse: createForm.interesse.trim() || null,
+        etapa_pipeline: "novo",
+        canal_origem: createForm.canal_origem,
+      };
+
+      const { error } = await ((supabase.from("leads") as any).insert(payload));
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loja-leads", activeLojaId] });
+      setShowCreateDialog(false);
+      setCreateForm(EMPTY_CREATE_FORM);
+      toast.success("Lead criado com sucesso");
+    },
+    onError: (error: Error) => toast.error("Erro ao criar lead", { description: error.message }),
+  });
+
+  const getLeadOrigin = (lead: Pick<LeadRow, "origem" | "canal_origem">) => lead.canal_origem || lead.origem || "manual";
+
   const filteredLeads = useMemo(() => {
     return (leads || []).filter((lead) => {
       const normalizedSearch = search.toLowerCase();
@@ -133,7 +184,7 @@ export default function LojaLeads() {
         || leadName.includes(normalizedSearch)
         || lead.telefone.includes(search)
         || (lead.ultima_mensagem || "").toLowerCase().includes(normalizedSearch);
-      const matchesOrigin = filterOrigin === "all" || (lead.origem || "manual") === filterOrigin;
+      const matchesOrigin = filterOrigin === "all" || getLeadOrigin(lead) === filterOrigin;
       return matchesSearch && matchesOrigin;
     });
   }, [filterOrigin, leads, search]);
@@ -149,6 +200,13 @@ export default function LojaLeads() {
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Clientes / Leads</h1>
         <p className="mt-1 text-sm text-muted-foreground">Acompanhe os leads do WhatsApp da sua loja.</p>
+      </div>
+
+      <div className="flex justify-end">
+        <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-4 w-4" />
+          Novo lead
+        </Button>
       </div>
 
       <Card>
@@ -209,7 +267,7 @@ export default function LojaLeads() {
               </TableHeader>
               <TableBody>
                 {filteredLeads.map((lead) => {
-                  const origin = getOriginMeta(lead.origem);
+                  const origin = getOriginMeta(getLeadOrigin(lead));
                   const OriginIcon = origin.icon;
 
                   return (
@@ -220,7 +278,7 @@ export default function LojaLeads() {
                       id: lead.id,
                       nome: getLeadName(lead.nome, lead.telefone),
                       telefone: lead.telefone,
-                      origem: lead.origem,
+                      origem: getLeadOrigin(lead),
                       is_bot_active: lead.is_bot_active,
                       ultima_mensagem: lead.ultima_mensagem,
                     })}
@@ -326,6 +384,75 @@ export default function LojaLeads() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo lead</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="lead-nome">Nome</Label>
+              <Input
+                id="lead-nome"
+                value={createForm.nome}
+                onChange={(event) => setCreateForm((current) => ({ ...current, nome: event.target.value }))}
+                placeholder="Nome do lead"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lead-telefone">Telefone</Label>
+              <Input
+                id="lead-telefone"
+                value={createForm.telefone}
+                onChange={(event) => setCreateForm((current) => ({ ...current, telefone: event.target.value }))}
+                placeholder="Telefone com DDD"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lead-origem">Origem</Label>
+              <Select
+                value={createForm.canal_origem}
+                onValueChange={(value) => setCreateForm((current) => ({ ...current, canal_origem: value as LeadOrigin }))}
+              >
+                <SelectTrigger id="lead-origem">
+                  <SelectValue placeholder="Selecione a origem" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="whatsapp">whatsapp</SelectItem>
+                  <SelectItem value="instagram">instagram</SelectItem>
+                  <SelectItem value="facebook">facebook</SelectItem>
+                  <SelectItem value="google">google</SelectItem>
+                  <SelectItem value="indicacao">indicacao</SelectItem>
+                  <SelectItem value="manual">manual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lead-interesse">Interesse</Label>
+              <Input
+                id="lead-interesse"
+                value={createForm.interesse}
+                onChange={(event) => setCreateForm((current) => ({ ...current, interesse: event.target.value }))}
+                placeholder="Produto ou interesse principal"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => createLeadMutation.mutate()} disabled={createLeadMutation.isPending}>
+              {createLeadMutation.isPending ? "Criando..." : "Criar lead"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
