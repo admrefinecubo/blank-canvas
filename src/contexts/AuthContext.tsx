@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -43,6 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [impersonatedClinicId, setImpersonatedClinicId] = useState<string | null>(
     () => localStorage.getItem('impersonated_clinic_id')
   );
+  const sessionRef = useRef<Session | null>(null);
+  const rolesRef = useRef<UserRole[]>([]);
+  const lastHydratedUserIdRef = useRef<string | null>(null);
 
   const fetchRoles = async (userId: string): Promise<UserRole[]> => {
     const { data, error } = await supabase
@@ -76,11 +79,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return resolvedRoles;
   };
 
-  const hydrateAuthState = async (nextSession: Session | null) => {
-    setLoading(true);
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  useEffect(() => {
+    rolesRef.current = roles;
+  }, [roles]);
+
+  useEffect(() => {
+    lastHydratedUserIdRef.current = lastHydratedUserId;
+  }, [lastHydratedUserId]);
+
+  const hydrateAuthState = async (nextSession: Session | null, options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true);
+      setRoles([]);
+    }
+
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
-    setRoles([]);
 
     if (!nextSession?.user) {
       setLastHydratedUserId(null);
@@ -103,7 +121,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      (event, nextSession) => {
+        const currentSession = sessionRef.current;
+        const currentUserId = currentSession?.user?.id ?? null;
+        const nextUserId = nextSession?.user?.id ?? null;
+        const sameUser = !!currentUserId && currentUserId === nextUserId;
+        const alreadyHydrated = !!nextUserId && lastHydratedUserIdRef.current === nextUserId && rolesRef.current.length > 0;
+        const isFocusRefreshEvent = event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION';
+
+        if (isFocusRefreshEvent && sameUser && alreadyHydrated) {
+          setSession(nextSession);
+          setUser(nextSession?.user ?? null);
+          return;
+        }
+
         void hydrateAuthState(nextSession);
       }
     );
