@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Loader2, MessageSquareText, Search, Store, UserRound } from "lucide-react";
+import { Loader2, MessageSquareText, Search, SendHorizontal, Store, UserRound } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
 import { formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
 
@@ -42,9 +46,11 @@ function getAttendanceStatus(lead: ConversationSummary) {
 }
 
 export default function WhatsApp() {
-  const { activeLojaId } = useAuth();
+  const queryClient = useQueryClient();
+  const { activeLojaId, activeClinicId } = useAuth();
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [draftMessage, setDraftMessage] = useState("");
 
   const { data: lojaContext } = useQuery({
     queryKey: ["whatsapp-loja-context", activeLojaId],
@@ -127,6 +133,10 @@ export default function WhatsApp() {
     || conversations.find((lead) => lead.id === selectedLeadId)
     || null;
 
+  useEffect(() => {
+    setDraftMessage("");
+  }, [selectedLead?.id]);
+
   const { data: messages = [], isLoading: loadingMessages } = useQuery({
     queryKey: ["whatsapp-chat-messages", selectedLead?.id],
     queryFn: async () => {
@@ -140,6 +150,89 @@ export default function WhatsApp() {
     },
     enabled: !!selectedLead?.id,
   });
+
+  const toggleBotMutation = useMutation({
+    mutationFn: async (nextValue: boolean) => {
+      if (!selectedLead?.id) throw new Error("Selecione um lead");
+
+      const { error } = await supabase
+        .from("leads")
+        .update({ is_bot_active: nextValue })
+        .eq("id", selectedLead.id);
+
+      if (error) throw error;
+      return nextValue;
+    },
+    onSuccess: (nextValue) => {
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations", activeLojaId] });
+      toast.success(nextValue ? "Conversa devolvida ao bot" : "Conversa assumida manualmente");
+    },
+    onError: (error: Error) => {
+      toast.error("Erro ao atualizar bot", { description: error.message });
+    },
+  });
+
+  const sendMessageMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedLead) throw new Error("Selecione uma conversa");
+      if (!activeClinicId) throw new Error("Clínica ativa não encontrada");
+
+      const message = draftMessage.trim();
+      if (!message) throw new Error("Digite uma mensagem");
+
+      const { data, error } = await supabase.functions.invoke("evolution-api", {
+        body: {
+          action: "send_message",
+          clinic_id: activeClinicId,
+          phone: selectedLead.telefone,
+          message,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const now = new Date().toISOString();
+
+      const [messageInsert, leadUpdate] = await Promise.all([
+        supabase.from("historico_mensagens").insert({
+          lead_id: selectedLead.id,
+          loja_id: activeLojaId,
+          telefone: selectedLead.telefone,
+          role: "assistant",
+          content: message,
+          created_at: now,
+        }),
+        supabase.from("leads").update({
+          ultima_mensagem: message,
+          ultima_interacao: now,
+        }).eq("id", selectedLead.id),
+      ]);
+
+      if (messageInsert.error) throw messageInsert.error;
+      if (leadUpdate.error) throw leadUpdate.error;
+    },
+    onSuccess: () => {
+      setDraftMessage("");
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations", activeLojaId] });
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-chat-messages", selectedLead?.id] });
+      toast.success("Mensagem enviada com sucesso");
+    },
+    onError: (error: Error) => {
+      toast.error("Erro ao enviar mensagem", { description: error.message });
+    },
+  });
+
+  const getRelativeTime = (value?: string | null) => {
+    if (!value) return "—";
+    return formatDistanceToNow(new Date(value), { addSuffix: true, locale: ptBR });
+  };
+
+  const getLeadInitials = (lead: ConversationSummary) => {
+    const name = getLeadName(lead.nome, lead.telefone).trim();
+    const parts = name.split(" ").filter(Boolean).slice(0, 2);
+    return parts.map((part) => part[0]?.toUpperCase() || "").join("") || "LD";
+  };
 
   if (!activeLojaId) {
     return (
@@ -201,19 +294,32 @@ export default function WhatsApp() {
                         onClick={() => setSelectedLeadId(lead.id)}
                         className={`w-full rounded-2xl border p-3 text-left transition-colors ${active ? "border-primary bg-primary/10" : "border-transparent hover:border-border hover:bg-accent/40"}`}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{getLeadName(lead.nome, lead.telefone)}</p>
-                            <p className="truncate text-xs text-muted-foreground">{lead.telefone}</p>
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-11 w-11 border border-border">
+                            <AvatarFallback>{getLeadInitials(lead)}</AvatarFallback>
+                          </Avatar>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-medium">{getLeadName(lead.nome, lead.telefone)}</p>
+                                <p className="truncate text-xs text-muted-foreground">{lead.telefone}</p>
+                              </div>
+                              <span className="shrink-0 text-[11px] text-muted-foreground">
+                                {getRelativeTime(lead.ultima_data)}
+                              </span>
+                            </div>
+
+                            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{lead.ultima_msg || "Sem mensagens ainda"}</p>
+
+                            <div className="mt-3 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className={`h-2.5 w-2.5 rounded-full ${lead.is_bot_active === false ? "bg-destructive" : "bg-primary"}`} />
+                                <Badge variant={status.variant}>{status.label}</Badge>
+                              </div>
+                              <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{lead.etapa_pipeline}</span>
+                            </div>
                           </div>
-                          <span className="shrink-0 text-[11px] text-muted-foreground">
-                            {lead.ultima_data ? format(new Date(lead.ultima_data), "HH:mm", { locale: ptBR }) : "—"}
-                          </span>
-                        </div>
-                        <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{lead.ultima_msg || "Sem mensagens ainda"}</p>
-                        <div className="mt-3 flex items-center justify-between gap-2">
-                          <Badge variant={status.variant}>{status.label}</Badge>
-                          <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{lead.etapa_pipeline}</span>
                         </div>
                       </button>
                     );
@@ -228,17 +334,28 @@ export default function WhatsApp() {
           <CardHeader className="border-b border-border/60 pb-4">
             {selectedLead ? (
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <CardTitle className="text-base">{getLeadName(selectedLead.nome, selectedLead.telefone)}</CardTitle>
-                  <p className="mt-1 text-sm text-muted-foreground">{selectedLead.telefone}</p>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12 border border-border">
+                    <AvatarFallback>{getLeadInitials(selectedLead)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-base">{getLeadName(selectedLead.nome, selectedLead.telefone)}</CardTitle>
+                    <p className="mt-1 text-sm text-muted-foreground">{selectedLead.telefone}</p>
+                  </div>
                 </div>
-                <Badge variant={getAttendanceStatus(selectedLead).variant}>{getAttendanceStatus(selectedLead).label}</Badge>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2">
+                    <span className={`h-2.5 w-2.5 rounded-full ${selectedLead.is_bot_active === false ? "bg-destructive" : "bg-primary"}`} />
+                    <span className="text-sm font-medium">{selectedLead.is_bot_active === false ? "Bot pausado" : "Bot ativo"}</span>
+                  </div>
+                  <Badge variant={getAttendanceStatus(selectedLead).variant}>{getAttendanceStatus(selectedLead).label}</Badge>
+                </div>
               </div>
             ) : (
               <CardTitle className="text-base">Selecione uma conversa</CardTitle>
             )}
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="flex h-[65vh] flex-col p-0">
             {!selectedLead ? (
               <div className="flex h-[65vh] flex-col items-center justify-center gap-3 text-center">
                 <UserRound className="h-10 w-10 text-muted-foreground" />
@@ -247,26 +364,79 @@ export default function WhatsApp() {
                   <p className="text-sm text-muted-foreground">Escolha um lead na lateral para abrir o histórico.</p>
                 </div>
               </div>
-            ) : loadingMessages ? (
-              <div className="flex h-[65vh] items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-            ) : !messages.length ? (
-              <div className="flex h-[65vh] items-center justify-center p-8 text-center text-sm text-muted-foreground">
-                Ainda não existem mensagens registradas para este lead.
-              </div>
             ) : (
-              <ScrollArea className="h-[65vh]">
-                <div className="space-y-3 p-4 md:p-6">
-                  {messages.map((message) => (
-                    <WhatsAppChatBubble
-                      key={message.id}
-                      role={message.role}
-                      content={message.content}
-                      createdAt={formatDateTime(message.created_at)}
-                      title={message.role === "assistant" ? (lojaContext?.nome_assistente || "Assistente") : getLeadName(selectedLead.nome, selectedLead.telefone)}
-                    />
-                  ))}
+              <>
+                <div className="border-b border-border/60 px-4 py-3 md:px-6">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Controle da conversa</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedLead.is_bot_active
+                          ? "Desative para assumir manualmente esta conversa."
+                          : "Ative para devolver o atendimento ao bot."}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium">Assumir conversa / Devolver ao bot</span>
+                      <Switch
+                        checked={selectedLead.is_bot_active !== false}
+                        disabled={toggleBotMutation.isPending}
+                        onCheckedChange={(checked) => toggleBotMutation.mutate(checked)}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </ScrollArea>
+
+                <div className="flex-1 overflow-hidden">
+                  {loadingMessages ? (
+                    <div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+                  ) : !messages.length ? (
+                    <div className="flex h-full items-center justify-center p-8 text-center text-sm text-muted-foreground">
+                      Ainda não existem mensagens registradas para este lead.
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-full">
+                      <div className="space-y-3 p-4 md:p-6">
+                        {messages.map((message) => (
+                          <WhatsAppChatBubble
+                            key={message.id}
+                            role={message.role}
+                            content={message.content}
+                            createdAt={formatDateTime(message.created_at)}
+                            title={message.role === "assistant" ? (lojaContext?.nome_assistente || "Assistente") : getLeadName(selectedLead.nome, selectedLead.telefone)}
+                          />
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+
+                <div className="border-t border-border/60 p-4 md:p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Input
+                      value={draftMessage}
+                      onChange={(event) => setDraftMessage(event.target.value)}
+                      placeholder="Digite uma mensagem manual para este lead..."
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
+                          if (!sendMessageMutation.isPending && draftMessage.trim()) {
+                            sendMessageMutation.mutate();
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      className="gap-2"
+                      disabled={!draftMessage.trim() || sendMessageMutation.isPending || !activeClinicId}
+                      onClick={() => sendMessageMutation.mutate()}
+                    >
+                      {sendMessageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
+                      Enviar
+                    </Button>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
