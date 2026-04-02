@@ -800,7 +800,9 @@ export type Database = {
           comment: string | null
           created_at: string
           id: string
-          patient_id: string
+          lead_id: string | null
+          loja_id: string | null
+          patient_id: string | null
           score: number
         }
         Insert: {
@@ -808,7 +810,9 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
-          patient_id: string
+          lead_id?: string | null
+          loja_id?: string | null
+          patient_id?: string | null
           score: number
         }
         Update: {
@@ -816,7 +820,9 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
-          patient_id?: string
+          lead_id?: string | null
+          loja_id?: string | null
+          patient_id?: string | null
           score?: number
         }
         Relationships: [
@@ -825,6 +831,20 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_responses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_responses_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
             referencedColumns: ["id"]
           },
           {
@@ -999,6 +1019,48 @@ export type Database = {
             columns: ["procedure_id"]
             isOneToOne: false
             referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_sale_contacts: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          loja_id: string
+          sent_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          loja_id: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          loja_id?: string
+          sent_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_sale_contacts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_sale_contacts_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
             referencedColumns: ["id"]
           },
         ]
