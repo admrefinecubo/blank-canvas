@@ -270,7 +270,7 @@ export default function WhatsApp() {
               </ScrollArea>
             )}
           </CardContent>
-        </div>
+        </Card>
       </div>
     </div>
   );
