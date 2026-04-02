@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
 import { formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
 
