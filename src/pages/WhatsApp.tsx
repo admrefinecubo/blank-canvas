@@ -60,9 +60,9 @@ export default function WhatsApp() {
     enabled: !!activeLojaId,
   });
 
-  const { data: conversations = [], isLoading } = useQuery({
+  const { data: conversations = [], isLoading } = useQuery<ConversationSummary[]>({
     queryKey: ["whatsapp-conversations", activeLojaId],
-    mutationFn: async () => {
+    queryFn: async () => {
       const [leadsResult, messagesResult] = await Promise.all([
         (supabase.from("leads") as any)
           .select("id, nome, telefone, etapa_pipeline, is_bot_active, bot_paused_until")
@@ -100,7 +100,6 @@ export default function WhatsApp() {
           return bTime - aTime;
         });
     },
-    queryFn: async () => [],
     enabled: !!activeLojaId,
   });
 
