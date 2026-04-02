@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { ChangeEvent, useMemo, useRef, useState } from "react";
 import {
-  Plus, RefreshCw, Pencil, Trash2, Loader2, Package,
+  Plus, RefreshCw, Pencil, Trash2, Loader2, Package, Upload, ImageIcon, ExternalLink,
 } from "lucide-react";
+import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,12 +30,24 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const CATEGORIAS = ["Sala", "Quarto", "Sala de Jantar", "Colchões", "Planejados", "Outros"];
 
+const productFormSchema = z.object({
+  nome: z.string().trim().min(1, "Informe o nome do produto").max(120, "Nome muito longo"),
+  descricao: z.string().trim().max(3000, "Descrição muito longa").optional(),
+  categoria: z.string().trim().max(80, "Categoria muito longa").optional(),
+  preco_original: z.coerce.number().positive("Preço deve ser maior que zero"),
+  preco_promocional: z.coerce.number().nonnegative("Preço promocional inválido").nullable(),
+  estoque_disponivel: z.boolean(),
+  foto_principal: z.string().trim().url("URL da foto principal inválida").nullable(),
+  foto_detalhe: z.string().trim().url("URL da foto detalhe inválida").nullable(),
+  video_url: z.string().trim().url("URL do vídeo inválida").nullable(),
+  checkout_url: z.string().trim().url("Checkout URL inválida").nullable(),
+});
+
 const EMPTY_FORM = {
   nome: "",
   descricao: "",
   categoria: "",
   tags: "",
-  especificacoes: "",
   variacoes: "",
   preco_original: "",
   preco_promocional: "",
@@ -42,6 +55,61 @@ const EMPTY_FORM = {
   foto_principal: "",
   foto_detalhe: "",
   video_url: "",
+  checkout_url: "",
+};
+
+const fileToBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== "string") {
+        reject(new Error("Falha ao processar arquivo"));
+        return;
+      }
+      resolve(result.split(",")[1] ?? "");
+    };
+    reader.onerror = () => reject(new Error("Falha ao ler arquivo"));
+    reader.readAsDataURL(file);
+  });
+
+const normalizeOptionalUrl = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
+
+const parseTagsInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith("[")) {
+    const parsed = JSON.parse(trimmed);
+    if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string" || !item.trim())) {
+      throw new Error("Tags devem ser um array JSON de strings ou uma lista separada por vírgula");
+    }
+    return JSON.stringify(parsed.map((item) => item.trim()));
+  }
+
+  const tags = trimmed
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (!tags.length) {
+    throw new Error("Informe ao menos uma tag válida");
+  }
+
+  return JSON.stringify(tags);
+};
+
+const parseVariationsInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = JSON.parse(trimmed);
+  if (!Array.isArray(parsed)) {
+    throw new Error("Variações devem ser um array JSON");
+  }
+  return JSON.stringify(parsed);
 };
 
 export default function LojaCatalogo() {
@@ -53,13 +121,17 @@ export default function LojaCatalogo() {
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [lastSavedProductId, setLastSavedProductId] = useState<string | null>(null);
+  const [uploadingField, setUploadingField] = useState<"foto_principal" | "foto_detalhe" | null>(null);
+  const principalInputRef = useRef<HTMLInputElement | null>(null);
+  const detailInputRef = useRef<HTMLInputElement | null>(null);
 
   const { data: produtos, isLoading } = useQuery({
     queryKey: ["loja-produtos", activeLojaId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("produtos")
-        .select("id, nome, categoria, preco_original, preco_promocional, estoque_disponivel, foto_principal, created_at")
+        .select("id, nome, categoria, preco_original, preco_promocional, estoque_disponivel, foto_principal, checkout_url, created_at")
         .eq("loja_id", activeLojaId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -67,6 +139,13 @@ export default function LojaCatalogo() {
     },
     enabled: !!activeLojaId,
   });
+
+  const categoryOptions = useMemo(() => {
+    const dynamicCategories = (produtos ?? [])
+      .map((item) => item.categoria)
+      .filter((item): item is string => Boolean(item));
+    return Array.from(new Set([...CATEGORIAS, ...dynamicCategories])).sort((a, b) => a.localeCompare(b));
+  }, [produtos]);
 
   const filtered = useMemo(() => {
     if (!produtos) return [];
@@ -80,11 +159,12 @@ export default function LojaCatalogo() {
   const openCreate = () => {
     setEditId(null);
     setForm(EMPTY_FORM);
+    setLastSavedProductId(null);
     setShowForm(true);
   };
 
   const openEdit = async (prodId: string) => {
-    const { data } = await supabase.from("produtos").select("*").eq("id", prodId).single();
+    const { data } = await (supabase as any).from("produtos").select("*").eq("id", prodId).single();
     if (!data) return;
     setEditId(prodId);
     setForm({
@@ -92,7 +172,6 @@ export default function LojaCatalogo() {
       descricao: data.descricao || "",
       categoria: data.categoria || "",
       tags: data.tags || "",
-      especificacoes: data.especificacoes || "",
       variacoes: data.variacoes || "",
       preco_original: data.preco_original?.toString() || "",
       preco_promocional: data.preco_promocional?.toString() || "",
@@ -100,50 +179,62 @@ export default function LojaCatalogo() {
       foto_principal: data.foto_principal || "",
       foto_detalhe: data.foto_detalhe || "",
       video_url: data.video_url || "",
+      checkout_url: data.checkout_url || "",
     });
+    setLastSavedProductId(prodId);
     setShowForm(true);
   };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const webhookUrl = (import.meta as any).env?.VITE_WF06_WEBHOOK_URL;
+      const tags = parseTagsInput(form.tags);
+      const variacoes = parseVariationsInput(form.variacoes);
+
+      const parsedForm = productFormSchema.parse({
+        nome: form.nome,
+        descricao: form.descricao.trim() || undefined,
+        categoria: form.categoria.trim() || undefined,
+        preco_original: form.preco_original,
+        preco_promocional: form.preco_promocional.trim() ? form.preco_promocional : null,
+        estoque_disponivel: form.estoque_disponivel,
+        foto_principal: normalizeOptionalUrl(form.foto_principal),
+        foto_detalhe: normalizeOptionalUrl(form.foto_detalhe),
+        video_url: normalizeOptionalUrl(form.video_url),
+        checkout_url: normalizeOptionalUrl(form.checkout_url),
+      });
+
       const payload = {
         loja_id: activeLojaId!,
-        nome: form.nome,
-        descricao: form.descricao || null,
-        categoria: form.categoria || null,
-        tags: form.tags || null,
-        especificacoes: form.especificacoes || null,
-        variacoes: form.variacoes || null,
-        preco_original: Number(form.preco_original),
-        preco_promocional: form.preco_promocional ? Number(form.preco_promocional) : null,
-        estoque_disponivel: form.estoque_disponivel,
-        foto_principal: form.foto_principal || null,
-        foto_detalhe: form.foto_detalhe || null,
-        video_url: form.video_url || null,
+        nome: parsedForm.nome,
+        descricao: parsedForm.descricao || null,
+        categoria: parsedForm.categoria || null,
+        tags,
+        variacoes,
+        preco_original: parsedForm.preco_original,
+        preco_promocional: parsedForm.preco_promocional,
+        estoque_disponivel: parsedForm.estoque_disponivel,
+        foto_principal: parsedForm.foto_principal,
+        foto_detalhe: parsedForm.foto_detalhe,
+        video_url: parsedForm.video_url,
+        checkout_url: parsedForm.checkout_url,
       };
 
       let produtoId = editId;
       if (editId) {
-        const { data, error } = await supabase.from("produtos").update(payload).eq("id", editId).select("id").single();
+        const { data, error } = await (supabase as any).from("produtos").update(payload).eq("id", editId).select("id").single();
         if (error) throw error;
         produtoId = data.id;
       } else {
-        const { data, error } = await supabase.from("produtos").insert(payload).select("id").single();
+        const { data, error } = await (supabase as any).from("produtos").insert(payload).select("id").single();
         if (error) throw error;
         produtoId = data.id;
       }
 
-      if (!webhookUrl || !produtoId) return;
-
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loja_id: activeLojaId, produto_id: produtoId, action: "upsert" }),
-      });
+      return { produtoId };
     },
-    onSuccess: () => {
+    onSuccess: ({ produtoId }) => {
       queryClient.invalidateQueries({ queryKey: ["loja-produtos", activeLojaId] });
+      setLastSavedProductId(produtoId ?? null);
       setShowForm(false);
       toast.success("Produto salvo!");
     },
@@ -164,22 +255,65 @@ export default function LojaCatalogo() {
   });
 
   const reindexMutation = useMutation({
-    mutationFn: async () => {
-      const webhookUrl = (import.meta as any).env?.VITE_WF06_WEBHOOK_URL;
-      if (!webhookUrl) throw new Error("URL do webhook WF-06 não configurada");
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loja_id: activeLojaId }),
+    mutationFn: async (produtoId?: string | null) => {
+      const { data, error } = await supabase.functions.invoke("catalog-actions", {
+        body: {
+          action: "reindex_embeddings",
+          loja_id: activeLojaId,
+          produto_id: produtoId ?? null,
+        },
       });
-      if (!res.ok) throw new Error(`Erro ${res.status}`);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => toast.success("Re-indexação iniciada!"),
     onError: (e: any) => toast.error("Erro ao re-indexar", { description: e.message }),
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: async ({ file, field }: { file: File; field: "foto_principal" | "foto_detalhe" }) => {
+      if (!activeLojaId) throw new Error("Loja não encontrada");
+      if (!file.type.startsWith("image/")) throw new Error("Envie apenas arquivos de imagem");
+      if (file.size > 5 * 1024 * 1024) throw new Error("A imagem deve ter no máximo 5MB");
+
+      const base64 = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke("catalog-actions", {
+        body: {
+          action: "upload_product_image",
+          loja_id: activeLojaId,
+          target_field: field,
+          file_name: file.name,
+          content_type: file.type,
+          base64,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      return { field, url: data?.publicUrl as string };
+    },
+    onMutate: ({ field }) => setUploadingField(field),
+    onSuccess: ({ field, url }) => {
+      set(field, url);
+      toast.success("Imagem enviada com sucesso!");
+    },
+    onError: (e: any) => toast.error("Erro ao enviar imagem", { description: e.message }),
+    onSettled: () => setUploadingField(null),
+  });
+
   const set = (key: string, value: any) => setForm((f) => ({ ...f, [key]: value }));
   const formatPrice = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const handleImageSelected = async (
+    event: ChangeEvent<HTMLInputElement>,
+    field: "foto_principal" | "foto_detalhe",
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    await uploadMutation.mutateAsync({ file, field });
+  };
 
   if (!activeLojaId) {
     return <div className="rounded-2xl border border-dashed border-border p-8 text-sm text-muted-foreground">Nenhuma loja operacional vinculada a esta conta.</div>;
@@ -201,12 +335,27 @@ export default function LojaCatalogo() {
         </div>
       </div>
 
+      {lastSavedProductId ? (
+        <Card>
+          <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="font-medium">Produto salvo com sucesso</p>
+              <p className="text-sm text-muted-foreground">Se quiser, já dispare a atualização dos embeddings deste item no WF-11.</p>
+            </div>
+            <Button className="gap-2" onClick={() => reindexMutation.mutate(lastSavedProductId)} disabled={reindexMutation.isPending}>
+              <RefreshCw className={`h-4 w-4 ${reindexMutation.isPending ? "animate-spin" : ""}`} />
+              Re-indexar embeddings
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Select value={filterCat} onValueChange={setFilterCat}>
           <SelectTrigger className="w-[200px]"><SelectValue placeholder="Categoria" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            {CATEGORIAS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            {categoryOptions.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
           </SelectContent>
         </Select>
         <Input placeholder="Buscar por nome..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
@@ -238,8 +387,8 @@ export default function LojaCatalogo() {
                   <TableRow key={produto.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 overflow-hidden rounded-xl bg-muted/40">
-                          {produto.foto_principal ? <img src={produto.foto_principal} alt={produto.nome} className="h-full w-full object-cover" loading="lazy" /> : null}
+                        <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-muted/40">
+                          {produto.foto_principal ? <img src={produto.foto_principal} alt={produto.nome} className="h-full w-full object-cover" loading="lazy" /> : <ImageIcon className="h-4 w-4 text-muted-foreground" />}
                         </div>
                         <div>
                           <p className="font-medium">{produto.nome}</p>
@@ -257,6 +406,13 @@ export default function LojaCatalogo() {
                     <TableCell><Badge variant={produto.estoque_disponivel ? "default" : "secondary"}>{produto.estoque_disponivel ? "Disponível" : "Indisponível"}</Badge></TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        {produto.checkout_url ? (
+                          <Button asChild variant="outline" size="sm">
+                            <a href={produto.checkout_url} target="_blank" rel="noreferrer">
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        ) : null}
                         <Button variant="outline" size="sm" onClick={() => openEdit(produto.id)}><Pencil className="h-4 w-4" /></Button>
                         <Button variant="outline" size="sm" onClick={() => setDeleteId(produto.id)}><Trash2 className="h-4 w-4" /></Button>
                       </div>
@@ -274,15 +430,31 @@ export default function LojaCatalogo() {
           <DialogHeader><DialogTitle>{editId ? "Editar produto" : "Novo produto"}</DialogTitle></DialogHeader>
           <div className="grid gap-4 md:grid-cols-2">
             <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => set("nome", e.target.value)} /></div>
-            <div><Label>Categoria</Label><Select value={form.categoria} onValueChange={(value) => set("categoria", value)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{CATEGORIAS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div>
-            <div><Label>Preço original</Label><Input type="number" value={form.preco_original} onChange={(e) => set("preco_original", e.target.value)} /></div>
+            <div><Label>Categoria</Label><Select value={form.categoria} onValueChange={(value) => set("categoria", value)}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{categoryOptions.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label>Preço</Label><Input type="number" min="0" step="0.01" value={form.preco_original} onChange={(e) => set("preco_original", e.target.value)} /></div>
             <div><Label>Preço promocional</Label><Input type="number" value={form.preco_promocional} onChange={(e) => set("preco_promocional", e.target.value)} /></div>
             <div className="md:col-span-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(e) => set("descricao", e.target.value)} rows={4} /></div>
-            <div className="md:col-span-2"><Label>Tags</Label><Input value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="sofá, premium, lançamento" /></div>
-            <div className="md:col-span-2"><Label>Especificações</Label><Textarea value={form.especificacoes} onChange={(e) => set("especificacoes", e.target.value)} rows={3} /></div>
-            <div className="md:col-span-2"><Label>Variações</Label><Textarea value={form.variacoes} onChange={(e) => set("variacoes", e.target.value)} rows={3} /></div>
-            <div><Label>Foto principal</Label><Input value={form.foto_principal} onChange={(e) => set("foto_principal", e.target.value)} placeholder="https://..." /></div>
-            <div><Label>Foto detalhe</Label><Input value={form.foto_detalhe} onChange={(e) => set("foto_detalhe", e.target.value)} placeholder="https://..." /></div>
+            <div className="md:col-span-2"><Label>Tags</Label><Textarea value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder='["colchão","casal","mola"] ou separado por vírgula' rows={2} /></div>
+            <div className="md:col-span-2"><Label>Variações (JSON)</Label><Textarea value={form.variacoes} onChange={(e) => set("variacoes", e.target.value)} placeholder='[{"tamanho":"Queen","preco":1899}]' rows={4} /></div>
+            <div className="md:col-span-2"><Label>Checkout URL</Label><Input value={form.checkout_url} onChange={(e) => set("checkout_url", e.target.value)} placeholder="https://checkout.sualoja.com/produto" /></div>
+            <div className="space-y-2">
+              <Label>Foto principal URL</Label>
+              <Input value={form.foto_principal} onChange={(e) => set("foto_principal", e.target.value)} placeholder="https://..." />
+              <input ref={principalInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => void handleImageSelected(event, "foto_principal")} />
+              <Button type="button" variant="outline" className="w-full gap-2" onClick={() => principalInputRef.current?.click()} disabled={uploadingField === "foto_principal"}>
+                {uploadingField === "foto_principal" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Upload para Storage
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <Label>Foto detalhe URL</Label>
+              <Input value={form.foto_detalhe} onChange={(e) => set("foto_detalhe", e.target.value)} placeholder="https://..." />
+              <input ref={detailInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => void handleImageSelected(event, "foto_detalhe")} />
+              <Button type="button" variant="outline" className="w-full gap-2" onClick={() => detailInputRef.current?.click()} disabled={uploadingField === "foto_detalhe"}>
+                {uploadingField === "foto_detalhe" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Upload para Storage
+              </Button>
+            </div>
             <div className="md:col-span-2"><Label>Vídeo</Label><Input value={form.video_url} onChange={(e) => set("video_url", e.target.value)} placeholder="https://..." /></div>
             <div className="md:col-span-2 flex items-center justify-between rounded-xl border border-border p-4">
               <div>
