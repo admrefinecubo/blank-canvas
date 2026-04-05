@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, MessageSquare, Loader2, Target, History, Eye } from "lucide-react";
+import { WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, Bot, Loader2, Target, History, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -516,6 +516,7 @@ export default function SettingsPage() {
     nome_loja: "",
     nome_assistente: "",
     tom_voz: "amigável",
+    descricao_loja: "",
     especialidades: "",
     regras_personalidade: "",
     horario_inicio: "08:00",
@@ -554,7 +555,7 @@ export default function SettingsPage() {
       if (!activeLojaId) return null;
       const { data, error } = await supabase
         .from("lojas")
-        .select("id, nome_loja, nome_assistente, tom_voz, especialidades, regras_personalidade, horario_inicio, horario_fim, formas_pagamento, politica_troca, prazo_entrega, frete_gratis_acima, montagem_disponivel, desconto_carrinho_abandonado, desconto_promocao_nao_respondida")
+        .select("id, nome_loja, nome_assistente, tom_voz, descricao_loja, especialidades, regras_personalidade, horario_inicio, horario_fim, formas_pagamento, politica_troca, prazo_entrega, frete_gratis_acima, montagem_disponivel, desconto_carrinho_abandonado, desconto_promocao_nao_respondida")
         .eq("id", activeLojaId)
         .single();
 
@@ -573,6 +574,7 @@ export default function SettingsPage() {
       nome_loja: activeLoja.nome_loja || "",
       nome_assistente: activeLoja.nome_assistente || "",
       tom_voz: activeLoja.tom_voz || "amigável",
+      descricao_loja: (activeLoja as any).descricao_loja || "",
       especialidades: activeLoja.especialidades || "",
       regras_personalidade: activeLoja.regras_personalidade || "",
       horario_inicio: activeLoja.horario_inicio || "08:00",
@@ -645,6 +647,7 @@ export default function SettingsPage() {
         .update({
           nome_assistente: storeForm.nome_assistente.trim() || null,
           tom_voz: storeForm.tom_voz,
+          descricao_loja: storeForm.descricao_loja.trim() || null,
           especialidades: storeForm.especialidades.trim() || null,
           regras_personalidade: storeForm.regras_personalidade.trim() || null,
           horario_inicio: storeForm.horario_inicio || null,
@@ -675,7 +678,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="clinic">
         <TabsList className="bg-accent flex-wrap h-auto gap-1">
           <TabsTrigger value="clinic">Conta</TabsTrigger>
-          {!showAdminControls && <TabsTrigger value="ai-agent"><MessageSquare className="h-3.5 w-3.5 mr-1" />Agente de IA</TabsTrigger>}
+          {!showAdminControls && <TabsTrigger value="ai-agent"><Bot className="h-3.5 w-3.5 mr-1" />Agente de IA</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="team">Equipe</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="post-procedure">Pós-Venda</TabsTrigger>}
@@ -740,6 +743,10 @@ export default function SettingsPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                  <div>
+                    <Label>Descrição da loja</Label>
+                    <Textarea value={storeForm.descricao_loja} onChange={e => setStoreForm(f => ({ ...f, descricao_loja: e.target.value }))} placeholder="Descreva sua loja, segmento e diferenciais." className="min-h-[110px]" />
                   </div>
                   <div>
                     <Label>Especialidades</Label>
