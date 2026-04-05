@@ -39,7 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LEAD_STAGE_OPTIONS, formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
+import { LEAD_STAGE_OPTIONS, getEtapaLabel, formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
 
 type LeadRow = {
   id: string;
@@ -49,7 +49,6 @@ type LeadRow = {
   interesse: string | null;
   ultima_interacao: string | null;
   origem: string | null;
-  canal_origem?: string | null;
   ultima_mensagem: string | null;
   is_bot_active: boolean;
 };
@@ -72,7 +71,7 @@ const EMPTY_CREATE_FORM = {
   nome: "",
   telefone: "",
   interesse: "",
-  canal_origem: "manual" as LeadOrigin,
+  origem: "manual" as LeadOrigin,
 };
 
 const ORIGIN_META: Record<string, { label: string; icon: typeof MessageCircle }> = {
@@ -92,14 +91,17 @@ export default function LojaLeads() {
   const [filterOrigin, setFilterOrigin] = useState<(typeof ORIGIN_OPTIONS)[number]>("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
+  const [customEtapa, setCustomEtapa] = useState("");
+  const [editingEtapaLeadId, setEditingEtapaLeadId] = useState<string | null>(null);
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["loja-leads", activeLojaId],
     queryFn: async () => {
-      const { data, error } = await ((supabase.from("leads") as any)
-        .select("id, nome, telefone, etapa_pipeline, interesse, ultima_interacao, origem, canal_origem, ultima_mensagem, is_bot_active")
+      const { data, error } = await supabase
+        .from("leads")
+        .select("id, nome, telefone, etapa_pipeline, interesse, ultima_interacao, origem, ultima_mensagem, is_bot_active")
         .eq("loja_id", activeLojaId!)
-        .order("ultima_interacao", { ascending: false }));
+        .order("ultima_interacao", { ascending: false });
       if (error) throw error;
       return (data || []) as LeadRow[];
     },
@@ -121,13 +123,15 @@ export default function LojaLeads() {
   });
 
   const stageMutation = useMutation({
-    mutationFn: async ({ leadId, etapa }: { leadId: string; etapa: (typeof LEAD_STAGE_OPTIONS)[number]["value"] }) => {
+    mutationFn: async ({ leadId, etapa }: { leadId: string; etapa: string }) => {
       const { error } = await supabase.from("leads").update({ etapa_pipeline: etapa }).eq("id", leadId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["loja-leads", activeLojaId] });
       toast.success("Etapa atualizada");
+      setEditingEtapaLeadId(null);
+      setCustomEtapa("");
     },
     onError: (error: Error) => toast.error("Erro ao atualizar etapa", { description: error.message }),
   });
@@ -158,10 +162,10 @@ export default function LojaLeads() {
         telefone,
         interesse: createForm.interesse.trim() || null,
         etapa_pipeline: "novo",
-        canal_origem: createForm.canal_origem,
+        origem: createForm.origem,
       };
 
-      const { error } = await ((supabase.from("leads") as any).insert(payload));
+      const { error } = await supabase.from("leads").insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -173,8 +177,6 @@ export default function LojaLeads() {
     onError: (error: Error) => toast.error("Erro ao criar lead", { description: error.message }),
   });
 
-  const getLeadOrigin = (lead: Pick<LeadRow, "origem" | "canal_origem">) => lead.canal_origem || lead.origem || "manual";
-
   const filteredLeads = useMemo(() => {
     return (leads || []).filter((lead) => {
       const normalizedSearch = search.toLowerCase();
@@ -183,12 +185,21 @@ export default function LojaLeads() {
         || leadName.includes(normalizedSearch)
         || lead.telefone.includes(search)
         || (lead.ultima_mensagem || "").toLowerCase().includes(normalizedSearch);
-      const matchesOrigin = filterOrigin === "all" || getLeadOrigin(lead) === filterOrigin;
+      const matchesOrigin = filterOrigin === "all" || (lead.origem || "manual") === filterOrigin;
       return matchesSearch && matchesOrigin;
     });
   }, [filterOrigin, leads, search]);
 
   const getOriginMeta = (origin: string | null) => ORIGIN_META[origin || "manual"] || { label: origin || "Manual", icon: UserRound };
+
+  const handleEtapaChange = (leadId: string, value: string) => {
+    if (value === "__other__") {
+      setEditingEtapaLeadId(leadId);
+      setCustomEtapa("");
+    } else {
+      stageMutation.mutate({ leadId, etapa: value });
+    }
+  };
 
   if (!activeLojaId) {
     return <div className="rounded-2xl border border-dashed border-border p-8 text-sm text-muted-foreground">Nenhuma loja operacional vinculada a esta conta.</div>;
@@ -266,7 +277,7 @@ export default function LojaLeads() {
               </TableHeader>
               <TableBody>
                 {filteredLeads.map((lead) => {
-                  const origin = getOriginMeta(getLeadOrigin(lead));
+                  const origin = getOriginMeta(lead.origem);
                   const OriginIcon = origin.icon;
 
                   return (
@@ -277,7 +288,7 @@ export default function LojaLeads() {
                       id: lead.id,
                       nome: getLeadName(lead.nome, lead.telefone),
                       telefone: lead.telefone,
-                      origem: getLeadOrigin(lead),
+                      origem: lead.origem,
                       is_bot_active: lead.is_bot_active,
                       ultima_mensagem: lead.ultima_mensagem,
                     })}
@@ -304,17 +315,50 @@ export default function LojaLeads() {
                     <TableCell>{lead.telefone}</TableCell>
                     <TableCell>
                       <div className="w-[180px]" onClick={(event) => event.stopPropagation()}>
-                        <Select
-                          value={lead.etapa_pipeline ?? "novo"}
-                          onValueChange={(value) => stageMutation.mutate({ leadId: lead.id, etapa: value as (typeof LEAD_STAGE_OPTIONS)[number]["value"] })}
-                        >
-                          <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                          <SelectContent>
-                            {LEAD_STAGE_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {editingEtapaLeadId === lead.id ? (
+                          <div className="flex gap-1">
+                            <Input
+                              value={customEtapa}
+                              onChange={(e) => setCustomEtapa(e.target.value)}
+                              placeholder="Etapa personalizada"
+                              className="h-9 text-sm"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && customEtapa.trim()) {
+                                  stageMutation.mutate({ leadId: lead.id, etapa: customEtapa.trim() });
+                                }
+                                if (e.key === "Escape") {
+                                  setEditingEtapaLeadId(null);
+                                  setCustomEtapa("");
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              className="h-9"
+                              disabled={!customEtapa.trim()}
+                              onClick={() => stageMutation.mutate({ leadId: lead.id, etapa: customEtapa.trim() })}
+                            >
+                              OK
+                            </Button>
+                          </div>
+                        ) : (
+                          <Select
+                            value={LEAD_STAGE_OPTIONS.some(o => o.value === lead.etapa_pipeline) ? (lead.etapa_pipeline ?? "novo") : "__other__"}
+                            onValueChange={(value) => handleEtapaChange(lead.id, value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue>
+                                {getEtapaLabel(lead.etapa_pipeline ?? "novo")}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {LEAD_STAGE_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                              ))}
+                              <SelectItem value="__other__">Outro...</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
@@ -414,19 +458,19 @@ export default function LojaLeads() {
             <div className="space-y-2">
               <Label htmlFor="lead-origem">Origem</Label>
               <Select
-                value={createForm.canal_origem}
-                onValueChange={(value) => setCreateForm((current) => ({ ...current, canal_origem: value as LeadOrigin }))}
+                value={createForm.origem}
+                onValueChange={(value) => setCreateForm((current) => ({ ...current, origem: value as LeadOrigin }))}
               >
                 <SelectTrigger id="lead-origem">
                   <SelectValue placeholder="Selecione a origem" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="whatsapp">whatsapp</SelectItem>
-                  <SelectItem value="instagram">instagram</SelectItem>
-                  <SelectItem value="facebook">facebook</SelectItem>
-                  <SelectItem value="google">google</SelectItem>
-                  <SelectItem value="indicacao">indicacao</SelectItem>
-                  <SelectItem value="manual">manual</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                  <SelectItem value="google">Google</SelectItem>
+                  <SelectItem value="indicacao">Indicação</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
                 </SelectContent>
               </Select>
             </div>
