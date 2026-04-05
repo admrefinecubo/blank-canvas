@@ -574,6 +574,7 @@ export default function SettingsPage() {
       nome_loja: activeLoja.nome_loja || "",
       nome_assistente: activeLoja.nome_assistente || "",
       tom_voz: activeLoja.tom_voz || "amigável",
+      descricao_loja: (activeLoja as any).descricao_loja || "",
       especialidades: activeLoja.especialidades || "",
       regras_personalidade: activeLoja.regras_personalidade || "",
       horario_inicio: activeLoja.horario_inicio || "08:00",
