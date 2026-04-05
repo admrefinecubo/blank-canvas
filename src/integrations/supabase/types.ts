@@ -641,6 +641,7 @@ export type Database = {
           created_at: string
           desconto_carrinho_abandonado: number | null
           desconto_promocao_nao_respondida: number | null
+          descricao_loja: string | null
           endereco: string | null
           especialidades: string | null
           formas_pagamento: string | null
@@ -668,6 +669,7 @@ export type Database = {
           created_at?: string
           desconto_carrinho_abandonado?: number | null
           desconto_promocao_nao_respondida?: number | null
+          descricao_loja?: string | null
           endereco?: string | null
           especialidades?: string | null
           formas_pagamento?: string | null
@@ -695,6 +697,7 @@ export type Database = {
           created_at?: string
           desconto_carrinho_abandonado?: number | null
           desconto_promocao_nao_respondida?: number | null
+          descricao_loja?: string | null
           endereco?: string | null
           especialidades?: string | null
           formas_pagamento?: string | null
