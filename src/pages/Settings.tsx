@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, MessageSquare, Loader2, Target, History, Eye } from "lucide-react";
+import { WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, Bot, Loader2, Target, History, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
