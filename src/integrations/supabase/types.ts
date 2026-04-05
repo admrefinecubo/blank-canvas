@@ -539,17 +539,20 @@ export type Database = {
         Row: {
           agente_pausado: boolean | null
           bot_paused_until: string | null
+          canal_origem: string | null
           created_at: string
           email: string | null
-          etapa_pipeline: Database["public"]["Enums"]["lead_stage"]
+          etapa_pipeline: string
           id: string
           instance: string | null
           interesse: string | null
           is_bot_active: boolean
           loja_id: string
           nome: string | null
+          nps_score: number | null
           orcamento_faixa: string | null
           origem: string | null
+          pos_venda_status: string | null
           telefone: string
           ultima_interacao: string | null
           ultima_mensagem: string | null
@@ -558,17 +561,20 @@ export type Database = {
         Insert: {
           agente_pausado?: boolean | null
           bot_paused_until?: string | null
+          canal_origem?: string | null
           created_at?: string
           email?: string | null
-          etapa_pipeline?: Database["public"]["Enums"]["lead_stage"]
+          etapa_pipeline?: string
           id?: string
           instance?: string | null
           interesse?: string | null
           is_bot_active?: boolean
           loja_id: string
           nome?: string | null
+          nps_score?: number | null
           orcamento_faixa?: string | null
           origem?: string | null
+          pos_venda_status?: string | null
           telefone: string
           ultima_interacao?: string | null
           ultima_mensagem?: string | null
@@ -577,17 +583,20 @@ export type Database = {
         Update: {
           agente_pausado?: boolean | null
           bot_paused_until?: string | null
+          canal_origem?: string | null
           created_at?: string
           email?: string | null
-          etapa_pipeline?: Database["public"]["Enums"]["lead_stage"]
+          etapa_pipeline?: string
           id?: string
           instance?: string | null
           interesse?: string | null
           is_bot_active?: boolean
           loja_id?: string
           nome?: string | null
+          nps_score?: number | null
           orcamento_faixa?: string | null
           origem?: string | null
+          pos_venda_status?: string | null
           telefone?: string
           ultima_interacao?: string | null
           ultima_mensagem?: string | null

@@ -2,12 +2,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export const LEAD_STAGE_OPTIONS = [
-  { value: "novo", label: "Novo" },
+  { value: "novo", label: "Novo Lead" },
   { value: "qualificado", label: "Qualificado" },
   { value: "orcamento", label: "Orçamento" },
   { value: "negociacao", label: "Negociação" },
-  { value: "fechado_ganho", label: "Fechado ganho" },
-  { value: "fechado_perdido", label: "Fechado perdido" },
+  { value: "fechado_ganho", label: "Fechado ✓" },
+  { value: "fechado_perdido", label: "Perdido" },
 ] as const;
 
 export const VISITA_STATUS_OPTIONS = [
@@ -16,6 +16,17 @@ export const VISITA_STATUS_OPTIONS = [
   { value: "realizada", label: "Realizada" },
   { value: "cancelada", label: "Cancelada" },
 ] as const;
+
+const etapaLabels: Record<string, string> = {
+  novo: "Novo Lead",
+  qualificado: "Qualificado",
+  orcamento: "Orçamento",
+  negociacao: "Negociação",
+  fechado_ganho: "Fechado ✓",
+  fechado_perdido: "Perdido",
+};
+
+export const getEtapaLabel = (etapa: string) => etapaLabels[etapa] ?? etapa;
 
 export const LEAD_STAGE_LABELS = Object.fromEntries(
   LEAD_STAGE_OPTIONS.map((option) => [option.value, option.label]),

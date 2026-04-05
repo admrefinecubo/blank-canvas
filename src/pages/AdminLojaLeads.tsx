@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import { Loader2, MessageSquareMore, UserRound } from "lucide-react";
+import { Loader2, UserRound } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,8 @@ import AdminLojaSectionLayout from "@/components/AdminLojaSectionLayout";
 import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Drawer,
   DrawerContent,
@@ -30,13 +32,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LEAD_STAGE_LABELS, LEAD_STAGE_OPTIONS, formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
+import { LEAD_STAGE_OPTIONS, getEtapaLabel, formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
 
 export default function AdminLojaLeads() {
   const { id: lojaId } = useParams<{ id: string }>();
   const location = useLocation();
   const queryClient = useQueryClient();
   const [selectedLead, setSelectedLead] = useState<{ id: string; nome: string; telefone: string } | null>(null);
+  const [customEtapa, setCustomEtapa] = useState("");
+  const [editingEtapaLeadId, setEditingEtapaLeadId] = useState<string | null>(null);
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["admin-loja-leads", lojaId],
@@ -67,16 +71,27 @@ export default function AdminLojaLeads() {
   });
 
   const stageMutation = useMutation({
-    mutationFn: async ({ leadId, etapa }: { leadId: string; etapa: (typeof LEAD_STAGE_OPTIONS)[number]["value"] }) => {
+    mutationFn: async ({ leadId, etapa }: { leadId: string; etapa: string }) => {
       const { error } = await supabase.from("leads").update({ etapa_pipeline: etapa }).eq("id", leadId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-loja-leads", lojaId] });
       toast.success("Etapa atualizada");
+      setEditingEtapaLeadId(null);
+      setCustomEtapa("");
     },
     onError: (error: Error) => toast.error("Erro ao atualizar etapa", { description: error.message }),
   });
+
+  const handleEtapaChange = (leadId: string, value: string) => {
+    if (value === "__other__") {
+      setEditingEtapaLeadId(leadId);
+      setCustomEtapa("");
+    } else {
+      stageMutation.mutate({ leadId, etapa: value });
+    }
+  };
 
   const totalLeads = useMemo(() => leads?.length ?? 0, [leads]);
 
@@ -128,21 +143,50 @@ export default function AdminLojaLeads() {
                     <TableCell>{lead.telefone}</TableCell>
                     <TableCell>
                       <div className="w-[180px]" onClick={(event) => event.stopPropagation()}>
-                        <Select
-                          value={lead.etapa_pipeline ?? "novo"}
-                          onValueChange={(value) => stageMutation.mutate({ leadId: lead.id, etapa: value as (typeof LEAD_STAGE_OPTIONS)[number]["value"] })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {LEAD_STAGE_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {editingEtapaLeadId === lead.id ? (
+                          <div className="flex gap-1">
+                            <Input
+                              value={customEtapa}
+                              onChange={(e) => setCustomEtapa(e.target.value)}
+                              placeholder="Etapa personalizada"
+                              className="h-9 text-sm"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && customEtapa.trim()) {
+                                  stageMutation.mutate({ leadId: lead.id, etapa: customEtapa.trim() });
+                                }
+                                if (e.key === "Escape") {
+                                  setEditingEtapaLeadId(null);
+                                  setCustomEtapa("");
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              className="h-9"
+                              disabled={!customEtapa.trim()}
+                              onClick={() => stageMutation.mutate({ leadId: lead.id, etapa: customEtapa.trim() })}
+                            >
+                              OK
+                            </Button>
+                          </div>
+                        ) : (
+                          <Select
+                            value={LEAD_STAGE_OPTIONS.some(o => o.value === lead.etapa_pipeline) ? (lead.etapa_pipeline ?? "novo") : "__other__"}
+                            onValueChange={(value) => handleEtapaChange(lead.id, value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue>
+                                {getEtapaLabel(lead.etapa_pipeline ?? "novo")}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {LEAD_STAGE_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                              ))}
+                              <SelectItem value="__other__">Outro...</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="hidden max-w-[220px] truncate lg:table-cell">{lead.interesse || "—"}</TableCell>
