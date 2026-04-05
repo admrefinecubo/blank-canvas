@@ -745,6 +745,10 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <div>
+                    <Label>Descrição da loja</Label>
+                    <Textarea value={storeForm.descricao_loja} onChange={e => setStoreForm(f => ({ ...f, descricao_loja: e.target.value }))} placeholder="Descreva sua loja, segmento e diferenciais." className="min-h-[110px]" />
+                  </div>
+                  <div>
                     <Label>Especialidades</Label>
                     <Textarea value={storeForm.especialidades} onChange={e => setStoreForm(f => ({ ...f, especialidades: e.target.value }))} placeholder="Descreva em que o agente é especialista." className="min-h-[110px]" />
                   </div>
