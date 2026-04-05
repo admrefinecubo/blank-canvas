@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
-import { formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
+import { formatDateTime, getLeadName, getEtapaLabel } from "@/lib/whatsapp-admin";
 
 type ConversationSummary = {
   id: string;
