@@ -647,6 +647,7 @@ export default function SettingsPage() {
         .update({
           nome_assistente: storeForm.nome_assistente.trim() || null,
           tom_voz: storeForm.tom_voz,
+          descricao_loja: storeForm.descricao_loja.trim() || null,
           especialidades: storeForm.especialidades.trim() || null,
           regras_personalidade: storeForm.regras_personalidade.trim() || null,
           horario_inicio: storeForm.horario_inicio || null,
