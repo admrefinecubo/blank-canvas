@@ -317,7 +317,7 @@ export default function WhatsApp() {
                                 <span className={`h-2.5 w-2.5 rounded-full ${lead.is_bot_active === false ? "bg-destructive" : "bg-primary"}`} />
                                 <Badge variant={status.variant}>{status.label}</Badge>
                               </div>
-                              <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{lead.etapa_pipeline}</span>
+                              <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{getEtapaLabel(lead.etapa_pipeline)}</span>
                             </div>
                           </div>
                         </div>
