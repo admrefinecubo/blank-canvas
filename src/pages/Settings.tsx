@@ -678,7 +678,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="clinic">
         <TabsList className="bg-accent flex-wrap h-auto gap-1">
           <TabsTrigger value="clinic">Conta</TabsTrigger>
-          {!showAdminControls && <TabsTrigger value="ai-agent"><MessageSquare className="h-3.5 w-3.5 mr-1" />Agente de IA</TabsTrigger>}
+          {!showAdminControls && <TabsTrigger value="ai-agent"><Bot className="h-3.5 w-3.5 mr-1" />Agente de IA</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="team">Equipe</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="post-procedure">Pós-Venda</TabsTrigger>}
