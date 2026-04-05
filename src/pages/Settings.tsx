@@ -516,6 +516,7 @@ export default function SettingsPage() {
     nome_loja: "",
     nome_assistente: "",
     tom_voz: "amigável",
+    descricao_loja: "",
     especialidades: "",
     regras_personalidade: "",
     horario_inicio: "08:00",
