@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Save, Copy, Check, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Save, Copy, Check, Loader2, Wifi, WifiOff, QrCode, RefreshCw, Settings2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -40,6 +43,10 @@ export default function AdminLojaDetail() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Record<string, any>>({});
   const [copied, setCopied] = useState(false);
+  const [qrDialog, setQrDialog] = useState(false);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [whatsappStatus, setWhatsappStatus] = useState<string>("disconnected");
+  const [checkingStatus, setCheckingStatus] = useState(false);
 
   const { data: loja, isLoading } = useQuery({
     queryKey: ["admin-loja", id],
@@ -59,6 +66,26 @@ export default function AdminLojaDetail() {
     if (loja) setForm(loja);
   }, [loja]);
 
+  // Check WhatsApp status on load
+  useEffect(() => {
+    if (loja?.clinic_id) checkWhatsAppStatus();
+  }, [loja?.clinic_id]);
+
+  const checkWhatsAppStatus = async () => {
+    if (!loja?.clinic_id) return;
+    setCheckingStatus(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("evolution-api", {
+        body: { action: "status", clinic_id: loja.clinic_id, instance_name: form.instance || loja.instance },
+      });
+      if (!error && data) setWhatsappStatus(data.status || "disconnected");
+    } catch {
+      setWhatsappStatus("error");
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const { id: _id, created_at: _ca, ...updates } = form;
@@ -74,6 +101,74 @@ export default function AdminLojaDetail() {
       toast({ title: "Configurações salvas!" });
     },
     onError: (e: any) => toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" }),
+  });
+
+  const createInstanceMutation = useMutation({
+    mutationFn: async () => {
+      const instName = form.instance;
+      if (!instName) throw new Error("Preencha o campo Instance primeiro");
+      if (!loja?.clinic_id) throw new Error("Loja sem clinic_id");
+
+      const { data, error } = await supabase.functions.invoke("evolution-api", {
+        body: {
+          action: "create_instance",
+          clinic_id: loja.clinic_id,
+          instance_name: instName,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.qrcode) {
+        setQrCode(data.qrcode);
+        setQrDialog(true);
+      }
+      setWhatsappStatus("pending");
+      toast({ title: "Instância criada!", description: "Escaneie o QR Code para conectar." });
+    },
+    onError: (e: any) => toast({ title: "Erro ao criar instância", description: e.message, variant: "destructive" }),
+  });
+
+  const reconnectMutation = useMutation({
+    mutationFn: async () => {
+      if (!loja?.clinic_id || !form.instance) throw new Error("Instance não configurada");
+      const { data, error } = await supabase.functions.invoke("evolution-api", {
+        body: {
+          action: "connect",
+          clinic_id: loja.clinic_id,
+          instance_name: form.instance,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.qrcode) {
+        setQrCode(data.qrcode);
+        setQrDialog(true);
+      }
+      setWhatsappStatus("pending");
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: async () => {
+      if (!loja?.clinic_id) throw new Error("Sem clinic_id");
+      const { data, error } = await supabase.functions.invoke("evolution-api", {
+        body: { action: "disconnect", clinic_id: loja.clinic_id },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      setWhatsappStatus("disconnected");
+      toast({ title: "WhatsApp desconectado" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
   const set = (key: string, value: any) => setForm((f) => ({ ...f, [key]: value }));
@@ -100,6 +195,13 @@ export default function AdminLojaDetail() {
       </div>
     );
   }
+
+  const statusBadge = {
+    connected: <Badge className="bg-green-600 text-white">Conectado</Badge>,
+    pending: <Badge className="bg-yellow-600 text-white">Aguardando QR</Badge>,
+    disconnected: <Badge variant="destructive">Desconectado</Badge>,
+    error: <Badge variant="destructive">Erro</Badge>,
+  }[whatsappStatus] || <Badge variant="secondary">{whatsappStatus}</Badge>;
 
   return (
     <AdminLojaSectionLayout
@@ -130,7 +232,6 @@ export default function AdminLojaDetail() {
       }
     >
 
-      {/* Tabs */}
       <Tabs defaultValue="identidade" className="space-y-6">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="identidade">Identidade</TabsTrigger>
@@ -172,7 +273,7 @@ export default function AdminLojaDetail() {
                 <Label>Regras de Personalidade</Label>
                 <Textarea
                   rows={4}
-                  placeholder="Ex: Nunca mencione concorrentes. Pergunte sobre o ambiente antes de sugerir produto. Sempre ofereça parcelamento."
+                  placeholder="Ex: Nunca mencione concorrentes. Pergunte sobre o ambiente antes de sugerir produto."
                   value={form.regras_personalidade || ""}
                   onChange={(e) => set("regras_personalidade", e.target.value)}
                 />
@@ -202,7 +303,7 @@ export default function AdminLojaDetail() {
               </div>
               <div>
                 <Label>Link do Google Maps</Label>
-                <Input type="url" placeholder="https://maps.google.com/..." value={form.link_google_maps || ""} onChange={(e) => set("link_google_maps", e.target.value)} />
+                <Input type="url" placeholder="https://maps.google.com/..." value={form.maps_link || ""} onChange={(e) => set("maps_link", e.target.value)} />
               </div>
               <div>
                 <Label>Formas de Pagamento</Label>
@@ -220,7 +321,7 @@ export default function AdminLojaDetail() {
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
                   <Label>Prazo de Entrega</Label>
-                  <Input placeholder="Ex: 7 a 15 dias úteis para Porto Alegre e região" value={form.prazo_entrega || ""} onChange={(e) => set("prazo_entrega", e.target.value)} />
+                  <Input placeholder="Ex: 7 a 15 dias úteis" value={form.prazo_entrega || ""} onChange={(e) => set("prazo_entrega", e.target.value)} />
                 </div>
                 <div>
                   <Label>Frete grátis acima de</Label>
@@ -243,47 +344,118 @@ export default function AdminLojaDetail() {
 
         {/* Tab 3 - Integrações */}
         <TabsContent value="integracoes">
-          <Card>
-            <CardContent className="space-y-5 pt-6">
-              <div>
-                <Label>Instance Evolution API</Label>
-                <Input value={form.instance || ""} onChange={(e) => set("instance", e.target.value)} />
-              </div>
-              <div>
-                <Label>Plataforma de e-commerce</Label>
-                <Select value={form.plataforma_ecommerce || "manual"} onValueChange={(v) => set("plataforma_ecommerce", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PLATAFORMA_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>URL base do checkout</Label>
-                <Input type="url" placeholder="https://loja.nuvemshop.com.br/checkout" value={form.url_base_checkout || ""} onChange={(e) => set("url_base_checkout", e.target.value)} />
-              </div>
-
-              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Informações do sistema</p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">ID da Loja</p>
-                    <code className="text-sm">{id}</code>
+          <div className="space-y-6">
+            {/* WhatsApp Status Panel */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  {whatsappStatus === "connected" ? <Wifi className="h-4 w-4 text-green-500" /> : <WifiOff className="h-4 w-4 text-destructive" />}
+                  WhatsApp (Evolution API)
+                </CardTitle>
+                <CardDescription>Gerencie a conexão WhatsApp desta loja</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Status da conexão</p>
+                    <p className="text-xs text-muted-foreground">Instância: {form.instance || "não configurada"}</p>
                   </div>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={copyId}>
-                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copied ? "Copiado!" : "Copiar"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {statusBadge}
+                    <Button variant="ghost" size="icon" onClick={checkWhatsAppStatus} disabled={checkingStatus}>
+                      <RefreshCw className={`h-4 w-4 ${checkingStatus ? "animate-spin" : ""}`} />
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Nome da instância</Label>
+                  <Input
+                    placeholder="Ex: lojaads"
+                    value={form.instance || ""}
+                    onChange={(e) => set("instance", e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Deve ser único. Usado para identificar esta loja na Evolution API.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {whatsappStatus === "disconnected" || whatsappStatus === "error" ? (
+                    <Button
+                      onClick={() => createInstanceMutation.mutate()}
+                      disabled={createInstanceMutation.isPending || !form.instance}
+                      className="gap-2"
+                    >
+                      <QrCode className="h-4 w-4" />
+                      {createInstanceMutation.isPending ? "Criando..." : "Criar Instância e Conectar"}
+                    </Button>
+                  ) : whatsappStatus === "pending" ? (
+                    <Button
+                      onClick={() => reconnectMutation.mutate()}
+                      disabled={reconnectMutation.isPending}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      <QrCode className="h-4 w-4" />
+                      {reconnectMutation.isPending ? "Obtendo QR..." : "Obter QR Code"}
+                    </Button>
+                  ) : null}
+
+                  {whatsappStatus === "connected" && (
+                    <Button
+                      onClick={() => disconnectMutation.mutate()}
+                      disabled={disconnectMutation.isPending}
+                      variant="destructive"
+                      className="gap-2"
+                    >
+                      <WifiOff className="h-4 w-4" />
+                      Desconectar
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* E-commerce / System Info */}
+            <Card>
+              <CardContent className="space-y-5 pt-6">
+                <div>
+                  <Label>Plataforma de e-commerce</Label>
+                  <Select value={form.plataforma_ecommerce || "manual"} onValueChange={(v) => set("plataforma_ecommerce", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PLATAFORMA_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Criado em</p>
-                  <p className="text-sm">{loja.created_at ? format(new Date(loja.created_at), "dd/MM/yyyy 'às' HH:mm") : "—"}</p>
+                  <Label>URL base do checkout</Label>
+                  <Input type="url" placeholder="https://loja.nuvemshop.com.br/checkout" value={form.checkout_base_url || ""} onChange={(e) => set("checkout_base_url", e.target.value)} />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Informações do sistema</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">ID da Loja</p>
+                      <code className="text-sm">{id}</code>
+                    </div>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={copyId}>
+                      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied ? "Copiado!" : "Copiar"}
+                    </Button>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Criado em</p>
+                    <p className="text-sm">{loja.created_at ? format(new Date(loja.created_at), "dd/MM/yyyy 'às' HH:mm") : "—"}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Tab 4 - Automações */}
@@ -310,6 +482,34 @@ export default function AdminLojaDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* QR Code Dialog */}
+      <Dialog open={qrDialog} onOpenChange={setQrDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Escaneie o QR Code</DialogTitle>
+            <DialogDescription>
+              Abra o WhatsApp no seu celular → Menu → Dispositivos conectados → Conectar dispositivo
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4">
+            {qrCode ? (
+              <img src={`data:image/png;base64,${qrCode}`} alt="QR Code" className="h-64 w-64" />
+            ) : (
+              <p className="text-muted-foreground">QR Code não disponível</p>
+            )}
+          </div>
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => reconnectMutation.mutate()} disabled={reconnectMutation.isPending}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Atualizar QR
+            </Button>
+            <Button onClick={() => { setQrDialog(false); checkWhatsAppStatus(); }}>
+              Já escaneei
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Fixed Save Footer */}
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 backdrop-blur-sm px-6 py-3">
