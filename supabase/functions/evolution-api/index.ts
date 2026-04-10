@@ -5,6 +5,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const DEFAULT_API_URL = Deno.env.get("EVOLUTION_API_URL") || "https://evoapi.refinecubo.com.br";
+const DEFAULT_API_KEY = Deno.env.get("EVOLUTION_API_KEY") || "";
+const N8N_WEBHOOK_URL = Deno.env.get("N8N_WEBHOOK_URL") || "";
+
+function getCredentials(body: any) {
+  return {
+    apiUrl: (body.api_url || DEFAULT_API_URL).replace(/\/+$/, ""),
+    apiKey: body.api_key || DEFAULT_API_KEY,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -21,7 +32,7 @@ Deno.serve(async (req) => {
     if (authErr || !user) throw new Error("Não autorizado");
 
     const body = await req.json();
-    const { action, clinic_id, api_url, api_key, instance_name } = body;
+    const { action, clinic_id, instance_name } = body;
 
     if (!clinic_id) throw new Error("clinic_id obrigatório");
 
@@ -36,62 +47,169 @@ Deno.serve(async (req) => {
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "platform_admin" });
     if (!role && !isAdmin) throw new Error("Sem permissão");
 
-    if (action === "connect") {
-      if (!api_url || !api_key || !instance_name) throw new Error("api_url, api_key e instance_name são obrigatórios");
+    const { apiUrl, apiKey } = getCredentials(body);
 
-      // Try to create instance and get QR code
-      const createRes = await fetch(`${api_url}/instance/create`, {
+    // ─── ACTION: create_instance ───
+    if (action === "create_instance") {
+      const instName = instance_name;
+      if (!instName) throw new Error("instance_name obrigatório");
+
+      // 1. Create instance
+      const createRes = await fetch(`${apiUrl}/instance/create`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", apikey: api_key },
+        headers: { "Content-Type": "application/json", apikey: apiKey },
         body: JSON.stringify({
-          instanceName: instance_name,
+          instanceName: instName,
           integration: "WHATSAPP-BAILEYS",
           qrcode: true,
+          rejectCall: true,
+          groupsIgnore: true,
         }),
       });
-
       const createData = await createRes.json();
 
+      // If instance exists, just reconnect
+      let qrcode = createData?.qrcode?.base64 || createData?.base64 || null;
       if (!createRes.ok) {
-        // Instance might already exist, try to get QR
-        const connectRes = await fetch(`${api_url}/instance/connect/${instance_name}`, {
+        const connectRes = await fetch(`${apiUrl}/instance/connect/${instName}`, {
           method: "GET",
-          headers: { apikey: api_key },
+          headers: { apikey: apiKey },
         });
         const connectData = await connectRes.json();
-
-        // Save config
-        await supabase.from("clinic_integrations").upsert({
-          clinic_id,
-          provider: "evolution_api",
-          config: { api_url, api_key, instance_name },
-          status: "pending",
-        }, { onConflict: "clinic_id,provider" });
-
-        return new Response(JSON.stringify({ 
-          success: true, 
-          qrcode: connectData?.base64 || connectData?.qrcode?.base64 || null,
-          status: "pending",
-          message: "Escaneie o QR Code com seu WhatsApp"
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        qrcode = connectData?.base64 || connectData?.qrcode?.base64 || null;
       }
 
-      // Save config
+      // 2. Set settings (ignore groups, reject calls)
+      try {
+        await fetch(`${apiUrl}/settings/set/${instName}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({
+            rejectCall: true,
+            groupsIgnore: true,
+            alwaysOnline: true,
+            readMessages: false,
+            readStatus: false,
+          }),
+        });
+      } catch (e) {
+        console.error("Failed to set settings:", e);
+      }
+
+      // 3. Set webhook for N8N
+      if (N8N_WEBHOOK_URL) {
+        try {
+          await fetch(`${apiUrl}/webhook/set/${instName}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: apiKey },
+            body: JSON.stringify({
+              enabled: true,
+              url: N8N_WEBHOOK_URL,
+              webhookByEvents: false,
+              webhookBase64: false,
+              events: [
+                "MESSAGES_UPSERT",
+                "CONNECTION_UPDATE",
+                "QRCODE_UPDATED",
+              ],
+            }),
+          });
+        } catch (e) {
+          console.error("Failed to set webhook:", e);
+        }
+      }
+
+      // 4. Save integration
       await supabase.from("clinic_integrations").upsert({
         clinic_id,
         provider: "evolution_api",
-        config: { api_url, api_key, instance_name },
+        config: { api_url: apiUrl, instance_name: instName },
         status: "pending",
       }, { onConflict: "clinic_id,provider" });
 
-      return new Response(JSON.stringify({ 
-        success: true, 
-        qrcode: createData?.qrcode?.base64 || createData?.base64 || null,
+      return new Response(JSON.stringify({
+        success: true,
+        qrcode,
         status: "pending",
-        message: "Escaneie o QR Code com seu WhatsApp"
+        message: "Instância criada. Escaneie o QR Code.",
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ─── ACTION: set_settings ───
+    if (action === "set_settings") {
+      const instName = instance_name;
+      if (!instName) throw new Error("instance_name obrigatório");
+
+      const settings = body.settings || {};
+
+      const settingsRes = await fetch(`${apiUrl}/settings/set/${instName}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: apiKey },
+        body: JSON.stringify({
+          rejectCall: settings.rejectCall ?? true,
+          groupsIgnore: settings.groupsIgnore ?? true,
+          alwaysOnline: settings.alwaysOnline ?? true,
+          readMessages: settings.readMessages ?? false,
+          readStatus: settings.readStatus ?? false,
+        }),
+      });
+
+      if (!settingsRes.ok) {
+        const err = await settingsRes.json();
+        throw new Error(err?.message || "Erro ao configurar settings");
+      }
+
+      // Set webhook if provided
+      if (settings.webhookUrl || N8N_WEBHOOK_URL) {
+        await fetch(`${apiUrl}/webhook/set/${instName}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({
+            enabled: true,
+            url: settings.webhookUrl || N8N_WEBHOOK_URL,
+            webhookByEvents: false,
+            webhookBase64: false,
+            events: settings.events || [
+              "MESSAGES_UPSERT",
+              "CONNECTION_UPDATE",
+              "QRCODE_UPDATED",
+            ],
+          }),
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ─── ACTION: connect ───
+    if (action === "connect") {
+      const instName = instance_name;
+      if (!instName) throw new Error("instance_name obrigatório");
+
+      const connectRes = await fetch(`${apiUrl}/instance/connect/${instName}`, {
+        method: "GET",
+        headers: { apikey: apiKey },
+      });
+      const connectData = await connectRes.json();
+
+      await supabase.from("clinic_integrations").upsert({
+        clinic_id,
+        provider: "evolution_api",
+        config: { api_url: apiUrl, instance_name: instName },
+        status: "pending",
+      }, { onConflict: "clinic_id,provider" });
+
+      return new Response(JSON.stringify({
+        success: true,
+        qrcode: connectData?.base64 || connectData?.qrcode?.base64 || null,
+        status: "pending",
+        message: "Escaneie o QR Code com seu WhatsApp",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── ACTION: status ───
     if (action === "status") {
       const { data: integration } = await supabase
         .from("clinic_integrations")
@@ -107,9 +225,13 @@ Deno.serve(async (req) => {
       }
 
       const cfg = integration.config as any;
+      const cfgUrl = cfg.api_url || apiUrl;
+      const cfgKey = cfg.api_key || apiKey;
+      const cfgInst = cfg.instance_name || instance_name;
+
       try {
-        const statusRes = await fetch(`${cfg.api_url}/instance/connectionState/${cfg.instance_name}`, {
-          headers: { apikey: cfg.api_key },
+        const statusRes = await fetch(`${cfgUrl}/instance/connectionState/${cfgInst}`, {
+          headers: { apikey: cfgKey },
         });
         const statusData = await statusRes.json();
         const connected = statusData?.instance?.state === "open";
@@ -118,9 +240,9 @@ Deno.serve(async (req) => {
           await supabase.from("clinic_integrations").update({ status: "connected" }).eq("id", integration.id);
         }
 
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           status: connected ? "connected" : "pending",
-          instance: cfg.instance_name,
+          instance: cfgInst,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       } catch {
         return new Response(JSON.stringify({ status: "error", message: "Não foi possível conectar à Evolution API" }), {
@@ -129,6 +251,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ─── ACTION: disconnect ───
     if (action === "disconnect") {
       const { data: integration } = await supabase
         .from("clinic_integrations")
@@ -140,20 +263,24 @@ Deno.serve(async (req) => {
       if (integration?.config) {
         const cfg = integration.config as any;
         try {
-          await fetch(`${cfg.api_url}/instance/logout/${cfg.instance_name}`, {
+          await fetch(`${(cfg.api_url || apiUrl)}/instance/logout/${cfg.instance_name}`, {
             method: "DELETE",
-            headers: { apikey: cfg.api_key },
+            headers: { apikey: cfg.api_key || apiKey },
           });
         } catch { /* ignore */ }
       }
 
-      await supabase.from("clinic_integrations").update({ status: "disconnected", config: {} }).eq("clinic_id", clinic_id).eq("provider", "evolution_api");
+      await supabase.from("clinic_integrations")
+        .update({ status: "disconnected", config: {} })
+        .eq("clinic_id", clinic_id)
+        .eq("provider", "evolution_api");
 
       return new Response(JSON.stringify({ success: true, status: "disconnected" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // ─── ACTION: send_message ───
     if (action === "send_message") {
       const { phone, message } = body;
       if (!phone || !message) throw new Error("phone e message obrigatórios");
@@ -170,9 +297,9 @@ Deno.serve(async (req) => {
       }
 
       const cfg = integration.config as any;
-      const sendRes = await fetch(`${cfg.api_url}/message/sendText/${cfg.instance_name}`, {
+      const sendRes = await fetch(`${(cfg.api_url || apiUrl)}/message/sendText/${cfg.instance_name}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", apikey: cfg.api_key },
+        headers: { "Content-Type": "application/json", apikey: cfg.api_key || apiKey },
         body: JSON.stringify({
           number: phone.replace(/\D/g, ""),
           text: message,
@@ -190,6 +317,7 @@ Deno.serve(async (req) => {
     throw new Error(`Ação desconhecida: ${action}`);
 
   } catch (error: any) {
+    console.error("evolution-api error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
