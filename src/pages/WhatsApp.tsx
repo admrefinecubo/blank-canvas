@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Loader2, MessageSquareText, Search, SendHorizontal, Store, UserRound } from "lucide-react";
@@ -409,19 +409,11 @@ export default function WhatsApp() {
                       Ainda não existem mensagens registradas para este lead.
                     </div>
                   ) : (
-                    <ScrollArea className="h-full">
-                      <div className="space-y-3 p-4 md:p-6">
-                        {messages.map((message) => (
-                          <WhatsAppChatBubble
-                            key={message.id}
-                            role={message.role}
-                            content={message.content}
-                            createdAt={formatDateTime(message.created_at)}
-                            title={message.role === "assistant" ? (lojaContext?.nome_assistente || "Assistente") : getLeadName(selectedLead.nome, selectedLead.telefone)}
-                          />
-                        ))}
-                      </div>
-                    </ScrollArea>
+                    <ChatMessages
+                      messages={messages}
+                      assistantName={lojaContext?.nome_assistente || "Assistente"}
+                      leadName={getLeadName(selectedLead.nome, selectedLead.telefone)}
+                    />
                   )}
                 </div>
 
