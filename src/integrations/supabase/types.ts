@@ -585,6 +585,7 @@ export type Database = {
           is_bot_active: boolean
           loja_id: string
           nome: string | null
+          nps_comentario: string | null
           nps_score: number | null
           orcamento_faixa: string | null
           origem: string | null
@@ -607,6 +608,7 @@ export type Database = {
           is_bot_active?: boolean
           loja_id: string
           nome?: string | null
+          nps_comentario?: string | null
           nps_score?: number | null
           orcamento_faixa?: string | null
           origem?: string | null
@@ -629,6 +631,7 @@ export type Database = {
           is_bot_active?: boolean
           loja_id?: string
           nome?: string | null
+          nps_comentario?: string | null
           nps_score?: number | null
           orcamento_faixa?: string | null
           origem?: string | null
@@ -687,6 +690,7 @@ export type Database = {
           desconto_carrinho_abandonado: number | null
           desconto_promocao_nao_respondida: number | null
           descricao_loja: string | null
+          dias_funcionamento: string | null
           endereco: string | null
           especialidades: string | null
           formas_pagamento: string | null
@@ -715,6 +719,7 @@ export type Database = {
           desconto_carrinho_abandonado?: number | null
           desconto_promocao_nao_respondida?: number | null
           descricao_loja?: string | null
+          dias_funcionamento?: string | null
           endereco?: string | null
           especialidades?: string | null
           formas_pagamento?: string | null
@@ -743,6 +748,7 @@ export type Database = {
           desconto_carrinho_abandonado?: number | null
           desconto_promocao_nao_respondida?: number | null
           descricao_loja?: string | null
+          dias_funcionamento?: string | null
           endereco?: string | null
           especialidades?: string | null
           formas_pagamento?: string | null
@@ -1402,8 +1408,10 @@ export type Database = {
           lead_id: string | null
           loja_id: string
           observacoes: string | null
+          produtos_interesse: string | null
           status: Database["public"]["Enums"]["visita_status"]
           updated_at: string
+          vendedor_responsavel: string | null
         }
         Insert: {
           created_at?: string
@@ -1412,8 +1420,10 @@ export type Database = {
           lead_id?: string | null
           loja_id: string
           observacoes?: string | null
+          produtos_interesse?: string | null
           status?: Database["public"]["Enums"]["visita_status"]
           updated_at?: string
+          vendedor_responsavel?: string | null
         }
         Update: {
           created_at?: string
@@ -1422,8 +1432,10 @@ export type Database = {
           lead_id?: string | null
           loja_id?: string
           observacoes?: string | null
+          produtos_interesse?: string | null
           status?: Database["public"]["Enums"]["visita_status"]
           updated_at?: string
+          vendedor_responsavel?: string | null
         }
         Relationships: [
           {
