@@ -80,7 +80,7 @@ export default function LojaVisitas() {
   }, [visitas, statusFilter]);
 
   const statusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: "agendada" | "confirmada" | "realizada" | "cancelada" }) => {
       const { error } = await supabase.from("visitas").update({ status }).eq("id", id);
       if (error) throw error;
     },
