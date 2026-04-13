@@ -119,9 +119,11 @@ export default function AppLayout() {
         <div className="flex h-[72px] items-center px-5">
           {!collapsed ? (
             <Link to={defaultRoute} className="flex items-center gap-3 group">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground transition-transform group-hover:scale-105 overflow-hidden shadow-sm">
-                <img src="/logo-lojaads.png" alt="LojaADS" className="h-6 w-6 object-contain" />
-              </div>
+              <img 
+                src="/logo-lojaads.png" 
+                alt="LojaADS" 
+                className="h-10 w-10 object-contain transition-transform group-hover:scale-105" 
+              />
               <div className="flex flex-col">
                 <span className="text-[15px] font-semibold tracking-tight">LojaADS</span>
                 <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-medium">CRM</span>
@@ -135,9 +137,11 @@ export default function AppLayout() {
             </Link>
           ) : (
             <Link to={defaultRoute} className="mx-auto">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden bg-primary text-primary-foreground shadow-sm">
-                <img src="/logo-lojaads.png" alt="LojaADS" className="h-6 w-6 object-contain" />
-              </div>
+              <img 
+                src="/logo-lojaads.png" 
+                alt="LojaADS" 
+                className="h-10 w-10 object-contain" 
+              />
             </Link>
           )}
         </div>
