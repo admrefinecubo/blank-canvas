@@ -52,6 +52,22 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/stats": "Estatísticas",
 };
 
+// Freezes the outlet content at mount time so AnimatePresence exit works cleanly
+const FrozenRoute = motion.create(
+  function FrozenOutlet() {
+    const outlet = useOutlet();
+    const [frozen] = useState(() => outlet);
+    return frozen;
+  }
+);
+FrozenRoute.defaultProps = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.3, ease: "easeInOut" },
+  className: "min-h-0",
+};
+
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
