@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Outlet, useLocation, Link } from "react-router-dom";
+import { useOutlet, useLocation, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard, Users, Package, Settings,
@@ -51,6 +51,15 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/lojas": "Lojas",
   "/admin/stats": "Estatísticas",
 };
+
+// Freezes the outlet content at mount time so AnimatePresence exit works cleanly
+function FrozenOutlet() {
+  const outlet = useOutlet();
+  const [frozen] = useState(() => outlet);
+  return frozen;
+}
+
+const FrozenRoute = motion.create(FrozenOutlet);
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -279,16 +288,13 @@ export default function AppLayout() {
         {/* Content */}
         <main className="flex-1 overflow-y-auto scroll-smooth p-5 md:p-8">
           <AnimatePresence mode="wait">
-            <motion.div
+            <FrozenRoute
               key={currentPath}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="min-h-0"
-            >
-              <Outlet />
-            </motion.div>
+            />
           </AnimatePresence>
         </main>
       </div>
