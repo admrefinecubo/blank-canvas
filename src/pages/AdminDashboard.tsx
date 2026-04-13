@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 function AdminStatCard({ title, value, icon: Icon, index = 0 }: { title: string; value: string; icon: React.ElementType; index?: number }) {
   return (
     <Card
-      className="transition-all duration-200 hover:scale-[1.02] hover:shadow-lg opacity-0 animate-fade-in [animation-fill-mode:forwards]"
+      className="transition-all duration-200 hover:scale-[1.02] hover:shadow-lg animate-fade-in [animation-fill-mode:both]"
       style={{ animationDelay: `${index * 75}ms` }}
     >
       <CardContent className="flex items-center justify-between p-6">
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
               </TableHeader>
               <TableBody>
                 {summary.rows.map((row, i) => (
-                  <TableRow key={row.id} className="opacity-0 animate-fade-in [animation-fill-mode:forwards]" style={{ animationDelay: `${300 + i * 50}ms` }}>
+                  <TableRow key={row.id} className="animate-fade-in [animation-fill-mode:both]" style={{ animationDelay: `${300 + i * 50}ms` }}>
                     <TableCell className="font-medium">{row.nome_loja}</TableCell>
                     <TableCell>
                       {row.instance ? (

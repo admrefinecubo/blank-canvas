@@ -23,7 +23,7 @@ import { formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
 function StatCard({ title, value, icon: Icon, href, index = 0 }: { title: string; value: string; icon: ElementType; href?: string; index?: number }) {
   return (
     <Card
-      className="overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:bg-accent/30 opacity-0 animate-fade-in [animation-fill-mode:forwards]"
+      className="overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:bg-accent/30 animate-fade-in [animation-fill-mode:both]"
       style={{ animationDelay: `${index * 75}ms` }}
     >
       <CardContent className="p-5">
@@ -246,7 +246,7 @@ export default function Dashboard() {
                 <Link
                   key={conversation.id}
                   to="/whatsapp"
-                  className="flex flex-col gap-2 rounded-2xl border border-border p-4 transition-all duration-200 hover:bg-accent/40 hover:scale-[1.01] hover:shadow-sm opacity-0 animate-fade-in [animation-fill-mode:forwards]"
+                  className="flex flex-col gap-2 rounded-2xl border border-border p-4 transition-all duration-200 hover:bg-accent/40 hover:scale-[1.01] hover:shadow-sm animate-fade-in [animation-fill-mode:both]"
                   style={{ animationDelay: `${400 + i * 75}ms` }}
                 >
                   <div className="flex items-center justify-between gap-3">
