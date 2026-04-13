@@ -102,7 +102,7 @@ export default function Login() {
             <div className={cn(
               "flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground glow-primary"
             )}>
-              <span className="text-2xl font-bold">L</span>
+              <img src="/logo-lojaads.png" alt="LojaADS" className="h-10 w-10 object-contain" />
             </div>
             <div className="text-center">
               <h1 className="text-2xl font-bold tracking-tight font-display">LojaADS</h1>
