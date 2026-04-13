@@ -122,7 +122,7 @@ export default function AppLayout() {
               <img 
                 src="/logo-lojaads.png" 
                 alt="LojaADS" 
-                className="h-10 w-10 object-contain transition-transform group-hover:scale-105 dark:invert" 
+                className="h-10 w-10 object-contain transition-transform group-hover:scale-105 invert dark:invert-0" 
               />
               <div className="flex flex-col">
                 <span className="text-[15px] font-semibold tracking-tight">LojaADS</span>
@@ -140,7 +140,7 @@ export default function AppLayout() {
               <img 
                 src="/logo-lojaads.png" 
                 alt="LojaADS" 
-                className="h-10 w-10 object-contain dark:invert" 
+                className="h-10 w-10 object-contain invert dark:invert-0" 
               />
             </Link>
           )}
