@@ -1,73 +1,35 @@
 
 
-# Fix WhatsApp Message Sending for Lojas
+# Add silent handoff-toggle webhook after manual message send
 
-## Problem
-`WhatsApp.tsx` calls `supabase.functions.invoke("evolution-api")` with `clinic_id`, but lojas have their own `instance` field directly. The edge function was designed for clinics (uses `clinic_integrations` table), not lojas.
+## What
+After a manual message is sent successfully in `WhatsApp.tsx`, silently call the N8N handoff webhook to pause the bot agent — but only if `agente_pausado` is not already `true`.
 
-We cannot call the Evolution API directly from the browser because the API key (`EVOLUTION_API_KEY`) is a secret that must stay server-side.
+## Changes
 
-## Solution
-Update the `evolution-api` edge function to support a `loja_id` parameter. When `loja_id` is provided, it looks up the loja's `instance` field and uses that directly — no `clinic_integrations` lookup needed.
+### 1. Update `ConversationSummary` type (line ~20)
+Add `agente_pausado` field to the type.
 
-### Step 1 — Update edge function (`supabase/functions/evolution-api/index.ts`)
+### 2. Update leads query (line ~74)
+Add `agente_pausado` to the select: `"id, nome, telefone, etapa_pipeline, is_bot_active, bot_paused_until, agente_pausado"`.
 
-Add support for `loja_id` in the `send_message` action:
-- If `loja_id` is provided (instead of `clinic_id`), query `lojas` table for `instance` field
-- Use `instance` as the Evolution API instance name
-- Use default `EVOLUTION_API_URL` and `EVOLUTION_API_KEY` from env
-- Verify user has loja access via `has_loja_access` RPC
-- Skip `clinic_integrations` entirely for loja-based calls
+### 3. Add handoff fetch in `sendMessageMutation` (after line 213)
+After the `Promise.all` insert/update block and error checks, add:
 
-Also add loja_id support for `status`, `connect`, `disconnect` actions.
-
-### Step 2 — Update `WhatsApp.tsx`
-
-Change `sendMessageMutation` (lines 175-224):
-- Fetch loja's `instance` field in `lojaContext` query (add `instance` to select)
-- Replace `supabase.functions.invoke("evolution-api")` call to pass `loja_id` instead of `clinic_id`
-- Remove dependency on `activeClinicId` for the send button disabled state
-- Pass `loja_id: activeLojaId` instead of `clinic_id: activeClinicId`
-
-### Step 3 — Deploy edge function
-
-Redeploy the updated `evolution-api` function.
-
-### Technical Details
-
-Edge function change for `send_message` with `loja_id`:
 ```typescript
-if (action === "send_message") {
-  let instName: string;
-  
-  if (loja_id) {
-    // Verify access
-    const { data: hasAccess } = await supabase.rpc("has_loja_access", { _user_id: user.id, _loja_id: loja_id });
-    if (!hasAccess) throw new Error("Sem permissão");
-    
-    const { data: loja } = await supabase.from("lojas").select("instance").eq("id", loja_id).single();
-    if (!loja?.instance) throw new Error("Loja sem instância WhatsApp configurada");
-    instName = loja.instance;
-  } else {
-    // existing clinic_integrations logic
-  }
-  
-  // send via Evolution API using instName + default credentials
+if (selectedLead.agente_pausado !== true) {
+  fetch("https://n8n.refinecubo.com.br/webhook/handoff-toggle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      telefone: selectedLead.telefone,
+      instance: lojaContext?.instance ?? "",
+      loja_id: activeLojaId,
+      action: "pause",
+    }),
+  }).catch(() => {});
 }
 ```
 
-WhatsApp.tsx lojaContext query adds `instance`:
-```typescript
-.select("nome_loja, nome_assistente, instance")
-```
-
-Send mutation uses `loja_id`:
-```typescript
-body: {
-  action: "send_message",
-  loja_id: activeLojaId,
-  phone: selectedLead.telefone,
-  message,
-}
-```
+No toast, no error handling — fire-and-forget.
 
