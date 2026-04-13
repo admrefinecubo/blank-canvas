@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, Link } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard, Users, Package, Settings,
   ChevronLeft, ChevronRight, Search, MessageSquare, Calendar,
@@ -265,9 +266,17 @@ export default function AppLayout() {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto scroll-smooth p-5 md:p-8">
-          <div key={currentPath} className="animate-fade-in">
-            <Outlet />
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentPath}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
 
