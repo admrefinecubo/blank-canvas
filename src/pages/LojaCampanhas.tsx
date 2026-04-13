@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Loader2, Megaphone, Plus } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Megaphone, Plus, Send } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -41,6 +45,7 @@ export default function LojaCampanhas() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [confirmDispatch, setConfirmDispatch] = useState<string | null>(null);
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["loja-campanhas", activeLojaId],
@@ -66,7 +71,6 @@ export default function LojaCampanhas() {
         segmentConfig[form.segment_type] = form.segment_value;
       }
 
-      // Count targeted leads
       let query = supabase.from("leads").select("id", { count: "exact", head: true }).eq("loja_id", activeLojaId!);
       if (form.segment_type === "interesse" && form.segment_value) {
         query = query.ilike("interesse", `%${form.segment_value}%`);
@@ -85,6 +89,7 @@ export default function LojaCampanhas() {
         discount_percent: form.discount_percent ? Number(form.discount_percent) : null,
         message_template: form.message_template.trim(),
         targeted_leads_count: count ?? 0,
+        status: "rascunho",
       });
       if (error) throw error;
     },
@@ -95,6 +100,51 @@ export default function LojaCampanhas() {
       toast.success("Campanha criada");
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
+  const dispatchMutation = useMutation({
+    mutationFn: async (campaignId: string) => {
+      const campaign = campaigns?.find((c) => c.id === campaignId);
+      if (!campaign) throw new Error("Campanha não encontrada");
+
+      const webhookUrl = import.meta.env.VITE_WF13_WEBHOOK_URL;
+      if (!webhookUrl) throw new Error("Webhook WF-13 não configurado");
+
+      const segmentConfig = campaign.segment_config as Record<string, string> | null;
+      const segmentValue = segmentConfig
+        ? Object.values(segmentConfig)[0] ?? null
+        : null;
+
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          loja_id: activeLojaId,
+          campanha_id: campaign.id,
+          segmento: segmentValue,
+          orcamento_faixa: null,
+          mensagem: campaign.message_template,
+          desconto: campaign.discount_percent ?? 0,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`Erro no webhook: ${res.status}`);
+
+      const { error } = await supabase
+        .from("promotional_campaigns")
+        .update({ status: "disparada", launched_at: new Date().toISOString() })
+        .eq("id", campaignId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loja-campanhas", activeLojaId] });
+      setConfirmDispatch(null);
+      toast.success("Campanha disparada com sucesso!");
+    },
+    onError: (e: Error) => {
+      setConfirmDispatch(null);
+      toast.error("Erro ao disparar campanha", { description: e.message });
+    },
   });
 
   if (!activeLojaId) {
@@ -132,6 +182,7 @@ export default function LojaCampanhas() {
                   <TableHead>Leads atingidos</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="hidden md:table-cell">Lançada em</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -145,6 +196,24 @@ export default function LojaCampanhas() {
                     <TableCell>{c.targeted_leads_count}</TableCell>
                     <TableCell><Badge variant={c.status === "disparada" ? "default" : "secondary"}>{c.status}</Badge></TableCell>
                     <TableCell className="hidden md:table-cell">{formatDateTime(c.launched_at)}</TableCell>
+                    <TableCell>
+                      {c.status !== "disparada" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5"
+                          disabled={dispatchMutation.isPending}
+                          onClick={() => setConfirmDispatch(c.id)}
+                        >
+                          {dispatchMutation.isPending && confirmDispatch === c.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Send className="h-3.5 w-3.5" />
+                          )}
+                          Disparar
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -153,6 +222,7 @@ export default function LojaCampanhas() {
         </CardContent>
       </Card>
 
+      {/* Create dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader><DialogTitle>Nova Campanha</DialogTitle></DialogHeader>
@@ -182,7 +252,7 @@ export default function LojaCampanhas() {
             </div>
             <div>
               <Label>Template de mensagem</Label>
-              <Textarea rows={4} placeholder="Olá {nome}! Temos uma promoção especial..." value={form.message_template} onChange={(e) => setForm(f => ({ ...f, message_template: e.target.value }))} />
+              <Textarea rows={4} placeholder="Olá {{nome}}! Temos uma promoção especial de {{desconto}}% em {{interesse}}..." value={form.message_template} onChange={(e) => setForm(f => ({ ...f, message_template: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
@@ -193,6 +263,31 @@ export default function LojaCampanhas() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm dispatch dialog */}
+      <AlertDialog open={!!confirmDispatch} onOpenChange={(open) => !open && setConfirmDispatch(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disparar campanha?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza? Isso enviará mensagem para todos os leads do segmento selecionado. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={dispatchMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={dispatchMutation.isPending}
+              onClick={() => confirmDispatch && dispatchMutation.mutate(confirmDispatch)}
+            >
+              {dispatchMutation.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Disparando...</>
+              ) : (
+                "Confirmar disparo"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
