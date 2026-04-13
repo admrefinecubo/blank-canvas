@@ -22,8 +22,9 @@ const clientNavItems = [
   { title: "Clientes / Leads", url: "/leads", icon: Users },
   { title: "WhatsApp", url: "/whatsapp", icon: MessageSquare },
   { title: "Catálogo", url: "/catalogo", icon: Package },
-  { title: "Agenda / Visitas", url: "/agenda", icon: Calendar },
+  { title: "Agenda / Visitas", url: "/visitas", icon: Calendar },
   { title: "Follow-ups", url: "/followups", icon: Workflow },
+  { title: "Campanhas", url: "/campanhas", icon: BarChart3 },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 

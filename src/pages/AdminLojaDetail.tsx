@@ -250,8 +250,13 @@ export default function AdminLojaDetail() {
                   <Input placeholder="Ex: Conforto" value={form.nome_loja || ""} onChange={(e) => set("nome_loja", e.target.value)} />
                 </div>
                 <div>
-                  <Label>Nome da IA</Label>
+                  <Label>Nome da IA (exibição)</Label>
                   <Input placeholder="Ex: Sofia" value={form.nome_assistente || ""} onChange={(e) => set("nome_assistente", e.target.value)} />
+                </div>
+                <div>
+                  <Label>Nome interno da IA</Label>
+                  <Input placeholder="Ex: sofia_moveis" value={form.nome_assistente_ia || ""} onChange={(e) => set("nome_assistente_ia", e.target.value)} />
+                  <p className="mt-1 text-xs text-muted-foreground">Usado internamente nos fluxos N8N</p>
                 </div>
                 <div>
                   <Label>Tom de Voz</Label>
@@ -266,6 +271,11 @@ export default function AdminLojaDetail() {
                 </div>
               </div>
               <div>
+                <Label>Descrição da loja</Label>
+                <Textarea rows={3} placeholder="Descreva a loja para o agente de IA..." value={form.descricao_loja || ""} onChange={(e) => set("descricao_loja", e.target.value)} />
+                <p className="mt-1 text-xs text-muted-foreground">Usada pelo agente para se apresentar e contextualizar respostas</p>
+              </div>
+              <div>
                 <Label>Especialidades</Label>
                 <Input placeholder="Ex: colchões, sofás, móveis planejados" value={form.especialidades || ""} onChange={(e) => set("especialidades", e.target.value)} />
               </div>
@@ -278,6 +288,25 @@ export default function AdminLojaDetail() {
                   onChange={(e) => set("regras_personalidade", e.target.value)}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">Estas regras são incluídas diretamente no prompt do agente</p>
+              </div>
+
+              {/* Prompt Preview */}
+              <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Preview do Prompt (somente leitura)</p>
+                <pre className="whitespace-pre-wrap text-xs text-muted-foreground font-mono max-h-[300px] overflow-y-auto">
+{`Você é ${form.nome_assistente || "[Nome da IA]"}, assistente virtual da loja ${form.nome_loja || "[Nome da Loja]"}.
+${form.descricao_loja ? `\nSobre a loja: ${form.descricao_loja}` : ""}
+${form.especialidades ? `Especialidades: ${form.especialidades}` : ""}
+${form.tom_voz ? `Tom de voz: ${form.tom_voz}` : ""}
+${form.regras_personalidade ? `\nRegras:\n${form.regras_personalidade}` : ""}
+${form.horario_inicio && form.horario_fim ? `\nHorário: ${form.horario_inicio} - ${form.horario_fim}${form.dias_funcionamento ? ` (${form.dias_funcionamento})` : ""}` : ""}
+${form.endereco ? `Endereço: ${form.endereco}` : ""}
+${form.formas_pagamento ? `Pagamento: ${form.formas_pagamento}` : ""}
+${form.politica_troca ? `Troca: ${form.politica_troca}` : ""}
+${form.prazo_entrega ? `Entrega: ${form.prazo_entrega}` : ""}
+${form.frete_gratis_acima ? `Frete grátis acima de R$ ${form.frete_gratis_acima}` : ""}
+${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
+                </pre>
               </div>
             </CardContent>
           </Card>
@@ -296,6 +325,10 @@ export default function AdminLojaDetail() {
                   <Label>Fecha às</Label>
                   <Input type="time" value={form.horario_fim || "18:00"} onChange={(e) => set("horario_fim", e.target.value)} />
                 </div>
+              </div>
+              <div>
+                <Label>Dias de funcionamento</Label>
+                <Input placeholder="Ex: Segunda a Sábado" value={form.dias_funcionamento || ""} onChange={(e) => set("dias_funcionamento", e.target.value)} />
               </div>
               <div>
                 <Label>Endereço completo</Label>

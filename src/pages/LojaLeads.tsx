@@ -51,6 +51,8 @@ type LeadRow = {
   origem: string | null;
   ultima_mensagem: string | null;
   is_bot_active: boolean;
+  agente_pausado: boolean | null;
+  orcamento_faixa: string | null;
 };
 
 type SelectedLead = {
@@ -99,7 +101,7 @@ export default function LojaLeads() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
-        .select("id, nome, telefone, etapa_pipeline, interesse, ultima_interacao, origem, ultima_mensagem, is_bot_active")
+        .select("id, nome, telefone, etapa_pipeline, interesse, ultima_interacao, origem, ultima_mensagem, is_bot_active, agente_pausado, orcamento_faixa")
         .eq("loja_id", activeLojaId!)
         .order("ultima_interacao", { ascending: false });
       if (error) throw error;
@@ -300,11 +302,17 @@ export default function LojaLeads() {
                         </div>
                         <div className="min-w-0 space-y-1">
                           <div className="font-medium">{getLeadName(lead.nome, lead.telefone)}</div>
-                          <div className="flex flex-wrap items-center gap-2">
+                           <div className="flex flex-wrap items-center gap-2">
                             <Badge variant="secondary">{origin.label}</Badge>
                             <Badge variant="outline" className={lead.is_bot_active ? "" : "text-muted-foreground"}>
                               {lead.is_bot_active ? "Bot ativo" : "Bot pausado"}
                             </Badge>
+                            {lead.agente_pausado && (
+                              <Badge variant="destructive" className="gap-1">Humano</Badge>
+                            )}
+                            {lead.orcamento_faixa && (
+                              <Badge variant="outline">R$ {lead.orcamento_faixa}</Badge>
+                            )}
                           </div>
                           <p className="max-w-[320px] truncate text-sm text-muted-foreground">
                             {lead.ultima_mensagem || "Sem mensagens recentes."}
