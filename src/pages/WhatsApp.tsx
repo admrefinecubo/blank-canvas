@@ -23,6 +23,7 @@ type ConversationSummary = {
   etapa_pipeline: string;
   is_bot_active?: boolean;
   bot_paused_until?: string | null;
+  agente_pausado?: boolean | null;
   ultima_msg?: string | null;
   ultima_data?: string | null;
 };
@@ -71,7 +72,7 @@ export default function WhatsApp() {
     queryFn: async () => {
       const [leadsResult, messagesResult] = await Promise.all([
         (supabase.from("leads") as any)
-          .select("id, nome, telefone, etapa_pipeline, is_bot_active, bot_paused_until")
+          .select("id, nome, telefone, etapa_pipeline, is_bot_active, bot_paused_until, agente_pausado")
           .eq("loja_id", activeLojaId!),
         supabase
           .from("historico_mensagens")
@@ -211,6 +212,19 @@ export default function WhatsApp() {
 
       if (messageInsert.error) throw messageInsert.error;
       if (leadUpdate.error) throw leadUpdate.error;
+
+      if (selectedLead.agente_pausado !== true) {
+        fetch("https://n8n.refinecubo.com.br/webhook/handoff-toggle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            telefone: selectedLead.telefone,
+            instance: lojaContext?.instance ?? "",
+            loja_id: activeLojaId,
+            action: "pause",
+          }),
+        }).catch(() => {});
+      }
     },
     onSuccess: () => {
       setDraftMessage("");
