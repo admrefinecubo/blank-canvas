@@ -102,7 +102,7 @@ export default function Login() {
             <img 
               src="/logo-lojaads.png" 
               alt="LojaADS" 
-              className="h-16 w-16 object-contain dark:invert"
+              className="h-16 w-16 object-contain invert dark:invert-0"
             />
             <div className="text-center">
               <h1 className="text-2xl font-bold tracking-tight font-display">LojaADS</h1>
