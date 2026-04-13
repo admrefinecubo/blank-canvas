@@ -216,7 +216,7 @@ export default function Dashboard() {
         <StatCard title="Leads hoje" value={String(kpis?.leadsHoje ?? 0)} icon={Users} href="/leads" />
         <StatCard title="Conversas ativas" value={String(kpis?.conversasAtivas ?? 0)} icon={MessageSquareText} href="/whatsapp" />
         <StatCard title="Follow-ups pendentes" value={String(kpis?.followUpsPendentes ?? 0)} icon={Workflow} href="/followups" />
-        <StatCard title="Visitas agendadas" value={String(kpis?.visitasAgendadas ?? 0)} icon={CalendarDays} href="/agenda" />
+        <StatCard title="Visitas agendadas" value={String(kpis?.visitasAgendadas ?? 0)} icon={CalendarDays} href="/visitas" />
         <StatCard title="Produtos no catálogo" value={String(kpis?.produtosCatalogo ?? 0)} icon={Package} href="/catalogo" />
       </div>
 
