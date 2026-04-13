@@ -28,8 +28,9 @@ Deno.serve(async (req) => {
     if (!authHeader) throw new Error("Não autorizado");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-    if (authErr || !user) throw new Error("Não autorizado");
+    const { data, error: authErr } = await supabase.auth.getClaims(token);
+    if (authErr || !data?.claims) throw new Error("Não autorizado");
+    const user = { id: data.claims.sub as string };
 
     const body = await req.json();
     const { action, clinic_id, loja_id, instance_name } = body;
