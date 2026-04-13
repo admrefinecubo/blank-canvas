@@ -99,11 +99,11 @@ export default function Login() {
         <div className="w-full max-w-[400px] space-y-8">
           {/* Mobile-only brand */}
           <div className="flex flex-col items-center gap-4 lg:hidden">
-            <div className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground glow-primary"
-            )}>
-              <img src="/logo-lojaads.png" alt="LojaADS" className="h-10 w-10 object-contain" />
-            </div>
+            <img 
+              src="/logo-lojaads.png" 
+              alt="LojaADS" 
+              className="h-16 w-16 object-contain"
+            />
             <div className="text-center">
               <h1 className="text-2xl font-bold tracking-tight font-display">LojaADS</h1>
               <p className="text-sm text-muted-foreground">CRM</p>
