@@ -63,15 +63,8 @@ export default function AppLayout() {
     if (isMobile) setMobileMenuOpen(false);
   }, [currentPath, isMobile]);
 
-  useEffect(() => {
-    if (appMode === "client" && activeLoja?.nome_loja) {
-      document.title = `CRM ‒ ${activeLoja.nome_loja}`;
-    } else if (appMode === "admin") {
-      document.title = "LojaADS ‒ Admin";
-    } else {
-      document.title = "CRM ‒ LojaADS";
-    }
-  }, [appMode, activeLoja?.nome_loja]);
+
+
 
   const breadcrumb = breadcrumbMap[currentPath] || currentPath.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" / ");
   const { user, roles, isPlatformAdmin, appMode, defaultRoute, impersonatedClinicId, clearImpersonation, signOut, activeLojaId } = useAuth();
