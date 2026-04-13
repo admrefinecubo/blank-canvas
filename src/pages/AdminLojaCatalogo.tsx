@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import {
-  Plus, RefreshCw, Pencil, Trash2, ImageIcon, Loader2, Package,
+  Plus, Pencil, Trash2, ImageIcon, Loader2, Package,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -117,7 +117,6 @@ export default function AdminLojaCatalogo() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const webhookUrl = import.meta.env.VITE_WF11_WEBHOOK_URL;
       const payload = {
         loja_id: lojaId!,
         nome: form.nome,
@@ -133,8 +132,8 @@ export default function AdminLojaCatalogo() {
         foto_detalhe: form.foto_detalhe || null,
         video_url: form.video_url || null,
       };
-      let produtoId = editId;
 
+      let produtoId = editId;
       if (editId) {
         const { data, error } = await supabase.from("produtos").update(payload).eq("id", editId).select("id").single();
         if (error) throw error;
@@ -145,36 +144,19 @@ export default function AdminLojaCatalogo() {
         produtoId = data.id;
       }
 
-      if (!webhookUrl || !produtoId) {
-        return { webhookError: null };
-      }
-
-      try {
-        const res = await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ loja_id: lojaId, produto_id: produtoId, action: "upsert" }),
-        });
-
-        if (!res.ok) {
-          return { webhookError: `Webhook retornou erro ${res.status}` };
-        }
-      } catch (error) {
-        return {
-          webhookError: error instanceof Error ? error.message : "Falha ao chamar o webhook de reindexação",
-        };
-      }
-
-      return { webhookError: null };
+      return { produtoId };
     },
-    onSuccess: ({ webhookError }) => {
+    onSuccess: ({ produtoId }) => {
       queryClient.invalidateQueries({ queryKey: ["admin-produtos", lojaId] });
       setShowForm(false);
       toast.success("Produto salvo!");
-      if (webhookError) {
-        toast.warning("Produto salvo, mas não foi possível disparar o webhook", {
-          description: webhookError,
-        });
+      // Fire-and-forget: silently trigger embedding indexation
+      if (produtoId && import.meta.env.VITE_WF11_WEBHOOK_URL) {
+        fetch(import.meta.env.VITE_WF11_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ loja_id: lojaId, produto_id: produtoId }),
+        }).catch(() => {});
       }
     },
     onError: (e: any) => toast.error("Erro ao salvar produto", { description: e.message }),
@@ -193,20 +175,6 @@ export default function AdminLojaCatalogo() {
     onError: (e: any) => toast.error("Erro ao excluir produto", { description: e.message }),
   });
 
-  const reindexMutation = useMutation({
-    mutationFn: async () => {
-      const webhookUrl = import.meta.env.VITE_WF11_WEBHOOK_URL;
-      if (!webhookUrl) throw new Error("URL do webhook WF-11 não configurada (VITE_WF11_WEBHOOK_URL)");
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loja_id: lojaId }),
-      });
-      if (!res.ok) throw new Error(`Erro ${res.status}`);
-    },
-    onSuccess: () => toast.success("Indexação iniciada!", { description: "Os embeddings serão atualizados em breve." }),
-    onError: (e: any) => toast.error("Erro ao indexar", { description: e.message }),
-  });
 
   const set = (key: string, value: any) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -219,15 +187,9 @@ export default function AdminLojaCatalogo() {
       title="Catálogo de Produtos"
       description={`${produtos?.length ?? 0} produto(s) cadastrado(s) para esta loja.`}
       actions={
-        <>
-          <Button variant="outline" className="gap-2" onClick={() => reindexMutation.mutate()} disabled={reindexMutation.isPending}>
-            <RefreshCw className={`h-4 w-4 ${reindexMutation.isPending ? "animate-spin" : ""}`} />
-            Indexar Embeddings
-          </Button>
-          <Button className="gap-2" onClick={openCreate}>
-            <Plus className="h-4 w-4" /> Novo Produto
-          </Button>
-        </>
+        <Button className="gap-2" onClick={openCreate}>
+          <Plus className="h-4 w-4" /> Novo Produto
+        </Button>
       }
     >
 

@@ -1,6 +1,6 @@
 import { ChangeEvent, useMemo, useRef, useState } from "react";
 import {
-  Plus, RefreshCw, Pencil, Trash2, Loader2, Package, Upload, ImageIcon, ExternalLink,
+  Plus, Pencil, Trash2, Loader2, Package, Upload, ImageIcon, ExternalLink,
 } from "lucide-react";
 import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
@@ -121,7 +121,7 @@ export default function LojaCatalogo() {
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [lastSavedProductId, setLastSavedProductId] = useState<string | null>(null);
+  
   const [uploadingField, setUploadingField] = useState<"foto_principal" | "foto_detalhe" | null>(null);
   const principalInputRef = useRef<HTMLInputElement | null>(null);
   const detailInputRef = useRef<HTMLInputElement | null>(null);
@@ -159,7 +159,6 @@ export default function LojaCatalogo() {
   const openCreate = () => {
     setEditId(null);
     setForm(EMPTY_FORM);
-    setLastSavedProductId(null);
     setShowForm(true);
   };
 
@@ -181,7 +180,7 @@ export default function LojaCatalogo() {
       video_url: data.video_url || "",
       checkout_url: data.checkout_url || "",
     });
-    setLastSavedProductId(prodId);
+    
     setShowForm(true);
   };
 
@@ -234,9 +233,16 @@ export default function LojaCatalogo() {
     },
     onSuccess: ({ produtoId }) => {
       queryClient.invalidateQueries({ queryKey: ["loja-produtos", activeLojaId] });
-      setLastSavedProductId(produtoId ?? null);
       setShowForm(false);
       toast.success("Produto salvo!");
+      // Fire-and-forget: silently trigger embedding indexation
+      if (produtoId && import.meta.env.VITE_WF11_WEBHOOK_URL) {
+        fetch(import.meta.env.VITE_WF11_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ loja_id: activeLojaId, produto_id: produtoId }),
+        }).catch(() => {});
+      }
     },
     onError: (e: any) => toast.error("Erro ao salvar produto", { description: e.message }),
   });
@@ -254,21 +260,6 @@ export default function LojaCatalogo() {
     onError: (e: any) => toast.error("Erro ao excluir produto", { description: e.message }),
   });
 
-  const reindexMutation = useMutation({
-    mutationFn: async (produtoId?: string | null) => {
-      const { data, error } = await supabase.functions.invoke("catalog-actions", {
-        body: {
-          action: "reindex_embeddings",
-          loja_id: activeLojaId,
-          produto_id: produtoId ?? null,
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-    },
-    onSuccess: () => toast.success("Re-indexação iniciada!"),
-    onError: (e: any) => toast.error("Erro ao re-indexar", { description: e.message }),
-  });
 
   const uploadMutation = useMutation({
     mutationFn: async ({ file, field }: { file: File; field: "foto_principal" | "foto_detalhe" }) => {
@@ -327,28 +318,10 @@ export default function LojaCatalogo() {
           <p className="mt-1 text-sm text-muted-foreground">Gerencie os produtos que alimentam a operação comercial da sua loja.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => reindexMutation.mutate(null)} disabled={reindexMutation.isPending}>
-            <RefreshCw className={`h-4 w-4 ${reindexMutation.isPending ? "animate-spin" : ""}`} />
-            Re-indexar Embeddings
-          </Button>
           <Button className="gap-2" onClick={openCreate}><Plus className="h-4 w-4" /> Novo Produto</Button>
         </div>
       </div>
 
-      {lastSavedProductId ? (
-        <Card>
-          <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="font-medium">Produto salvo com sucesso</p>
-              <p className="text-sm text-muted-foreground">Se quiser, já dispare a atualização dos embeddings deste item no WF-11.</p>
-            </div>
-            <Button className="gap-2" onClick={() => reindexMutation.mutate(lastSavedProductId)} disabled={reindexMutation.isPending}>
-              <RefreshCw className={`h-4 w-4 ${reindexMutation.isPending ? "animate-spin" : ""}`} />
-              Re-indexar embeddings
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Select value={filterCat} onValueChange={setFilterCat}>
