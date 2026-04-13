@@ -8,9 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-function AdminStatCard({ title, value, icon: Icon }: { title: string; value: string; icon: React.ElementType }) {
+function AdminStatCard({ title, value, icon: Icon, index = 0 }: { title: string; value: string; icon: React.ElementType; index?: number }) {
   return (
-    <Card>
+    <Card
+      className="transition-all duration-200 hover:scale-[1.02] hover:shadow-lg opacity-0 animate-fade-in [animation-fill-mode:forwards]"
+      style={{ animationDelay: `${index * 75}ms` }}
+    >
       <CardContent className="flex items-center justify-between p-6">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
@@ -129,10 +132,10 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <AdminStatCard title="Lojas Ativas" value={isLoading ? "..." : String(summary.lojasAtivas)} icon={Building2} />
-        <AdminStatCard title="Leads este mês" value={isLoading ? "..." : String(summary.totalLeadsMes)} icon={Users} />
-        <AdminStatCard title="Mensagens hoje" value={isLoading ? "..." : String(summary.totalMensagensHoje)} icon={MessageSquareText} />
-        <AdminStatCard title="Follow-ups pendentes" value={isLoading ? "..." : String(summary.followUpsPendentes)} icon={Workflow} />
+        <AdminStatCard title="Lojas Ativas" value={isLoading ? "..." : String(summary.lojasAtivas)} icon={Building2} index={0} />
+        <AdminStatCard title="Leads este mês" value={isLoading ? "..." : String(summary.totalLeadsMes)} icon={Users} index={1} />
+        <AdminStatCard title="Mensagens hoje" value={isLoading ? "..." : String(summary.totalMensagensHoje)} icon={MessageSquareText} index={2} />
+        <AdminStatCard title="Follow-ups pendentes" value={isLoading ? "..." : String(summary.followUpsPendentes)} icon={Workflow} index={3} />
       </div>
 
       <Card>
@@ -159,8 +162,8 @@ export default function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {summary.rows.map((row) => (
-                  <TableRow key={row.id}>
+                {summary.rows.map((row, i) => (
+                  <TableRow key={row.id} className="opacity-0 animate-fade-in [animation-fill-mode:forwards]" style={{ animationDelay: `${300 + i * 50}ms` }}>
                     <TableCell className="font-medium">{row.nome_loja}</TableCell>
                     <TableCell>
                       {row.instance ? (
@@ -177,7 +180,7 @@ export default function AdminDashboard() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button asChild size="sm" className="gap-1.5">
+                      <Button asChild size="sm" className="gap-1.5 active:scale-95 transition-transform duration-100">
                         <Link to={`/admin/lojas/${row.id}`}>
                           <Settings2 className="h-3.5 w-3.5" />
                           Gerenciar

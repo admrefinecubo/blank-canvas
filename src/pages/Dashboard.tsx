@@ -20,9 +20,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
 
-function StatCard({ title, value, icon: Icon, href }: { title: string; value: string; icon: ElementType; href?: string }) {
+function StatCard({ title, value, icon: Icon, href, index = 0 }: { title: string; value: string; icon: ElementType; href?: string; index?: number }) {
   return (
-    <Card className="overflow-hidden transition-colors hover:bg-accent/30">
+    <Card
+      className="overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:bg-accent/30 opacity-0 animate-fade-in [animation-fill-mode:forwards]"
+      style={{ animationDelay: `${index * 75}ms` }}
+    >
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
@@ -35,7 +38,7 @@ function StatCard({ title, value, icon: Icon, href }: { title: string; value: st
         </div>
         {href ? (
           <div className="mt-4">
-            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-0 text-primary hover:text-primary">
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-0 text-primary hover:text-primary active:scale-95 transition-transform duration-100">
               <Link to={href}>
                 Ver detalhe
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -213,11 +216,11 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard title="Leads hoje" value={String(kpis?.leadsHoje ?? 0)} icon={Users} href="/leads" />
-        <StatCard title="Conversas ativas" value={String(kpis?.conversasAtivas ?? 0)} icon={MessageSquareText} href="/whatsapp" />
-        <StatCard title="Follow-ups pendentes" value={String(kpis?.followUpsPendentes ?? 0)} icon={Workflow} href="/followups" />
-        <StatCard title="Visitas agendadas" value={String(kpis?.visitasAgendadas ?? 0)} icon={CalendarDays} href="/visitas" />
-        <StatCard title="Produtos no catálogo" value={String(kpis?.produtosCatalogo ?? 0)} icon={Package} href="/catalogo" />
+        <StatCard title="Leads hoje" value={String(kpis?.leadsHoje ?? 0)} icon={Users} href="/leads" index={0} />
+        <StatCard title="Conversas ativas" value={String(kpis?.conversasAtivas ?? 0)} icon={MessageSquareText} href="/whatsapp" index={1} />
+        <StatCard title="Follow-ups pendentes" value={String(kpis?.followUpsPendentes ?? 0)} icon={Workflow} href="/followups" index={2} />
+        <StatCard title="Visitas agendadas" value={String(kpis?.visitasAgendadas ?? 0)} icon={CalendarDays} href="/visitas" index={3} />
+        <StatCard title="Produtos no catálogo" value={String(kpis?.produtosCatalogo ?? 0)} icon={Package} href="/catalogo" index={4} />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.6fr,1fr]">
@@ -225,7 +228,7 @@ export default function Dashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-4">
               <CardTitle className="text-base">Últimas 5 conversas</CardTitle>
-              <Button asChild variant="ghost" size="sm" className="gap-1 text-primary hover:text-primary">
+              <Button asChild variant="ghost" size="sm" className="gap-1 text-primary hover:text-primary active:scale-95 transition-transform duration-100">
                 <Link to="/whatsapp">
                   Abrir inbox
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -239,11 +242,12 @@ export default function Dashboard() {
                 Ainda não há conversas registradas para esta loja.
               </div>
             ) : (
-              latestConversations.map((conversation) => (
+              latestConversations.map((conversation, i) => (
                 <Link
                   key={conversation.id}
                   to="/whatsapp"
-                  className="flex flex-col gap-2 rounded-2xl border border-border p-4 transition-colors hover:bg-accent/40"
+                  className="flex flex-col gap-2 rounded-2xl border border-border p-4 transition-all duration-200 hover:bg-accent/40 hover:scale-[1.01] hover:shadow-sm opacity-0 animate-fade-in [animation-fill-mode:forwards]"
+                  style={{ animationDelay: `${400 + i * 75}ms` }}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -265,15 +269,15 @@ export default function Dashboard() {
               <CardTitle className="text-base">Resumo operacional</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-2xl border border-border p-4">
+              <div className="rounded-2xl border border-border p-4 transition-all duration-200 hover:scale-[1.02] hover:shadow-sm">
                 <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Loja</p>
                 <p className="mt-2 text-lg font-semibold">{lojaContext?.nome_loja || "—"}</p>
               </div>
-              <div className="rounded-2xl border border-border p-4">
+              <div className="rounded-2xl border border-border p-4 transition-all duration-200 hover:scale-[1.02] hover:shadow-sm">
                 <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Assistente</p>
                 <p className="mt-2 text-lg font-semibold">{assistantName}</p>
               </div>
-              <div className="rounded-2xl border border-border p-4">
+              <div className="rounded-2xl border border-border p-4 transition-all duration-200 hover:scale-[1.02] hover:shadow-sm">
                 <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Próximo foco</p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Priorize os {kpis?.followUpsPendentes ?? 0} follow-ups pendentes e acompanhe as conversas ativas do inbox.

@@ -264,8 +264,10 @@ export default function AppLayout() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-5 md:p-8">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto scroll-smooth p-5 md:p-8">
+          <div key={currentPath} className="animate-fade-in">
+            <Outlet />
+          </div>
         </main>
       </div>
 
