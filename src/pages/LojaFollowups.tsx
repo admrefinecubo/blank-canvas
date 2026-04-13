@@ -150,6 +150,9 @@ export default function LojaFollowups() {
               <SelectItem value="enviado">Enviado</SelectItem>
             </SelectContent>
           </Select>
+          <Button className="gap-2" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4" /> Novo follow-up
+          </Button>
         </div>
       </div>
 
@@ -199,6 +202,48 @@ export default function LojaFollowups() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Novo Follow-up</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Lead (opcional)</Label>
+              <Select value={createForm.lead_id} onValueChange={(v) => setCreateForm(f => ({ ...f, lead_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione um lead..." /></SelectTrigger>
+                <SelectContent>
+                  {(leads ?? []).map((l) => (
+                    <SelectItem key={l.id} value={l.id}>{getLeadName(l.nome, l.telefone)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Tipo</Label>
+              <Select value={createForm.tipo} onValueChange={(v) => setCreateForm(f => ({ ...f, tipo: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TIPO_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Agendado para</Label>
+              <Input type="datetime-local" value={createForm.agendado_para} onChange={(e) => setCreateForm(f => ({ ...f, agendado_para: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Mensagem (opcional)</Label>
+              <Textarea rows={3} placeholder="Mensagem do follow-up..." value={createForm.mensagem} onChange={(e) => setCreateForm(f => ({ ...f, mensagem: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+            <Button onClick={() => createFollowupMutation.mutate()} disabled={createFollowupMutation.isPending}>
+              {createFollowupMutation.isPending ? "Criando..." : "Criar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
