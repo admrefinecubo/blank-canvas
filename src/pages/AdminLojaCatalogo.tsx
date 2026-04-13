@@ -117,7 +117,7 @@ export default function AdminLojaCatalogo() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const webhookUrl = (import.meta as any).env?.VITE_WF06_WEBHOOK_URL;
+      const webhookUrl = import.meta.env.VITE_WF11_WEBHOOK_URL;
       const payload = {
         loja_id: lojaId!,
         nome: form.nome,
