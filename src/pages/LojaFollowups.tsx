@@ -97,6 +97,32 @@ export default function LojaFollowups() {
     onError: (error: Error) => toast.error("Erro ao excluir follow-up", { description: error.message }),
   });
 
+  const TIPO_OPTIONS = [
+    "interacao_inicial", "carrinho_abandonado", "promocao_nao_respondida",
+    "orcamento_pendente", "pos_visita", "medidas_ambiente", "pos_venda",
+  ];
+
+  const createFollowupMutation = useMutation({
+    mutationFn: async () => {
+      if (!createForm.agendado_para) throw new Error("Informe a data");
+      const { error } = await supabase.from("follow_ups").insert({
+        loja_id: activeLojaId!,
+        lead_id: createForm.lead_id || null,
+        tipo: createForm.tipo,
+        agendado_para: new Date(createForm.agendado_para).toISOString(),
+        mensagem: createForm.mensagem || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loja-followups", activeLojaId] });
+      setShowCreate(false);
+      setCreateForm({ lead_id: "", tipo: "interacao_inicial", agendado_para: "", mensagem: "" });
+      toast.success("Follow-up criado");
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
   if (!activeLojaId) {
     return <div className="rounded-2xl border border-dashed border-border p-8 text-sm text-muted-foreground">Nenhuma loja operacional vinculada a esta conta.</div>;
   }
