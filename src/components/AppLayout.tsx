@@ -120,7 +120,7 @@ export default function AppLayout() {
           {!collapsed ? (
             <Link to={defaultRoute} className="flex items-center gap-3 group">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground transition-transform group-hover:scale-105 overflow-hidden shadow-sm">
-                <span className="text-base font-bold">L</span>
+                <img src="/logo-lojaads.png" alt="LojaADS" className="h-6 w-6 object-contain" />
               </div>
               <div className="flex flex-col">
                 <span className="text-[15px] font-semibold tracking-tight">LojaADS</span>
@@ -136,7 +136,7 @@ export default function AppLayout() {
           ) : (
             <Link to={defaultRoute} className="mx-auto">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden bg-primary text-primary-foreground shadow-sm">
-                <span className="text-base font-bold">L</span>
+                <img src="/logo-lojaads.png" alt="LojaADS" className="h-6 w-6 object-contain" />
               </div>
             </Link>
           )}
