@@ -295,6 +295,7 @@ export default function AppLayout() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             />
+          </AnimatePresence>
         </main>
       </div>
 
