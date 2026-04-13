@@ -288,8 +288,13 @@ export default function AppLayout() {
         {/* Content */}
         <main className="flex-1 overflow-y-auto scroll-smooth p-5 md:p-8">
           <AnimatePresence mode="wait">
-            <FrozenRoute key={currentPath} />
-          </AnimatePresence>
+            <FrozenRoute
+              key={currentPath}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            />
         </main>
       </div>
 
