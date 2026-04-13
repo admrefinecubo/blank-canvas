@@ -126,8 +126,10 @@ export default function AppLayout() {
                 className="h-10 w-10 object-contain transition-transform group-hover:scale-105 invert dark:invert-0" 
               />
               <div className="flex flex-col">
-                <span className="text-[15px] font-semibold tracking-tight">LojaADS</span>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-medium">CRM</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-semibold tracking-tight">LojaADS</span>
+                  <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-medium">CRM</span>
+                </div>
                 {!isPlatformAdmin && appMode === "client" && activeLoja?.nome_loja ? (
                   <>
                     <span className="mt-2 h-px w-full bg-border/60" />
