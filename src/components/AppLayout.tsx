@@ -269,10 +269,11 @@ export default function AppLayout() {
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPath}
-              initial={{ opacity: 0, y: 10 }}
+              style={{ opacity: 0 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.55, ease: "easeInOut" }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
               className="min-h-0"
             >
               <Outlet />
