@@ -63,18 +63,6 @@ export default function AppLayout() {
     if (isMobile) setMobileMenuOpen(false);
   }, [currentPath, isMobile]);
 
-
-
-  useEffect(() => {
-    if (appMode === "client" && activeLoja?.nome_loja) {
-      document.title = `CRM ‒ ${activeLoja.nome_loja}`;
-    } else if (appMode === "admin") {
-      document.title = "LojaADS ‒ Admin";
-    } else {
-      document.title = "CRM ‒ LojaADS";
-    }
-  }, [appMode, activeLoja?.nome_loja]);
-
   const breadcrumb = breadcrumbMap[currentPath] || currentPath.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" / ");
   const { user, roles, isPlatformAdmin, appMode, defaultRoute, impersonatedClinicId, clearImpersonation, signOut, activeLojaId } = useAuth();
   const userInitials = user?.email?.substring(0, 2).toUpperCase() || 'U';
@@ -101,6 +89,16 @@ export default function AppLayout() {
     },
     enabled: appMode === "client" && !!activeLojaId,
   });
+
+  useEffect(() => {
+    if (appMode === "client" && activeLoja?.nome_loja) {
+      document.title = `CRM ‒ ${activeLoja.nome_loja}`;
+    } else if (appMode === "admin") {
+      document.title = "LojaADS ‒ Admin";
+    } else {
+      document.title = "CRM ‒ LojaADS";
+    }
+  }, [appMode, activeLoja?.nome_loja]);
 
   const ImpersonationBanner = () => (
     <div className="flex h-10 items-center justify-center gap-4 bg-primary text-sm font-medium text-primary-foreground">
