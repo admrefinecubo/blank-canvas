@@ -57,7 +57,7 @@ export default function WhatsApp() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lojas")
-        .select("nome_loja, nome_assistente")
+        .select("nome_loja, nome_assistente, instance")
         .eq("id", activeLojaId!)
         .maybeSingle();
       if (error) throw error;
@@ -175,7 +175,7 @@ export default function WhatsApp() {
   const sendMessageMutation = useMutation({
     mutationFn: async () => {
       if (!selectedLead) throw new Error("Selecione uma conversa");
-      if (!activeClinicId) throw new Error("Clínica ativa não encontrada");
+      if (!activeLojaId) throw new Error("Loja ativa não encontrada");
 
       const message = draftMessage.trim();
       if (!message) throw new Error("Digite uma mensagem");
@@ -183,7 +183,7 @@ export default function WhatsApp() {
       const { data, error } = await supabase.functions.invoke("evolution-api", {
         body: {
           action: "send_message",
-          clinic_id: activeClinicId,
+          loja_id: activeLojaId,
           phone: selectedLead.telefone,
           message,
         },
@@ -428,7 +428,7 @@ export default function WhatsApp() {
                     />
                     <Button
                       className="gap-2"
-                      disabled={!draftMessage.trim() || sendMessageMutation.isPending || !activeClinicId}
+                      disabled={!draftMessage.trim() || sendMessageMutation.isPending || !activeLojaId}
                       onClick={() => sendMessageMutation.mutate()}
                     >
                       {sendMessageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}

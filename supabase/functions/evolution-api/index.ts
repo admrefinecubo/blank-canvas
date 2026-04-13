@@ -32,20 +32,25 @@ Deno.serve(async (req) => {
     if (authErr || !user) throw new Error("Não autorizado");
 
     const body = await req.json();
-    const { action, clinic_id, instance_name } = body;
+    const { action, clinic_id, loja_id, instance_name } = body;
 
-    if (!clinic_id) throw new Error("clinic_id obrigatório");
+    if (!clinic_id && !loja_id) throw new Error("clinic_id ou loja_id obrigatório");
 
-    // Verify user belongs to clinic
-    const { data: role } = await supabase
-      .from("user_roles")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("clinic_id", clinic_id)
-      .maybeSingle();
+    // Verify user access
+    if (loja_id) {
+      const { data: hasAccess } = await supabase.rpc("has_loja_access", { _loja_id: loja_id, _user_id: user.id });
+      if (!hasAccess) throw new Error("Sem permissão");
+    } else {
+      const { data: role } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("clinic_id", clinic_id)
+        .maybeSingle();
 
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "platform_admin" });
-    if (!role && !isAdmin) throw new Error("Sem permissão");
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "platform_admin" });
+      if (!role && !isAdmin) throw new Error("Sem permissão");
+    }
 
     const { apiUrl, apiKey } = getCredentials(body);
 
@@ -285,21 +290,41 @@ Deno.serve(async (req) => {
       const { phone, message } = body;
       if (!phone || !message) throw new Error("phone e message obrigatórios");
 
-      const { data: integration } = await supabase
-        .from("clinic_integrations")
-        .select("*")
-        .eq("clinic_id", clinic_id)
-        .eq("provider", "evolution_api")
-        .maybeSingle();
+      let instName: string;
+      let sendApiUrl = apiUrl;
+      let sendApiKey = apiKey;
 
-      if (!integration || integration.status !== "connected") {
-        throw new Error("WhatsApp não conectado");
+      if (loja_id) {
+        // Loja-based: get instance directly from lojas table
+        const { data: loja, error: lojaErr } = await supabase
+          .from("lojas")
+          .select("instance")
+          .eq("id", loja_id)
+          .single();
+        if (lojaErr || !loja?.instance) throw new Error("Loja sem instância WhatsApp configurada");
+        instName = loja.instance;
+      } else {
+        // Clinic-based: use clinic_integrations
+        const { data: integration } = await supabase
+          .from("clinic_integrations")
+          .select("*")
+          .eq("clinic_id", clinic_id)
+          .eq("provider", "evolution_api")
+          .maybeSingle();
+
+        if (!integration || integration.status !== "connected") {
+          throw new Error("WhatsApp não conectado");
+        }
+
+        const cfg = integration.config as any;
+        instName = cfg.instance_name;
+        sendApiUrl = cfg.api_url || apiUrl;
+        sendApiKey = cfg.api_key || apiKey;
       }
 
-      const cfg = integration.config as any;
-      const sendRes = await fetch(`${(cfg.api_url || apiUrl)}/message/sendText/${cfg.instance_name}`, {
+      const sendRes = await fetch(`${sendApiUrl}/message/sendText/${instName}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", apikey: cfg.api_key || apiKey },
+        headers: { "Content-Type": "application/json", apikey: sendApiKey },
         body: JSON.stringify({
           number: phone.replace(/\D/g, ""),
           text: message,
