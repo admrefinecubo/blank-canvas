@@ -117,7 +117,7 @@ export default function AdminLojaCatalogo() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const webhookUrl = (import.meta as any).env?.VITE_WF06_WEBHOOK_URL;
+      const webhookUrl = import.meta.env.VITE_WF11_WEBHOOK_URL;
       const payload = {
         loja_id: lojaId!,
         nome: form.nome,
@@ -195,8 +195,8 @@ export default function AdminLojaCatalogo() {
 
   const reindexMutation = useMutation({
     mutationFn: async () => {
-      const webhookUrl = (import.meta as any).env?.VITE_WF06_WEBHOOK_URL;
-      if (!webhookUrl) throw new Error("URL do webhook WF-06 não configurada (VITE_WF06_WEBHOOK_URL)");
+      const webhookUrl = import.meta.env.VITE_WF11_WEBHOOK_URL;
+      if (!webhookUrl) throw new Error("URL do webhook WF-11 não configurada (VITE_WF11_WEBHOOK_URL)");
       const res = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -204,8 +204,8 @@ export default function AdminLojaCatalogo() {
       });
       if (!res.ok) throw new Error(`Erro ${res.status}`);
     },
-    onSuccess: () => toast.success("Re-indexação iniciada!", { description: "Os embeddings serão atualizados em breve." }),
-    onError: (e: any) => toast.error("Erro ao re-indexar", { description: e.message }),
+    onSuccess: () => toast.success("Indexação iniciada!", { description: "Os embeddings serão atualizados em breve." }),
+    onError: (e: any) => toast.error("Erro ao indexar", { description: e.message }),
   });
 
   const set = (key: string, value: any) => setForm((f) => ({ ...f, [key]: value }));
@@ -222,7 +222,7 @@ export default function AdminLojaCatalogo() {
         <>
           <Button variant="outline" className="gap-2" onClick={() => reindexMutation.mutate()} disabled={reindexMutation.isPending}>
             <RefreshCw className={`h-4 w-4 ${reindexMutation.isPending ? "animate-spin" : ""}`} />
-            Re-indexar Embeddings
+            Indexar Embeddings
           </Button>
           <Button className="gap-2" onClick={openCreate}>
             <Plus className="h-4 w-4" /> Novo Produto
