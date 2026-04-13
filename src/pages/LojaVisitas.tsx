@@ -182,7 +182,7 @@ export default function LojaVisitas() {
                         <div className="w-[160px]">
                           <Select
                             value={v.status}
-                            onValueChange={(val) => statusMutation.mutate({ id: v.id, status: val })}
+                            onValueChange={(val) => statusMutation.mutate({ id: v.id, status: val as any })}
                           >
                             <SelectTrigger>
                               <Badge className={STATUS_COLORS[v.status] || ""} variant="outline">{VISITA_STATUS_OPTIONS.find(o => o.value === v.status)?.label || v.status}</Badge>
