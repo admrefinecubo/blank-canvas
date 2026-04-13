@@ -46,6 +46,31 @@ function getAttendanceStatus(lead: ConversationSummary) {
   return { label: "Bot ativo", variant: "default" as const };
 }
 
+function ChatMessages({ messages, assistantName, leadName }: { messages: { id: string; role: string; content: string; created_at: string }[]; assistantName: string; leadName: string }) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "instant" });
+  }, [messages]);
+
+  return (
+    <ScrollArea className="h-full">
+      <div className="space-y-3 p-4 md:p-6">
+        {messages.map((message) => (
+          <WhatsAppChatBubble
+            key={message.id}
+            role={message.role}
+            content={message.content}
+            createdAt={formatDateTime(message.created_at)}
+            title={message.role === "assistant" ? assistantName : leadName}
+          />
+        ))}
+        <div ref={bottomRef} />
+      </div>
+    </ScrollArea>
+  );
+}
+
 export default function WhatsApp() {
   const queryClient = useQueryClient();
   const { activeLojaId, activeClinicId } = useAuth();
