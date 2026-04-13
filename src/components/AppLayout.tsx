@@ -90,6 +90,16 @@ export default function AppLayout() {
     enabled: appMode === "client" && !!activeLojaId,
   });
 
+  useEffect(() => {
+    if (appMode === "client" && activeLoja?.nome_loja) {
+      document.title = `CRM ‒ ${activeLoja.nome_loja}`;
+    } else if (appMode === "admin") {
+      document.title = "LojaADS ‒ Admin";
+    } else {
+      document.title = "CRM ‒ LojaADS";
+    }
+  }, [appMode, activeLoja?.nome_loja]);
+
   const ImpersonationBanner = () => (
     <div className="flex h-10 items-center justify-center gap-4 bg-primary text-sm font-medium text-primary-foreground">
       <Eye className="h-4 w-4" />
