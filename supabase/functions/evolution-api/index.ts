@@ -339,6 +339,58 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ─── ACTION: send_media ───
+    if (action === "send_media") {
+      const { phone, media_url, caption, media_type } = body;
+      if (!phone || !media_url) throw new Error("phone e media_url obrigatórios");
+
+      let instName: string;
+      let sendApiUrl = apiUrl;
+      let sendApiKey = apiKey;
+
+      if (loja_id) {
+        const { data: loja, error: lojaErr } = await supabase
+          .from("lojas")
+          .select("instance")
+          .eq("id", loja_id)
+          .single();
+        if (lojaErr || !loja?.instance) throw new Error("Loja sem instância WhatsApp configurada");
+        instName = loja.instance;
+      } else {
+        const { data: integration } = await supabase
+          .from("clinic_integrations")
+          .select("*")
+          .eq("clinic_id", clinic_id)
+          .eq("provider", "evolution_api")
+          .maybeSingle();
+
+        if (!integration || integration.status !== "connected") throw new Error("WhatsApp não conectado");
+
+        const cfg = integration.config as any;
+        instName = cfg.instance_name;
+        sendApiUrl = cfg.api_url || apiUrl;
+        sendApiKey = cfg.api_key || apiKey;
+      }
+
+      const sendRes = await fetch(`${sendApiUrl}/message/sendMedia/${instName}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: sendApiKey },
+        body: JSON.stringify({
+          number: phone.replace(/\D/g, ""),
+          mediatype: media_type === "video" ? "video" : "image",
+          media: media_url,
+          caption: caption || "",
+        }),
+      });
+
+      const sendData = await sendRes.json();
+      if (!sendRes.ok) throw new Error(sendData?.message || "Erro ao enviar mídia");
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     throw new Error(`Ação desconhecida: ${action}`);
 
   } catch (error: any) {

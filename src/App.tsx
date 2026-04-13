@@ -35,6 +35,8 @@ import AdminStats from "@/pages/AdminStats";
 import LojaLeads from "@/pages/LojaLeads";
 import LojaCatalogo from "@/pages/LojaCatalogo";
 import LojaFollowups from "@/pages/LojaFollowups";
+import LojaVisitas from "@/pages/LojaVisitas";
+import LojaCampanhas from "@/pages/LojaCampanhas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -80,6 +82,8 @@ const App = () => (
               <Route path="/leads" element={<LojaLeads />} />
               <Route path="/catalogo" element={<LojaCatalogo />} />
               <Route path="/followups" element={<LojaFollowups />} />
+              <Route path="/visitas" element={<LojaVisitas />} />
+              <Route path="/campanhas" element={<LojaCampanhas />} />
               <Route path="/configuracoes" element={<SettingsPage />} />
               <Route path="/patients" element={<Patients />} />
               <Route path="/patients/:id" element={<PatientDetail />} />

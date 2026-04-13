@@ -22,8 +22,9 @@ const clientNavItems = [
   { title: "Clientes / Leads", url: "/leads", icon: Users },
   { title: "WhatsApp", url: "/whatsapp", icon: MessageSquare },
   { title: "Catálogo", url: "/catalogo", icon: Package },
-  { title: "Agenda / Visitas", url: "/agenda", icon: Calendar },
+  { title: "Agenda / Visitas", url: "/visitas", icon: Calendar },
   { title: "Follow-ups", url: "/followups", icon: Workflow },
+  { title: "Campanhas", url: "/campanhas", icon: BarChart3 },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
@@ -40,10 +41,11 @@ const breadcrumbMap: Record<string, string> = {
   "/catalogo": "Catálogo",
   "/configuracoes": "Configurações",
   "/followups": "Follow-ups",
+  "/visitas": "Visitas à Loja",
+  "/campanhas": "Campanhas",
   "/patients": "Clientes / Leads",
   "/settings": "Configurações",
   "/whatsapp": "WhatsApp",
-  "/agenda": "Agenda / Visitas",
   "/admin": "Visão geral",
   "/admin/lojas": "Lojas",
   "/admin/stats": "Estatísticas",

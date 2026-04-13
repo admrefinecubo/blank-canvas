@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Loader2, Send, Trash2 } from "lucide-react";
+import { Loader2, Plus, Send, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -29,6 +35,8 @@ export default function LojaFollowups() {
   const queryClient = useQueryClient();
   const [tipoFiltro, setTipoFiltro] = useState("todos");
   const [statusFiltro, setStatusFiltro] = useState("todos");
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({ lead_id: "", tipo: "interacao_inicial", agendado_para: "", mensagem: "" });
 
   const { data: followups, isLoading } = useQuery({
     queryKey: ["loja-followups", activeLojaId],
@@ -89,6 +97,32 @@ export default function LojaFollowups() {
     onError: (error: Error) => toast.error("Erro ao excluir follow-up", { description: error.message }),
   });
 
+  const TIPO_OPTIONS = [
+    "interacao_inicial", "carrinho_abandonado", "promocao_nao_respondida",
+    "orcamento_pendente", "pos_visita", "medidas_ambiente", "pos_venda",
+  ];
+
+  const createFollowupMutation = useMutation({
+    mutationFn: async () => {
+      if (!createForm.agendado_para) throw new Error("Informe a data");
+      const { error } = await supabase.from("follow_ups").insert({
+        loja_id: activeLojaId!,
+        lead_id: createForm.lead_id || null,
+        tipo: createForm.tipo,
+        agendado_para: new Date(createForm.agendado_para).toISOString(),
+        mensagem: createForm.mensagem || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loja-followups", activeLojaId] });
+      setShowCreate(false);
+      setCreateForm({ lead_id: "", tipo: "interacao_inicial", agendado_para: "", mensagem: "" });
+      toast.success("Follow-up criado");
+    },
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+
   if (!activeLojaId) {
     return <div className="rounded-2xl border border-dashed border-border p-8 text-sm text-muted-foreground">Nenhuma loja operacional vinculada a esta conta.</div>;
   }
@@ -116,6 +150,9 @@ export default function LojaFollowups() {
               <SelectItem value="enviado">Enviado</SelectItem>
             </SelectContent>
           </Select>
+          <Button className="gap-2" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4" /> Novo follow-up
+          </Button>
         </div>
       </div>
 
@@ -165,6 +202,48 @@ export default function LojaFollowups() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Novo Follow-up</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Lead (opcional)</Label>
+              <Select value={createForm.lead_id} onValueChange={(v) => setCreateForm(f => ({ ...f, lead_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione um lead..." /></SelectTrigger>
+                <SelectContent>
+                  {(leads ?? []).map((l) => (
+                    <SelectItem key={l.id} value={l.id}>{getLeadName(l.nome, l.telefone)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Tipo</Label>
+              <Select value={createForm.tipo} onValueChange={(v) => setCreateForm(f => ({ ...f, tipo: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TIPO_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Agendado para</Label>
+              <Input type="datetime-local" value={createForm.agendado_para} onChange={(e) => setCreateForm(f => ({ ...f, agendado_para: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Mensagem (opcional)</Label>
+              <Textarea rows={3} placeholder="Mensagem do follow-up..." value={createForm.mensagem} onChange={(e) => setCreateForm(f => ({ ...f, mensagem: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+            <Button onClick={() => createFollowupMutation.mutate()} disabled={createFollowupMutation.isPending}>
+              {createFollowupMutation.isPending ? "Criando..." : "Criar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
