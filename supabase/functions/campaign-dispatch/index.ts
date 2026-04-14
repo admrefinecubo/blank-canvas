@@ -91,6 +91,32 @@ Deno.serve(async (req) => {
 
     if (!webhookRes.ok) throw new Error(`Webhook retornou erro ${webhookRes.status}`);
 
+    // Validate webhook response - require explicit confirmation
+    let webhookResult: Record<string, unknown> = {};
+    try {
+      webhookResult = await webhookRes.json();
+    } catch {
+      // If n8n returns empty or non-JSON, treat as unconfirmed
+      throw new Error(
+        "O webhook não retornou confirmação de processamento. " +
+        "O disparo não foi efetivado. Verifique a configuração do N8N."
+      );
+    }
+
+    // Accept if webhook returned success/accepted flag or an execution ID
+    const confirmed =
+      webhookResult.success === true ||
+      webhookResult.accepted === true ||
+      !!webhookResult.executionId ||
+      !!webhookResult.execution_id;
+
+    if (!confirmed) {
+      throw new Error(
+        "O webhook respondeu mas não confirmou o processamento. " +
+        "Resposta: " + JSON.stringify(webhookResult).slice(0, 200)
+      );
+    }
+
     const { error: updateError } = await supabase
       .from("promotional_campaigns")
       .update({

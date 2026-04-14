@@ -345,7 +345,22 @@ export default function LojaCampanhas() {
             </div>
             <div>
               <Label>Template de mensagem</Label>
-              <Textarea rows={4} placeholder="Olá {{nome}}! Temos uma promoção especial de {{desconto}}% em {{interesse}}..." value={form.message_template} onChange={(e) => setForm(f => ({ ...f, message_template: e.target.value }))} />
+              <Textarea rows={4} placeholder="Digite sua mensagem e use os botões abaixo para inserir variáveis..." value={form.message_template} onChange={(e) => setForm(f => ({ ...f, message_template: e.target.value }))} />
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <span className="text-xs text-muted-foreground mr-1 self-center">Inserir variável:</span>
+                {["{{nome}}", "{{desconto}}", "{{interesse}}"].map((v) => (
+                  <Button
+                    key={v}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs px-2"
+                    onClick={() => setForm(f => ({ ...f, message_template: f.message_template + v }))}
+                  >
+                    {v}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
