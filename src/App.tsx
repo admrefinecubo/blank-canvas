@@ -42,6 +42,7 @@ import LojaVendas from "@/pages/LojaVendas";
 import LojaPosVenda from "@/pages/LojaPosVenda";
 import NotFound from "./pages/NotFound";
 import Roadmap from "./pages/Roadmap";
+import WorkflowsEditor from "./pages/WorkflowsEditor";
 
 const queryClient = new QueryClient({
   defaultOptions: {
