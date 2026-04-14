@@ -80,7 +80,7 @@ export default function NpsSatisfaction() {
       } else {
         insert.patient_id = form.lead_id || null;
       }
-      const { error } = await supabase.from("nps_responses").insert(insert);
+      const { error } = await supabase.from("nps_responses").insert(insert as any);
       if (error) throw error;
     },
     onSuccess: () => {
