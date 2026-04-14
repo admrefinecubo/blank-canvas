@@ -4,14 +4,14 @@ import { Moon, Sun } from "lucide-react";
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem("cubo-theme");
+    const saved = localStorage.getItem("lojaads-theme");
     if (saved) return saved === "dark";
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
-    localStorage.setItem("cubo-theme", dark ? "dark" : "light");
+    localStorage.setItem("lojaads-theme", dark ? "dark" : "light");
   }, [dark]);
 
   return (
