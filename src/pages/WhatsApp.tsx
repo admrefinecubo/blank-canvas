@@ -181,7 +181,43 @@ export default function WhatsApp() {
     enabled: !!selectedLead?.id,
   });
 
-  const toggleBotMutation = useMutation({
+  // Fetch WhatsApp profile pictures for visible leads
+  const { data: profilePics = {} } = useQuery({
+    queryKey: ["whatsapp-profile-pics", activeLojaId, conversations.map(c => c.id).join(",")],
+    queryFn: async () => {
+      const pics: Record<string, { url: string | null; pushName: string | null }> = {};
+      const batch = conversations.slice(0, 20);
+      const results = await Promise.allSettled(
+        batch.map(async (lead) => {
+          try {
+            const { data } = await supabase.functions.invoke("evolution-api", {
+              body: { action: "profile_picture", loja_id: activeLojaId, phone: lead.telefone },
+            });
+            return { id: lead.id, url: data?.profilePictureUrl || null, pushName: data?.pushName || null };
+          } catch {
+            return { id: lead.id, url: null, pushName: null };
+          }
+        })
+      );
+      results.forEach((r) => {
+        if (r.status === "fulfilled" && r.value) {
+          pics[r.value.id] = { url: r.value.url, pushName: r.value.pushName };
+        }
+      });
+      return pics;
+    },
+    enabled: !!activeLojaId && conversations.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const getDisplayName = (lead: ConversationSummary) => {
+    const pic = profilePics[lead.id];
+    if (pic?.pushName) return pic.pushName;
+    return getLeadName(lead.nome, lead.telefone);
+  };
+
+
     mutationFn: async (botActive: boolean) => {
       if (!selectedLead?.id) throw new Error("Selecione um lead");
       if (!activeLojaId) throw new Error("Loja ativa não encontrada");
