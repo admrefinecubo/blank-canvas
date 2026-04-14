@@ -32,12 +32,14 @@ import AdminLojaConversas from "@/pages/AdminLojaConversas";
 import AdminLojaFollowups from "@/pages/AdminLojaFollowups";
 import AdminLojaVisitas from "@/pages/AdminLojaVisitas";
 import AdminStats from "@/pages/AdminStats";
+import AdminLojaLogs from "@/pages/AdminLojaLogs";
 import LojaLeads from "@/pages/LojaLeads";
 import LojaCatalogo from "@/pages/LojaCatalogo";
 import LojaFollowups from "@/pages/LojaFollowups";
 import LojaVisitas from "@/pages/LojaVisitas";
 import LojaCampanhas from "@/pages/LojaCampanhas";
 import LojaVendas from "@/pages/LojaVendas";
+import LojaPosVenda from "@/pages/LojaPosVenda";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -86,6 +88,7 @@ const App = () => (
               <Route path="/visitas" element={<LojaVisitas />} />
               <Route path="/campanhas" element={<LojaCampanhas />} />
               <Route path="/vendas" element={<LojaVendas />} />
+              <Route path="/pos-venda" element={<LojaPosVenda />} />
               <Route path="/configuracoes" element={<SettingsPage />} />
               <Route path="/patients" element={<Patients />} />
               <Route path="/patients/:id" element={<PatientDetail />} />
@@ -112,6 +115,7 @@ const App = () => (
               <Route path="lojas/:id/conversas" element={<AdminLojaConversas />} />
               <Route path="lojas/:id/followups" element={<AdminLojaFollowups />} />
               <Route path="lojas/:id/visitas" element={<AdminLojaVisitas />} />
+              <Route path="lojas/:id/logs" element={<AdminLojaLogs />} />
             </Route>
             <Route path="/settings" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route index element={<SettingsPage />} />

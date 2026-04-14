@@ -511,6 +511,14 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">Aplicado quando cliente não responde após follow-up de promoção</p>
               </div>
+              <div>
+                <Label>Desconto para follow-up de orçamento pendente</Label>
+                <div className="relative max-w-xs">
+                  <Input type="number" value={form.desconto_followup_orcamento ?? ""} onChange={(e) => set("desconto_followup_orcamento", e.target.value ? Number(e.target.value) : null)} />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Aplicado no follow-up quando cliente recebeu orçamento mas não finalizou</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Loader2, MessageSquareText, Search, SendHorizontal, Store, UserRound } from "lucide-react";
+import { Loader2, MessageSquareText, Search, SendHorizontal, Store, UserRound, Info } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { activateHandoff, deactivateHandoff } from "@/lib/handoff";
 import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
+import LeadProfileDrawer from "@/components/LeadProfileDrawer";
 import { formatDateTime, getLeadName, getEtapaLabel } from "@/lib/whatsapp-admin";
 
 type ConversationSummary = {
@@ -79,6 +80,7 @@ export default function WhatsApp() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [draftMessage, setDraftMessage] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const { data: lojaContext } = useQuery({
     queryKey: ["whatsapp-loja-context", activeLojaId],
@@ -390,6 +392,9 @@ export default function WhatsApp() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setProfileOpen(true)}>
+                    <Info className="h-3.5 w-3.5" /> Perfil
+                  </Button>
                   <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2">
                     <span className={`h-2.5 w-2.5 rounded-full ${selectedLead.is_bot_active === false ? "bg-destructive" : "bg-primary"}`} />
                     <span className="text-sm font-medium">{selectedLead.is_bot_active === false ? "Bot pausado" : "Bot ativo"}</span>
@@ -484,6 +489,13 @@ export default function WhatsApp() {
           </CardContent>
         </Card>
       </div>
+
+      <LeadProfileDrawer
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        leadId={selectedLead?.id ?? null}
+        lojaId={activeLojaId}
+      />
     </div>
   );
 }

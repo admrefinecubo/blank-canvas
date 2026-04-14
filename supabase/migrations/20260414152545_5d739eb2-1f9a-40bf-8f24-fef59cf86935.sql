@@ -1,0 +1,1 @@
+ALTER TABLE public.lojas ADD COLUMN IF NOT EXISTS desconto_followup_orcamento numeric DEFAULT NULL;
