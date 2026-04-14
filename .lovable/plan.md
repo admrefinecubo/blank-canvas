@@ -1,44 +1,29 @@
 
 
-# Plano: Melhorar UX de Campanhas
+# Fix: Campanha marcada como disparada sem enviar nada
 
-## Duas alterações
+## Problemas identificados
 
-### 1. Filtro de segmentação com opções clicáveis (não digitação livre)
+1. **Validação ausente na criação**: O formulário permite criar campanha com `segment_type: "etapa_pipeline"` sem selecionar uma etapa — resultando em `segment_config: {}` vazio
+2. **Edge function não envia os contatos**: O `campaign-dispatch` envia apenas o nome do segmento ao N8N, sem os telefones dos leads. O N8N recebe `segmento: null` e não sabe pra quem enviar
+3. **Sucesso falso**: A edge function marca como "disparada" mesmo quando o webhook provavelmente não fez nada
 
-Quando o usuário seleciona "Por etapa do funil", mostrar um `Select` com as etapas já conhecidas (`LEAD_STAGE_OPTIONS` de `whatsapp-admin.ts`): Novo Lead, Qualificado, Orçamento, Negociação, Fechado, Perdido.
+## Correções
 
-Quando seleciona "Por origem", buscar valores distintos de `leads.origem` no banco e popular um `Select`.
+### 1. Validação no frontend (`LojaCampanhas.tsx`)
+- Bloquear criação se `segment_type` != "todos" e `segment_value` estiver vazio
+- Mostrar erro: "Selecione um valor para o segmento"
 
-Quando seleciona "Por interesse", buscar valores distintos de `leads.interesse` no banco e popular um `Select`.
+### 2. Edge function envia lista de telefones (`campaign-dispatch/index.ts`)
+- Antes de chamar o webhook, buscar os leads filtrados pelo `segment_type` + `segment_config`
+- Enviar array de `{nome, telefone}` no payload do webhook para o N8N
+- Incluir `targeted_leads_count` real baseado na query
 
-Assim o usuário só clica, sem digitar.
+### 3. Validação na edge function
+- Se nenhum lead for encontrado pelo filtro, retornar erro em vez de sucesso
+- Só marcar como "disparada" se houver leads para enviar
 
-### 2. Listar contatos no aviso de disparo
-
-Ao clicar "Disparar" numa campanha, antes de confirmar:
-- Buscar os leads que serão atingidos (usando `segment_type` + `segment_config` da campanha)
-- Mostrar a lista com nome e telefone no `AlertDialog` (com scroll, max ~10 visíveis)
-- Exibir o total no topo: "X leads receberão esta campanha"
-
-### Arquivos alterados
-
-- `src/pages/LojaCampanhas.tsx`:
-  - Adicionar query para buscar valores distintos de `origem` e `interesse` da tabela `leads`
-  - Substituir `Input` do filtro por `Select` condicional (etapa_pipeline usa constante local, origem/interesse usam dados do banco)
-  - Adicionar query que carrega leads do segmento quando `confirmDispatch` é setado
-  - Renderizar lista de leads (nome + telefone) dentro do `AlertDialogDescription`
-
-### Detalhes técnicos
-
-```
-Segmentação "etapa_pipeline" → Select com LEAD_STAGE_OPTIONS (constante)
-Segmentação "origem"         → Select com distinct leads.origem WHERE loja_id = X
-Segmentação "interesse"      → Select com distinct leads.interesse WHERE loja_id = X
-
-Disparo confirm → query leads filtrados pelo segment_config da campanha
-                → ScrollArea com lista de nomes/telefones
-```
-
-Nenhuma migration necessária. Apenas alteração de UI no `LojaCampanhas.tsx`.
+## Arquivos alterados
+- `src/pages/LojaCampanhas.tsx` — adicionar validação de segment_value obrigatório
+- `supabase/functions/campaign-dispatch/index.ts` — buscar leads, enviar telefones no payload, validar que existem leads
 
