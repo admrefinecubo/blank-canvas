@@ -88,6 +88,7 @@ const App = () => (
               <Route path="/visitas" element={<LojaVisitas />} />
               <Route path="/campanhas" element={<LojaCampanhas />} />
               <Route path="/vendas" element={<LojaVendas />} />
+              <Route path="/pos-venda" element={<LojaPosVenda />} />
               <Route path="/configuracoes" element={<SettingsPage />} />
               <Route path="/patients" element={<Patients />} />
               <Route path="/patients/:id" element={<PatientDetail />} />
@@ -114,6 +115,7 @@ const App = () => (
               <Route path="lojas/:id/conversas" element={<AdminLojaConversas />} />
               <Route path="lojas/:id/followups" element={<AdminLojaFollowups />} />
               <Route path="lojas/:id/visitas" element={<AdminLojaVisitas />} />
+              <Route path="lojas/:id/logs" element={<AdminLojaLogs />} />
             </Route>
             <Route path="/settings" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route index element={<SettingsPage />} />
