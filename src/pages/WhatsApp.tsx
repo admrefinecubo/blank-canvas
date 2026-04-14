@@ -23,7 +23,6 @@ type ConversationSummary = {
   etapa_pipeline: string;
   is_bot_active?: boolean;
   bot_paused_until?: string | null;
-  agente_pausado?: boolean | null;
   ultima_msg?: string | null;
   ultima_data?: string | null;
 };
