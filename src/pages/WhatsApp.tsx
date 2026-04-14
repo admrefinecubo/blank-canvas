@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { activateHandoff, deactivateHandoff } from "@/lib/handoff";
 import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
 import { formatDateTime, getLeadName, getEtapaLabel } from "@/lib/whatsapp-admin";
 
@@ -181,13 +182,17 @@ export default function WhatsApp() {
   const toggleBotMutation = useMutation({
     mutationFn: async (nextValue: boolean) => {
       if (!selectedLead?.id) throw new Error("Selecione um lead");
-
-      const { error } = await supabase
-        .from("leads")
-        .update({ is_bot_active: nextValue })
-        .eq("id", selectedLead.id);
-
-      if (error) throw error;
+      const params = {
+        leadId: selectedLead.id,
+        telefone: selectedLead.telefone,
+        lojaId: activeLojaId!,
+        instance: lojaContext?.instance,
+      };
+      if (nextValue) {
+        await deactivateHandoff(params);
+      } else {
+        await activateHandoff(params);
+      }
       return nextValue;
     },
     onSuccess: (nextValue) => {
@@ -233,24 +238,20 @@ export default function WhatsApp() {
         supabase.from("leads").update({
           ultima_mensagem: message,
           ultima_interacao: now,
-          is_bot_active: false,
         }).eq("id", selectedLead.id),
       ]);
 
       if (messageInsert.error) throw messageInsert.error;
       if (leadUpdate.error) throw leadUpdate.error;
 
-      if (selectedLead.agente_pausado !== true) {
-        fetch("https://n8n.refinecubo.com.br/webhook/handoff-toggle", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            telefone: selectedLead.telefone,
-            instance: lojaContext?.instance ?? "",
-            loja_id: activeLojaId,
-            action: "pause",
-          }),
-        }).catch(() => {});
+      // Ativa handoff automaticamente ao enviar mensagem manual
+      if (selectedLead.is_bot_active !== false) {
+        await activateHandoff({
+          leadId: selectedLead.id,
+          telefone: selectedLead.telefone,
+          lojaId: activeLojaId!,
+          instance: lojaContext?.instance,
+        });
       }
     },
     onSuccess: () => {
