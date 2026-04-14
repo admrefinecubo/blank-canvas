@@ -414,7 +414,7 @@ export default function LojaLeads() {
                   variant="outline"
                   className="gap-2"
                   disabled={!selectedLead.is_bot_active || pauseBotMutation.isPending}
-                  onClick={() => pauseBotMutation.mutate(selectedLead.id)}
+                  onClick={() => pauseBotMutation.mutate({ id: selectedLead.id, telefone: selectedLead.telefone })}
                 >
                   <PauseCircle className="h-4 w-4" />
                   {pauseBotMutation.isPending ? "Pausando..." : "Pausar bot"}
