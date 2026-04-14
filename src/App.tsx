@@ -32,12 +32,14 @@ import AdminLojaConversas from "@/pages/AdminLojaConversas";
 import AdminLojaFollowups from "@/pages/AdminLojaFollowups";
 import AdminLojaVisitas from "@/pages/AdminLojaVisitas";
 import AdminStats from "@/pages/AdminStats";
+import AdminLojaLogs from "@/pages/AdminLojaLogs";
 import LojaLeads from "@/pages/LojaLeads";
 import LojaCatalogo from "@/pages/LojaCatalogo";
 import LojaFollowups from "@/pages/LojaFollowups";
 import LojaVisitas from "@/pages/LojaVisitas";
 import LojaCampanhas from "@/pages/LojaCampanhas";
 import LojaVendas from "@/pages/LojaVendas";
+import LojaPosVenda from "@/pages/LojaPosVenda";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
