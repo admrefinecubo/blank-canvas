@@ -148,6 +148,11 @@ export default function Roadmap() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Arthos watermark — loads first */}
+      <div className="fixed bottom-0 right-0" style={{ zIndex: 2147483647 }}>
+        <img src={arthosBadge} alt="Made by Arthos" className="h-[48px] rounded-xl" />
+      </div>
+
       {/* Header */}
       <header className="border-b border-border/60 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-5 sm:px-6">
@@ -414,11 +419,6 @@ export default function Roadmap() {
         <footer className="text-center text-xs text-muted-foreground py-6 border-t border-border/40">
           LojaADS · CRM para Lojas de Móveis e Colchões · Versão 1.0
         </footer>
-
-        {/* Arthos watermark */}
-        <div className="fixed bottom-0 right-0" style={{ zIndex: 2147483647 }}>
-          <img src={arthosBadge} alt="Made by Arthos" className="h-[48px] rounded-xl" />
-        </div>
       </main>
     </div>
   );
