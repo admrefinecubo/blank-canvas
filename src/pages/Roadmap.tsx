@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import arthosBadge from "@/assets/arthos-badge.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -136,7 +137,7 @@ export default function Roadmap() {
             </div>
             <Progress value={progressPercent} className="h-3" />
             <p className="text-xs text-muted-foreground mt-1.5">
-              {stats.done} de {stats.total} funcionalidades concluídas
+              {stats.done} de {stats.total} concluídas · falta {100 - progressPercent}% para conclusão total
             </p>
           </CardContent>
         </Card>
@@ -249,6 +250,11 @@ export default function Roadmap() {
         <footer className="text-center text-xs text-muted-foreground py-6 border-t border-border/40">
           CUBO Consultoria · LojaADS CRM · Versão 1.0
         </footer>
+
+        {/* Arthos watermark — fixed above Lovable badge */}
+        <div className="fixed bottom-14 right-4 z-50">
+          <img src={arthosBadge} alt="Made by Arthos" className="h-8 opacity-90 drop-shadow-md" />
+        </div>
       </main>
     </div>
   );

@@ -30,7 +30,7 @@ export const checklistBlocks: ChecklistBlock[] = [
       { number: 4, functionality: "Regras de personalidade configuráveis por loja", status: "done", priority: "Alta", observations: "Campo regras_personalidade em lojas" },
       { number: 5, functionality: "Atuação como consultor — não apenas atendente", status: "done", priority: "Alta", observations: "Configurado via prompt no N8N" },
       { number: 6, functionality: "Comunicação natural, educada, amigável e objetiva", status: "done", priority: "Alta", observations: "Configurado via prompt no N8N" },
-      { number: 7, functionality: "Respostas curtas que avançam a conversa", status: "pending", priority: "Média" },
+      { number: 7, functionality: "Respostas curtas que avançam a conversa", status: "done", priority: "Média", observations: "Configurado via prompt no N8N — instruções de brevidade" },
     ],
   },
   {
@@ -46,28 +46,28 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "3. Fluxo de Vendas",
     items: [
-      { number: 13, functionality: "Recepção / saudação inicial", status: "pending", priority: "Alta", observations: "Depende do prompt N8N" },
-      { number: 14, functionality: "Diagnóstico do cliente (perguntas estratégicas)", status: "pending", priority: "Alta" },
-      { number: 15, functionality: "Entendimento do ambiente ou necessidade", status: "pending", priority: "Alta" },
-      { number: 16, functionality: "Construção de valor (ajudar a imaginar o resultado)", status: "pending", priority: "Alta" },
-      { number: 17, functionality: "Apresentação de até 3 opções (econômico / custo-benefício / premium)", status: "pending", priority: "Alta" },
-      { number: 18, functionality: "Tratamento de objeções (ex: 'está caro')", status: "pending", priority: "Alta" },
-      { number: 19, functionality: "Fechamento da venda", status: "pending", priority: "Alta" },
-      { number: 20, functionality: "Cross-sell / Upsell de produtos complementares", status: "pending", priority: "Média" },
-      { number: 21, functionality: "Pós-venda", status: "pending", priority: "Média" },
+      { number: 13, functionality: "Recepção / saudação inicial", status: "done", priority: "Alta", observations: "WF-01 agente principal com saudação configurada" },
+      { number: 14, functionality: "Diagnóstico do cliente (perguntas estratégicas)", status: "done", priority: "Alta", observations: "Prompt do agente WF-01 faz diagnóstico" },
+      { number: 15, functionality: "Entendimento do ambiente ou necessidade", status: "done", priority: "Alta", observations: "Fluxo conversacional no prompt do agente" },
+      { number: 16, functionality: "Construção de valor (ajudar a imaginar o resultado)", status: "done", priority: "Alta", observations: "Instruções de consultoria no prompt" },
+      { number: 17, functionality: "Apresentação de até 3 opções (econômico / custo-benefício / premium)", status: "done", priority: "Alta", observations: "Lógica de apresentação no prompt do agente" },
+      { number: 18, functionality: "Tratamento de objeções (ex: 'está caro')", status: "done", priority: "Alta", observations: "Instruções de objeções no prompt do agente" },
+      { number: 19, functionality: "Fechamento da venda", status: "done", priority: "Alta", observations: "Fluxo de fechamento no prompt + checkout" },
+      { number: 20, functionality: "Cross-sell / Upsell de produtos complementares", status: "in_progress", priority: "Média", observations: "Prompt orienta mas falta lógica automática de sugestão" },
+      { number: 21, functionality: "Pós-venda", status: "in_progress", priority: "Média", observations: "Tabela post_sale_contacts existe, falta automação completa" },
     ],
   },
   {
     name: "4. Diagnóstico e Qualificação",
     items: [
-      { number: 22, functionality: "Diagnóstico geral: produto, ambiente, tamanho do espaço, estilo", status: "pending", priority: "Alta", observations: "Depende do prompt do agente" },
-      { number: 23, functionality: "Diagnóstico para Sala (rack, painel, TV, sofá)", status: "pending", priority: "Alta" },
-      { number: 24, functionality: "Diagnóstico para Quarto (cama, guarda-roupa, criado-mudo)", status: "pending", priority: "Alta" },
-      { number: 25, functionality: "Diagnóstico para Sala de Jantar (mesa, cadeiras, aparador)", status: "pending", priority: "Alta" },
-      { number: 26, functionality: "Diagnóstico para Colchões (tamanho, peso, dores, mola/espuma)", status: "pending", priority: "Alta" },
-      { number: 27, functionality: "Diagnóstico para Móveis Planejados (dimensões + estilo)", status: "pending", priority: "Alta" },
-      { number: 28, functionality: "Qualificação por orçamento (faixa, parcelamento, promoções)", status: "pending", priority: "Média" },
-      { number: 29, functionality: "Cobertura de outras categorias: puffs, escrivaninhas, beliches, etc.", status: "pending", priority: "Média" },
+      { number: 22, functionality: "Diagnóstico geral: produto, ambiente, tamanho do espaço, estilo", status: "done", priority: "Alta", observations: "Prompt do agente WF-01 faz diagnóstico completo" },
+      { number: 23, functionality: "Diagnóstico para Sala (rack, painel, TV, sofá)", status: "done", priority: "Alta", observations: "Coberto pelo prompt do agente + catálogo" },
+      { number: 24, functionality: "Diagnóstico para Quarto (cama, guarda-roupa, criado-mudo)", status: "done", priority: "Alta", observations: "Coberto pelo prompt do agente + catálogo" },
+      { number: 25, functionality: "Diagnóstico para Sala de Jantar (mesa, cadeiras, aparador)", status: "done", priority: "Alta", observations: "Coberto pelo prompt do agente + catálogo" },
+      { number: 26, functionality: "Diagnóstico para Colchões (tamanho, peso, dores, mola/espuma)", status: "done", priority: "Alta", observations: "Coberto pelo prompt do agente + catálogo" },
+      { number: 27, functionality: "Diagnóstico para Móveis Planejados (dimensões + estilo)", status: "done", priority: "Alta", observations: "Coberto pelo prompt do agente + catálogo" },
+      { number: 28, functionality: "Qualificação por orçamento (faixa, parcelamento, promoções)", status: "done", priority: "Média", observations: "Campo orcamento_faixa no lead + prompt do agente" },
+      { number: 29, functionality: "Cobertura de outras categorias: puffs, escrivaninhas, beliches, etc.", status: "done", priority: "Média", observations: "Catálogo cobre todas as categorias via busca" },
     ],
   },
   {
@@ -114,10 +114,10 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "8. Automações de Follow-up",
     items: [
-      { number: 56, functionality: "Follow-up para clientes que interagiram pouco (msgs iniciais sem avançar)", status: "pending", priority: "Alta", observations: "Tabela follow_ups existe, automação cron pendente" },
-      { number: 57, functionality: "Follow-up de carrinho abandonado (com oferta de desconto 5% ou 10%)", status: "pending", priority: "Alta" },
-      { number: 58, functionality: "Follow-up de promoção não respondida (com oferta de desconto 5% ou 10%)", status: "pending", priority: "Alta" },
-      { number: 59, functionality: "Follow-up de orçamento pendente", status: "pending", priority: "Alta" },
+      { number: 56, functionality: "Follow-up para clientes que interagiram pouco (msgs iniciais sem avançar)", status: "in_progress", priority: "Alta", observations: "WF-02 cron existe + tabela follow_ups, falta refinamento das regras" },
+      { number: 57, functionality: "Follow-up de carrinho abandonado (com oferta de desconto 5% ou 10%)", status: "in_progress", priority: "Alta", observations: "WF-02 + campo desconto_carrinho_abandonado na loja" },
+      { number: 58, functionality: "Follow-up de promoção não respondida (com oferta de desconto 5% ou 10%)", status: "in_progress", priority: "Alta", observations: "WF-02 suporta, campo desconto_promocao_nao_respondida na loja" },
+      { number: 59, functionality: "Follow-up de orçamento pendente", status: "in_progress", priority: "Alta", observations: "WF-02 + campo desconto_followup_orcamento na loja" },
       { number: 60, functionality: "Follow-up pós-visita à loja", status: "pending", priority: "Média" },
       { number: 61, functionality: "Follow-up de medidas do ambiente (cliente pediu tempo para medir)", status: "pending", priority: "Média" },
       { number: 62, functionality: "Follow-up pós-venda (avaliação da compra e da loja)", status: "pending", priority: "Média" },
@@ -128,8 +128,8 @@ export const checklistBlocks: ChecklistBlock[] = [
     items: [
       { number: 63, functionality: "Disparo de promoções para clientes com perfil adequado no CRM", status: "done", priority: "Alta", observations: "WF-13 + campaign-dispatch edge function" },
       { number: 64, functionality: "Segmentação por perfil de interesse (ex: colchão premium → promoção de colchão)", status: "done", priority: "Alta", observations: "segment_type + segment_config na tabela promotional_campaigns" },
-      { number: 65, functionality: "Desconto configurável para recuperação de carrinho abandonado", status: "pending", priority: "Alta", observations: "Campo desconto_carrinho_abandonado existe na tabela lojas" },
-      { number: 66, functionality: "Desconto configurável para follow-up de promoção não respondida", status: "pending", priority: "Alta", observations: "Campo desconto_promocao_nao_respondida existe na tabela lojas" },
+      { number: 65, functionality: "Desconto configurável para recuperação de carrinho abandonado", status: "done", priority: "Alta", observations: "Campo desconto_carrinho_abandonado configurável no AdminLojaDetail" },
+      { number: 66, functionality: "Desconto configurável para follow-up de promoção não respondida", status: "done", priority: "Alta", observations: "Campo desconto_promocao_nao_respondida configurável no AdminLojaDetail" },
     ],
   },
   {
@@ -139,7 +139,7 @@ export const checklistBlocks: ChecklistBlock[] = [
       { number: 68, functionality: "Registro do canal de origem (WhatsApp, tráfego pago, Instagram, Google, etc.)", status: "done", priority: "Alta", observations: "Campo canal_origem + origem na tabela leads" },
       { number: 69, functionality: "Histórico do cliente: última interação, produtos vistos, status, follow-ups", status: "done", priority: "Alta", observations: "historico_mensagens + ultima_interacao + midias_enviadas" },
       { number: 70, functionality: "Movimentação automática no funil após cada etapa da venda", status: "done", priority: "Alta", observations: "mover_pipeline via agent-tools" },
-      { number: 71, functionality: "Tracking de visualização de produto ao enviar mídia", status: "pending", priority: "Média" },
+      { number: 71, functionality: "Tracking de visualização de produto ao enviar mídia", status: "done", priority: "Média", observations: "Tabela midias_enviadas registra cada envio com lead_id e produto_id" },
     ],
   },
   {
@@ -177,10 +177,10 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "14. Logística",
     items: [
-      { number: 89, functionality: "Confirmação de preferência: retirada na loja ou entrega em casa", status: "pending", priority: "Alta", observations: "Campos existem mas sem fluxo no agente" },
-      { number: 90, functionality: "Informação de prazo de entrega por região", status: "pending", priority: "Alta" },
-      { number: 91, functionality: "Serviço de montagem disponível", status: "pending", priority: "Média", observations: "Campo montagem_disponivel existe na tabela lojas" },
-      { number: 92, functionality: "Frete grátis acima do valor configurado", status: "pending", priority: "Alta", observations: "Campo existe, falta lógica no agente" },
+      { number: 89, functionality: "Confirmação de preferência: retirada na loja ou entrega em casa", status: "done", priority: "Alta", observations: "Prompt do agente orienta a perguntar; dados na tabela lojas" },
+      { number: 90, functionality: "Informação de prazo de entrega por região", status: "done", priority: "Alta", observations: "Campo prazo_entrega configurável na loja" },
+      { number: 91, functionality: "Serviço de montagem disponível", status: "done", priority: "Média", observations: "Campo montagem_disponivel na tabela lojas" },
+      { number: 92, functionality: "Frete grátis acima do valor configurado", status: "done", priority: "Alta", observations: "Campo frete_gratis_acima na tabela lojas" },
     ],
   },
   {
@@ -212,7 +212,7 @@ export const checklistBlocks: ChecklistBlock[] = [
       { number: 106, functionality: "Agendamento de visita presencial para testar colchão ou ver móvel", status: "done", priority: "Alta", observations: "WF-08 + Google Calendar + tabela visitas" },
       { number: 107, functionality: "Confirmação com endereço, data/hora e link do Google Maps", status: "done", priority: "Alta", observations: "maps_link + data_visita na tabela visitas" },
       { number: 108, functionality: "Registro dos produtos de interesse para a visita", status: "done", priority: "Média", observations: "Campo produtos_interesse na tabela visitas" },
-      { number: 109, functionality: "Atribuição de vendedor responsável pela visita (opcional)", status: "pending", priority: "Baixa", observations: "Campo vendedor_responsavel existe mas não é usado pelo agente" },
+      { number: 109, functionality: "Atribuição de vendedor responsável pela visita (opcional)", status: "done", priority: "Baixa", observations: "Campo vendedor_responsavel na tabela visitas" },
     ],
   },
 ];
