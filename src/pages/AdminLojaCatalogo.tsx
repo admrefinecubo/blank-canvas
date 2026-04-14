@@ -150,12 +150,10 @@ export default function AdminLojaCatalogo() {
       queryClient.invalidateQueries({ queryKey: ["admin-produtos", lojaId] });
       setShowForm(false);
       toast.success("Produto salvo!");
-      // Fire-and-forget: silently trigger embedding indexation
-      if (produtoId && import.meta.env.VITE_WF11_WEBHOOK_URL) {
-        fetch(import.meta.env.VITE_WF11_WEBHOOK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ loja_id: lojaId, produto_id: produtoId }),
+      // Fire-and-forget: trigger embedding re-indexation via edge function
+      if (produtoId) {
+        supabase.functions.invoke("catalog-actions", {
+          body: { action: "reindex_embeddings", loja_id: lojaId, produto_id: produtoId },
         }).catch(() => {});
       }
     },
