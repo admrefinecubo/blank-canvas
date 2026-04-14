@@ -309,12 +309,9 @@ export default function LojaLeads() {
                           <div className="font-medium">{getLeadName(lead.nome, lead.telefone)}</div>
                            <div className="flex flex-wrap items-center gap-2">
                             <Badge variant="secondary">{origin.label}</Badge>
-                            <Badge variant="outline" className={lead.is_bot_active ? "" : "text-muted-foreground"}>
-                              {lead.is_bot_active ? "Bot ativo" : "Bot pausado"}
+                            <Badge variant={lead.is_bot_active ? "outline" : "destructive"}>
+                              {lead.is_bot_active ? "Bot ativo" : "Humano"}
                             </Badge>
-                            {lead.agente_pausado && (
-                              <Badge variant="destructive" className="gap-1">Humano</Badge>
-                            )}
                             {lead.orcamento_faixa && (
                               <Badge variant="outline">R$ {lead.orcamento_faixa}</Badge>
                             )}
