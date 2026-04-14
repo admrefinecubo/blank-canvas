@@ -82,6 +82,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/roadmap" element={<Roadmap />} />
+            <Route path="/workflows-editor" element={<WorkflowsEditor />} />
             <Route path="/" element={<RootRedirect />} />
             <Route element={<ProtectedRoute requiredMode="client"><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
