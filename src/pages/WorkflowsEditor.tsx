@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -176,7 +176,7 @@ export default function WorkflowsEditor() {
     }
   };
 
-  useState(() => { loadFixedWF01(); });
+  useEffect(() => { loadFixedWF01(); }, []);
 
   const parsedInput = useMemo(() => {
     if (!inputJson.trim()) return null;
@@ -384,6 +384,57 @@ export default function WorkflowsEditor() {
                 </pre>
               </CardContent>
             )}
+          </Card>
+        )}
+
+        {/* Pre-fixed Workflows */}
+        {fixedWorkflows.length > 0 && (
+          <Card className="border-primary/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" /> Workflows Corrigidos (prontos para importar)
+              </CardTitle>
+              <CardDescription>JSONs já corrigidos — copie e importe no n8n</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {fixedWorkflows.map((wf, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <FileJson className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">{wf.name}</span>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {JSON.parse(wf.json).nodes?.length || 0} nodes
+                    </Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setOutputJson(wf.json);
+                        setShowPreview(true);
+                        toast.success(`Preview do ${wf.name} carregado`);
+                      }}
+                    >
+                      <ChevronDown className="h-4 w-4 mr-1" /> Preview
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(wf.json);
+                          toast.success(`${wf.name} copiado! Cole no n8n (importar workflow)`);
+                        } catch {
+                          toast.error("Erro ao copiar");
+                        }
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-1" /> Copiar JSON
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
           </Card>
         )}
       </div>
