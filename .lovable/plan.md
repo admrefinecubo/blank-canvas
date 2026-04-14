@@ -1,19 +1,35 @@
 
 
-## Plano: Adicionar seção "Trabalhando Agora"
+## Plano: Página de Gestão de Workflows n8n
 
-Adicionar uma seção destacada logo abaixo da barra de progresso geral, mostrando todos os itens com status `in_progress` do checklist. Isso deixa claro pro patrão exatamente no que você está focado neste momento.
+Criar uma página `/workflows-editor` pública (como o roadmap) onde você pode colar, editar e copiar JSONs dos workflows n8n. Foco no fix do bug de horário comercial.
 
 ### O que será feito
 
-1. **Nova seção no Roadmap** (entre a barra de progresso e os gráficos)
-   - Card com ícone de pulso/atividade e título "Trabalhando Agora"
-   - Lista todos os itens `in_progress` extraídos automaticamente do `checklistBlocks`
-   - Cada item mostra: ícone animado ⏳, número (#), nome, descrição curta, bloco de origem e prioridade
-   - Visual com borda amber/amarela pra destacar que é trabalho ativo
+1. **Nova página `/workflows-editor`** — página pública sem login
+   - Área de texto grande pra colar JSON do workflow
+   - Botão "Colar JSON" e "Copiar JSON corrigido"
+   - Validação de JSON com feedback visual
+   - Seção com os fixes conhecidos pré-aplicáveis (checkbox):
+     - **Fix Horário Comercial**: Corrige a lógica de comparação BRT — o bug provável é que `diasNumericos` mapeia "seg,ter,qua..." mas o campo pode estar em outro formato, ou a comparação de horário está usando string ao invés de número
+   - Preview do JSON formatado com syntax highlight básico
 
-2. **Lógica** — `useMemo` filtrando `checklistBlocks.flatMap(b => b.items).filter(i => i.status === "in_progress")` com referência ao bloco de origem
+2. **Fix automático do horário comercial** — botão que aplica o patch no JSON:
+   - Localiza o node de checagem de horário no WF-01
+   - Corrige a lógica de conversão UTC→BRT (garantir `getUTCHours() - 3` com wrap correto)
+   - Corrige o mapeamento de dias (aceitar "seg", "segunda", "Segunda-feira" etc.)
+   - Corrige comparação de horário (converter "08:00" pra minutos antes de comparar)
+
+3. **Rota no App.tsx** — adicionar `/workflows-editor` como rota pública (igual `/roadmap`)
 
 ### Arquivos alterados
-- `src/pages/Roadmap.tsx` — adicionar seção entre a barra de progresso e os gráficos
+- `src/pages/WorkflowsEditor.tsx` — nova página
+- `src/App.tsx` — nova rota pública
+
+### Sobre o bug do horário comercial
+
+Baseado na análise do WF-01, o problema mais provável é:
+- A conversão UTC→BRT usa `new Date().getHours() - 3` ao invés de `getUTCHours() - 3`, que no servidor n8n pode já estar em outro timezone
+- Ou o `dias_funcionamento` da loja está em formato diferente do esperado pelo mapeamento
+- O fix vai normalizar ambos os lados da comparação
 
