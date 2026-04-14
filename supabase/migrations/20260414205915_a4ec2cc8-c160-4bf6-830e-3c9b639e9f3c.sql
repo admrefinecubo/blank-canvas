@@ -1,0 +1,1 @@
+UPDATE public.lojas SET nome_assistente_ia = NULL WHERE id = '7da66bc8-9e7e-49de-88f0-72b8a43292f8';
