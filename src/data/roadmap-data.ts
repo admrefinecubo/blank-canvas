@@ -322,8 +322,12 @@ export interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  { date: "2026-04-14T23:00:00", title: "Sprint final com Claude Code — 15 itens concluídos", description: "Workflows WF-02, WF-04, WF-06, WF-09, WF-11 finalizados. Envio de mídias, follow-ups e orçamento corrigidos e testados end-to-end.", type: "progress" },
+  { date: "2026-04-14T20:00:00", title: "RAG + Busca semântica validada", description: "match_produtos testado end-to-end com embeddings reais. Re-indexação automática (WF-11) ativada com trigger.", type: "feature" },
+  { date: "2026-04-14T18:00:00", title: "Envio de mídias corrigido (WF-04/WF-06)", description: "Pipeline de envio de fotos e vídeos no WhatsApp funcionando. Delay anti-spam e ordem mídia→texto→CRM validados.", type: "fix" },
   { date: "2026-04-14T16:00:00", title: "Limpeza de referências CUBO", description: "Removidas todas as referências à CUBO Consultoria. Tema renomeado para lojaads-theme. URLs hardcoded substituídas por env vars.", type: "infra" },
   { date: "2026-04-14T14:30:00", title: "Roadmap atualizado — 74 itens concluídos", description: "Auditoria completa do projeto. 24 itens adicionais marcados como feitos após análise das edge functions e prompts.", type: "progress" },
+  { date: "2026-04-13T22:00:00", title: "Follow-ups refinados (WF-02)", description: "Regras de carrinho abandonado, orçamento pendente e promoção não respondida finalizadas. Descontos configuráveis por loja.", type: "feature" },
   { date: "2026-04-13T10:00:00", title: "WF-13 Campanha Promocional", description: "Workflow de disparo de campanhas promocionais com segmentação por perfil de interesse implementado e testado.", type: "feature" },
   { date: "2026-04-12T18:00:00", title: "WF-14 Sync Estoque E-commerce", description: "Webhook de sincronização de estoque e preço com plataformas de e-commerce ativo.", type: "feature" },
   { date: "2026-04-12T11:00:00", title: "Follow-ups automáticos (WF-02)", description: "Cron de follow-up com regras para carrinho abandonado, orçamento pendente e promoção não respondida.", type: "feature" },
