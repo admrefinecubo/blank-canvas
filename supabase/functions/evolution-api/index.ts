@@ -374,6 +374,8 @@ Deno.serve(async (req) => {
       }
 
       let mediaData = media_url;
+      let fileName = "arquivo";
+
       if (media_url.startsWith("http")) {
         try {
           const res = await fetch(media_url);
@@ -381,6 +383,14 @@ Deno.serve(async (req) => {
           const buffer = await blob.arrayBuffer();
           const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
           mediaData = `data:${blob.type};base64,${base64}`;
+
+          // Tentar extrair o nome do arquivo da URL
+          const urlParts = media_url.split("/");
+          fileName = urlParts[urlParts.length - 1] || "arquivo";
+          if (!fileName.includes(".")) {
+            const ext = blob.type.split("/")[1] || "png";
+            fileName += `.${ext}`;
+          }
         } catch (e) {
           console.error("Erro ao converter URL para base64:", e);
         }
@@ -393,6 +403,7 @@ Deno.serve(async (req) => {
           number: phone.replace(/\D/g, ""),
           mediatype: media_type === "video" ? "video" : "image",
           media: mediaData,
+          fileName: fileName,
           caption: caption || "",
         }),
       });
