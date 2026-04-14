@@ -1,385 +1,425 @@
-import { useState, useMemo, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  ClipboardPaste,
+  Copy,
+  FileJson,
+  Save,
+  Upload,
+  Wrench,
+  AlertTriangle,
+  Database,
+  FolderOpen,
+} from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  ArrowLeft, ClipboardPaste, Copy, Check, Wrench, AlertTriangle,
-  Clock, FileJson, Bug, ChevronDown, ChevronUp
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
+  applyWorkflowFixes,
+  createStoredWorkflowEntry,
+  DEFAULT_SELECTED_FIX_IDS,
+  diagnoseWorkflow,
+  getWorkflowFixes,
+  parseStoredWorkflowLibrary,
+  parseWorkflowJson,
+  StoredWorkflowEntry,
+  WORKFLOW_LIBRARY_STORAGE_KEY,
+  WorkflowDiagnosis,
+} from "@/lib/workflow-patches";
 
-// ── Fix definitions ──
-interface Fix {
-  id: string;
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-  severity: "critical" | "warning" | "info";
-  apply: (workflow: any) => { workflow: any; changed: boolean; details: string };
-}
-
-const BUSINESS_HOURS_FIX_CODE = `const loja = $('Supabase - Carregar Config da Loja (Tenant)').first()?.json || {};
-const historico = $('Supabase - Carregar Histórico de Conversa (últimas 25)').all().map(i => i.json);
-const lead = $('Supabase - Buscar ou Criar Lead (Upsert)').first().json;
-const payloadNode = $('Code - Extrair Campos do Payload').first().json;
-
-// Brasil = UTC-3 fixo (sem DST desde 2019)
-const agora = new Date();
-const brDate = new Date(agora.getTime() - 3 * 60 * 60 * 1000);
-const hBR = brDate.getUTCHours();
-const mBR = brDate.getUTCMinutes();
-const minutosAgora = hBR * 60 + mBR;
-const diaSemana = brDate.getUTCDay(); // 0=Dom, 1=Seg, ..., 6=Sab
-
-const horaInicio = loja.horario_inicio || '08:00';
-const horaFim    = loja.horario_fim    || '18:00';
-const [hIni, mIni] = horaInicio.split(':').map(Number);
-const [hFim, mFim] = horaFim.split(':').map(Number);
-const minutosInicio = hIni * 60 + (mIni || 0);
-const minutosFim    = hFim * 60 + (mFim || 0);
-const dentroHorario_hora = minutosAgora >= minutosInicio && minutosAgora <= minutosFim;
-
-// Dias de funcionamento — aceita "seg", "segunda", "segunda-feira", etc.
-const diasMap = {
-  dom: 0, domingo: 0, 'domingo-feira': 0,
-  seg: 1, segunda: 1, 'segunda-feira': 1,
-  ter: 2, terca: 2, terça: 2, 'terca-feira': 2, 'terça-feira': 2,
-  qua: 3, quarta: 3, 'quarta-feira': 3,
-  qui: 4, quinta: 4, 'quinta-feira': 4,
-  sex: 5, sexta: 5, 'sexta-feira': 5,
-  sab: 6, sabado: 6, sábado: 6,
-};
-const diasFuncionamento = loja.dias_funcionamento
-  ? loja.dias_funcionamento.split(',').map(d => {
-      const key = d.trim().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
-      return diasMap[key] ?? diasMap[d.trim().toLowerCase()];
-    }).filter(d => d !== undefined && d !== null)
-  : null;
-const dentroDia = !diasFuncionamento || diasFuncionamento.length === 0 || diasFuncionamento.includes(diaSemana);
-const dentroHorario = dentroHorario_hora && dentroDia;
-
-// Formatar histórico para o prompt
-const historicoFormatado = historico
-  .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-  .map(m => \`\${m.role === 'user' ? 'Cliente' : 'Assistente'}: \${m.content}\`)
-  .join('\\n');
-
-const primeiroContato = historico.length === 0;
-const nomeAssistente = loja.nome_assistente_ia || loja.nome_assistente || 'Sofia';`;
-
-function findNodeByName(nodes: any[], patterns: string[]): any | null {
-  for (const node of nodes) {
-    const name = (node.name || "").toLowerCase();
-    if (patterns.some(p => name.includes(p.toLowerCase()))) return node;
-  }
-  return null;
-}
-
-const fixes: Fix[] = [
+const PRESET_WORKFLOWS = [
   {
-    id: "fix-horario",
-    label: "Fix Horário Comercial (BRT)",
-    description: "Corrige mapeamento de dias (aceita 'seg', 'segunda', 'segunda-feira', etc.), normaliza acentos, e garante conversão UTC→BRT correta com getUTCHours(). Também corrige parse de minutos com fallback para 0.",
-    icon: <Clock className="h-4 w-4" />,
-    severity: "critical",
-    apply: (workflow) => {
-      const nodes = workflow.nodes || [];
-      const node = findNodeByName(nodes, ["Checar Horário", "Montar Contexto"]);
-      if (!node) return { workflow, changed: false, details: "Node 'Checar Horário + Montar Contexto' não encontrado." };
-
-      const oldCode = node.parameters?.jsCode || "";
-      if (!oldCode.includes("diasNumericos") && !oldCode.includes("dentroHorario")) {
-        return { workflow, changed: false, details: "Node encontrado mas não contém lógica de horário." };
-      }
-
-      // Extract the return statement part (everything after the business hours logic)
-      const returnMatch = oldCode.match(/return \[\{[\s\S]*$/);
-      if (!returnMatch) return { workflow, changed: false, details: "Não encontrou bloco return no código." };
-
-      node.parameters.jsCode = BUSINESS_HOURS_FIX_CODE + "\n\n" + returnMatch[0];
-      return {
-        workflow,
-        changed: true,
-        details: "✅ Mapeamento de dias expandido (seg/segunda/segunda-feira + sem acento). Conversão UTC→BRT validada. Parse de minutos com fallback."
-      };
-    }
+    path: "/workflows/WF-01-fixed.json",
+    sourceName: "WF-01 · Agente de Vendas WhatsApp · Patch horário v2",
   },
-  {
-    id: "fix-if-boolean",
-    label: "Fix IF Boolean (typeValidation)",
-    description: "Altera typeValidation do IF de horário de 'loose' para 'strict' para evitar comparação incorreta de boolean.",
-    icon: <Bug className="h-4 w-4" />,
-    severity: "warning",
-    apply: (workflow) => {
-      const nodes = workflow.nodes || [];
-      const node = findNodeByName(nodes, ["Dentro do Horário", "IF - Dentro"]);
-      if (!node) return { workflow, changed: false, details: "Node IF de horário não encontrado." };
-
-      const conditions = node.parameters?.conditions;
-      if (!conditions) return { workflow, changed: false, details: "Node IF não tem conditions." };
-
-      if (conditions.options?.typeValidation === "loose") {
-        conditions.options.typeValidation = "strict";
-        return { workflow, changed: true, details: "✅ typeValidation alterado de 'loose' para 'strict'." };
-      }
-      return { workflow, changed: false, details: "typeValidation já está correto." };
-    }
-  },
-  {
-    id: "remove-debug",
-    label: "Remover _debug_horario",
-    description: "Remove o bloco _debug_horario do return para limpar o output em produção.",
-    icon: <Wrench className="h-4 w-4" />,
-    severity: "info",
-    apply: (workflow) => {
-      const nodes = workflow.nodes || [];
-      const node = findNodeByName(nodes, ["Checar Horário", "Montar Contexto"]);
-      if (!node) return { workflow, changed: false, details: "Node não encontrado." };
-
-      const code = node.parameters?.jsCode || "";
-      if (!code.includes("_debug_horario")) {
-        return { workflow, changed: false, details: "_debug_horario não encontrado no código." };
-      }
-
-      // Remove the debug block
-      node.parameters.jsCode = code.replace(/,?\s*\/\/\s*DEBUG[\s\S]*?_debug_horario:\s*\{[\s\S]*?\}\s*\n/g, "\n");
-      return { workflow, changed: true, details: "✅ Bloco _debug_horario removido." };
-    }
-  }
 ];
+
+const fixes = getWorkflowFixes();
+
+const badgeVariantByStatus: Record<WorkflowDiagnosis["status"], "default" | "destructive" | "outline" | "secondary"> = {
+  fixed: "default",
+  invalid: "destructive",
+  outdated: "secondary",
+  unrecognized: "outline",
+};
+
+const badgeVariantBySeverity = {
+  critical: "destructive",
+  info: "outline",
+  warning: "secondary",
+} as const;
 
 export default function WorkflowsEditor() {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [inputJson, setInputJson] = useState("");
-  const [selectedFixes, setSelectedFixes] = useState<string[]>(["fix-horario", "fix-if-boolean"]);
-  const [appliedResults, setAppliedResults] = useState<{ id: string; details: string; changed: boolean }[]>([]);
+  const [slotName, setSlotName] = useState("");
+  const [selectedFixes, setSelectedFixes] = useState<string[]>(DEFAULT_SELECTED_FIX_IDS);
+  const [appliedResults, setAppliedResults] = useState<{ changed: boolean; details: string; id: string }[]>([]);
   const [outputJson, setOutputJson] = useState("");
   const [showPreview, setShowPreview] = useState(false);
-  const [fixedWorkflows, setFixedWorkflows] = useState<{ name: string; json: string }[]>([]);
+  const [savedWorkflows, setSavedWorkflows] = useState<StoredWorkflowEntry[]>([]);
+  const [presetWorkflows, setPresetWorkflows] = useState<StoredWorkflowEntry[]>([]);
 
-  // Load pre-fixed workflows
-  const loadFixedWF01 = async () => {
-    try {
-      const res = await fetch("/workflows/WF-01-fixed.json");
-      const data = await res.json();
-      const jsonStr = JSON.stringify(data, null, 2);
-      setFixedWorkflows(prev => {
-        const exists = prev.find(w => w.name === "WF-01");
-        if (exists) return prev;
-        return [...prev, { name: "WF-01 · Agente de Vendas (CORRIGIDO)", json: jsonStr }];
-      });
-    } catch (e) {
-      console.error("Erro ao carregar WF-01 fixado:", e);
+  const parsedInput = useMemo(() => parseWorkflowJson(inputJson), [inputJson]);
+  const parsedOutput = useMemo(() => parseWorkflowJson(outputJson), [outputJson]);
+
+  const currentDiagnosis = useMemo(
+    () => (parsedInput && parsedInput !== "invalid" ? diagnoseWorkflow(parsedInput) : null),
+    [parsedInput],
+  );
+
+  const outputDiagnosis = useMemo(
+    () => (parsedOutput && parsedOutput !== "invalid" ? diagnoseWorkflow(parsedOutput) : null),
+    [parsedOutput],
+  );
+
+  const workflowName = parsedInput && parsedInput !== "invalid" ? parsedInput.name || "Workflow sem nome" : "";
+  const nodeCount = parsedInput && parsedInput !== "invalid" ? parsedInput.nodes?.length || 0 : 0;
+  const recommendedFixes = currentDiagnosis?.recommendedFixIds || [];
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setSavedWorkflows(parseStoredWorkflowLibrary(window.localStorage.getItem(WORKFLOW_LIBRARY_STORAGE_KEY)));
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPresets = async () => {
+      const loaded = await Promise.all(
+        PRESET_WORKFLOWS.map(async (preset) => {
+          try {
+            const response = await fetch(preset.path);
+            const data = await response.json();
+            const json = JSON.stringify(data, null, 2);
+            return createStoredWorkflowEntry(data.name || preset.sourceName, json, "preset");
+          } catch (error) {
+            console.error(`Erro ao carregar preset ${preset.path}:`, error);
+            return null;
+          }
+        }),
+      );
+
+      if (active) {
+        setPresetWorkflows(loaded.filter(Boolean) as StoredWorkflowEntry[]);
+      }
+    };
+
+    loadPresets();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const resetOutputState = () => {
+    setOutputJson("");
+    setAppliedResults([]);
+    setShowPreview(false);
+  };
+
+  const persistSavedWorkflows = (entries: StoredWorkflowEntry[]) => {
+    setSavedWorkflows(entries);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(WORKFLOW_LIBRARY_STORAGE_KEY, JSON.stringify(entries));
     }
   };
 
-  useEffect(() => { loadFixedWF01(); }, []);
+  const saveWorkflowToLibrary = (json: string, fallbackName?: string) => {
+    const parsed = parseWorkflowJson(json);
 
-  const parsedInput = useMemo(() => {
-    if (!inputJson.trim()) return null;
-    try {
-      return JSON.parse(inputJson);
-    } catch {
-      return "invalid";
+    if (!parsed || parsed === "invalid") {
+      toast.error("JSON inválido. Corrija antes de salvar.");
+      return;
     }
-  }, [inputJson]);
 
-  const nodeCount = parsedInput && parsedInput !== "invalid" ? (parsedInput.nodes?.length || 0) : 0;
-  const workflowName = parsedInput && parsedInput !== "invalid" ? (parsedInput.name || "Sem nome") : "";
+    const name = (slotName || fallbackName || parsed.name || "Workflow salvo").trim();
+    const nextEntry = createStoredWorkflowEntry(name, JSON.stringify(parsed, null, 2), "local");
+
+    persistSavedWorkflows([
+      nextEntry,
+      ...savedWorkflows.filter((entry) => entry.name !== name),
+    ]);
+
+    setSlotName(name);
+    toast.success(`Workflow "${name}" salvo no navegador.`);
+  };
+
+  const loadWorkflowIntoEditor = (entry: StoredWorkflowEntry) => {
+    setInputJson(entry.json);
+    setSlotName(entry.name);
+    resetOutputState();
+    toast.success(`Workflow "${entry.name}" carregado no editor.`);
+  };
 
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
       setInputJson(text);
-      setOutputJson("");
-      setAppliedResults([]);
-      toast.success("JSON colado da área de transferência");
+      resetOutputState();
+      toast.success("JSON colado no editor.");
     } catch {
-      toast.error("Não foi possível acessar a área de transferência");
+      toast.error("Não foi possível acessar a área de transferência.");
+    }
+  };
+
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      setInputJson(text);
+      setSlotName(file.name.replace(/\.json$/i, ""));
+      resetOutputState();
+      toast.success(`Arquivo ${file.name} carregado no editor.`);
+    } catch {
+      toast.error("Não foi possível ler o arquivo enviado.");
+    } finally {
+      event.target.value = "";
     }
   };
 
   const handleApplyFixes = () => {
     if (!parsedInput || parsedInput === "invalid") {
-      toast.error("JSON inválido. Corrija antes de aplicar fixes.");
+      toast.error("JSON inválido. Corrija antes de aplicar os fixes.");
       return;
     }
 
-    let wf = JSON.parse(JSON.stringify(parsedInput)); // deep clone
-    const results: typeof appliedResults = [];
-
-    for (const fix of fixes) {
-      if (!selectedFixes.includes(fix.id)) continue;
-      const result = fix.apply(wf);
-      wf = result.workflow;
-      results.push({ id: fix.id, details: result.details, changed: result.changed });
-    }
+    const { results, workflow } = applyWorkflowFixes(parsedInput, selectedFixes);
+    const nextJson = JSON.stringify(workflow, null, 2);
+    const changedCount = results.filter((result) => result.changed).length;
+    const correctedName = `${slotName || workflowName || "Workflow"} · Corrigido`;
 
     setAppliedResults(results);
-    setOutputJson(JSON.stringify(wf, null, 2));
+    setOutputJson(nextJson);
+    setShowPreview(true);
 
-    const changedCount = results.filter(r => r.changed).length;
     if (changedCount > 0) {
-      toast.success(`${changedCount} fix(es) aplicado(s) com sucesso!`);
-    } else {
-      toast.info("Nenhuma alteração foi necessária.");
+      const nextEntry = createStoredWorkflowEntry(correctedName, nextJson, "local");
+      persistSavedWorkflows([
+        nextEntry,
+        ...savedWorkflows.filter((entry) => entry.name !== correctedName),
+      ]);
+      toast.success(`${changedCount} fix(es) aplicado(s) e workflow salvo na biblioteca.`);
+      return;
     }
+
+    toast.info("Nenhuma alteração foi necessária.");
   };
 
-  const handleCopyOutput = async () => {
+  const handleCopy = async (json: string, successMessage: string) => {
     try {
-      await navigator.clipboard.writeText(outputJson || inputJson);
-      toast.success("JSON copiado para a área de transferência!");
+      await navigator.clipboard.writeText(json);
+      toast.success(successMessage);
     } catch {
-      toast.error("Erro ao copiar");
+      toast.error("Erro ao copiar JSON.");
     }
   };
 
   const toggleFix = (id: string) => {
-    setSelectedFixes(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+    setSelectedFixes((current) => (current.includes(id) ? current.filter((fixId) => fixId !== id) : [...current, id]));
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/roadmap")}>
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/roadmap")}> 
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
             <FileJson className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold">Workflow Editor</h1>
+            <h1 className="text-lg font-semibold">Workflow Editor</h1>
           </div>
-          <Badge variant="outline" className="ml-auto">n8n JSON Patcher</Badge>
+          <Badge variant="outline" className="ml-auto">repositório local de workflows</Badge>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Input */}
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6">
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ClipboardPaste className="h-4 w-4" /> Colar Workflow JSON
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ClipboardPaste className="h-4 w-4" /> JSON do workflow
                 </CardTitle>
-                <CardDescription>Cole o JSON exportado do n8n aqui</CardDescription>
+                <CardDescription>Cole, envie um .json ou carregue um workflow salvo para eu corrigir aqui no editor.</CardDescription>
               </div>
-              <Button onClick={handlePaste} variant="outline" size="sm">
-                <ClipboardPaste className="h-4 w-4 mr-1" /> Colar
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handlePaste} variant="outline" size="sm">
+                  <ClipboardPaste className="mr-1 h-4 w-4" /> Colar JSON
+                </Button>
+                <Button onClick={() => fileInputRef.current?.click()} variant="outline" size="sm">
+                  <Upload className="mr-1 h-4 w-4" /> Enviar .json
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Textarea
-              value={inputJson}
-              onChange={(e) => { setInputJson(e.target.value); setOutputJson(""); setAppliedResults([]); }}
-              placeholder='{"name": "WF-01 · Agente de Vendas...", "nodes": [...]}'
-              className="font-mono text-xs min-h-[160px] max-h-[300px]"
-            />
-            <div className="flex items-center gap-3 text-sm">
+            <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleUpload} />
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
+              <Textarea
+                value={inputJson}
+                onChange={(event) => {
+                  setInputJson(event.target.value);
+                  resetOutputState();
+                }}
+                placeholder='{"name":"WF-01 · Agente de Vendas...","nodes":[...]}'
+                className="min-h-[220px] font-mono text-xs"
+              />
+              <input
+                value={slotName}
+                onChange={(event) => setSlotName(event.target.value)}
+                placeholder="Nome do slot"
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <Button onClick={() => saveWorkflowToLibrary(outputJson || inputJson, workflowName)} disabled={!(outputJson || inputJson).trim()} className="h-10">
+                <Save className="mr-2 h-4 w-4" /> Salvar slot
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-sm">
               {parsedInput === "invalid" && (
                 <Badge variant="destructive" className="gap-1">
                   <AlertTriangle className="h-3 w-3" /> JSON inválido
                 </Badge>
               )}
-              {parsedInput && parsedInput !== "invalid" && (
+
+              {parsedInput && parsedInput !== "invalid" && currentDiagnosis && (
                 <>
-                  <Badge variant="secondary" className="gap-1">
-                    <Check className="h-3 w-3" /> JSON válido
-                  </Badge>
+                  <Badge variant={badgeVariantByStatus[currentDiagnosis.status]}>{currentDiagnosis.statusLabel}</Badge>
                   <span className="text-muted-foreground">{workflowName} — {nodeCount} nodes</span>
+                  <Badge variant="outline">assinatura: {currentDiagnosis.patchSignature}</Badge>
                 </>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Fixes */}
-        <Card className="border-amber-500/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-amber-500" /> Fixes Disponíveis
-            </CardTitle>
-            <CardDescription>Selecione os patches para aplicar no workflow</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {fixes.map((fix) => (
-              <div key={fix.id} className="flex items-start gap-3 p-3 rounded-lg border border-border/60 hover:bg-accent/30 transition-colors">
-                <Checkbox
-                  id={fix.id}
-                  checked={selectedFixes.includes(fix.id)}
-                  onCheckedChange={() => toggleFix(fix.id)}
-                  className="mt-0.5"
-                />
-                <div className="flex-1 space-y-1">
-                  <label htmlFor={fix.id} className="text-sm font-medium flex items-center gap-2 cursor-pointer">
-                    {fix.icon}
-                    {fix.label}
-                    <Badge variant={fix.severity === "critical" ? "destructive" : fix.severity === "warning" ? "secondary" : "outline"} className="text-[10px] px-1.5 py-0">
-                      {fix.severity}
-                    </Badge>
-                  </label>
-                  <p className="text-xs text-muted-foreground">{fix.description}</p>
+        {currentDiagnosis && parsedInput && parsedInput !== "invalid" && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Database className="h-4 w-4 text-primary" /> Diagnóstico do workflow carregado
+              </CardTitle>
+              <CardDescription>{currentDiagnosis.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+              <div className="space-y-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Branch crítico</p>
+                <div className="space-y-2 rounded-lg border border-border/60 bg-muted/30 p-3">
+                  {currentDiagnosis.branchSummary.map((item) => (
+                    <p key={item} className="text-sm">{item}</p>
+                  ))}
                 </div>
-                {appliedResults.find(r => r.id === fix.id) && (
-                  <Badge variant={appliedResults.find(r => r.id === fix.id)?.changed ? "default" : "outline"} className="text-[10px] whitespace-nowrap">
-                    {appliedResults.find(r => r.id === fix.id)?.changed ? "Aplicado" : "Sem alteração"}
-                  </Badge>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Checks</p>
+                <div className="space-y-2">
+                  {currentDiagnosis.nodeChecks.map((check) => (
+                    <div key={check.label} className="rounded-lg border border-border/60 bg-card p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium">{check.label}</span>
+                        <Badge variant={check.ok ? "default" : "secondary"}>{check.ok ? "OK" : "Atenção"}</Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{check.details}</p>
+                    </div>
+                  ))}
+                </div>
+                {recommendedFixes.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Recomendado agora: {fixes.filter((fix) => recommendedFixes.includes(fix.id)).map((fix) => fix.label).join(", ")}
+                  </p>
                 )}
               </div>
-            ))}
+            </CardContent>
+          </Card>
+        )}
 
-            <Button
-              onClick={handleApplyFixes}
-              disabled={!parsedInput || parsedInput === "invalid" || selectedFixes.length === 0}
-              className="w-full"
-            >
-              <Wrench className="h-4 w-4 mr-2" />
-              Aplicar {selectedFixes.length} Fix(es)
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wrench className="h-4 w-4 text-primary" /> Fixes disponíveis
+            </CardTitle>
+            <CardDescription>Aplico os patches no JSON carregado e salvo a versão corrigida na biblioteca local.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {fixes.map((fix) => {
+              const result = appliedResults.find((item) => item.id === fix.id);
+              const isRecommended = recommendedFixes.includes(fix.id);
+
+              return (
+                <div key={fix.id} className="flex items-start gap-3 rounded-lg border border-border/60 p-3 transition-colors hover:bg-accent/30">
+                  <Checkbox id={fix.id} checked={selectedFixes.includes(fix.id)} onCheckedChange={() => toggleFix(fix.id)} className="mt-0.5" />
+                  <div className="flex-1 space-y-1">
+                    <label htmlFor={fix.id} className="flex cursor-pointer flex-wrap items-center gap-2 text-sm font-medium">
+                      {fix.label}
+                      <Badge variant={badgeVariantBySeverity[fix.severity]}>{fix.severity}</Badge>
+                      {isRecommended && <Badge variant="outline">recomendado</Badge>}
+                    </label>
+                    <p className="text-xs text-muted-foreground">{fix.description}</p>
+                  </div>
+                  {result && (
+                    <Badge variant={result.changed ? "default" : "outline"} className="whitespace-nowrap text-[10px]">
+                      {result.changed ? "Aplicado" : "Sem alteração"}
+                    </Badge>
+                  )}
+                </div>
+              );
+            })}
+
+            <Button onClick={handleApplyFixes} disabled={!parsedInput || parsedInput === "invalid" || selectedFixes.length === 0} className="w-full">
+              <Wrench className="mr-2 h-4 w-4" /> Aplicar {selectedFixes.length} fix(es)
             </Button>
 
-            {/* Results */}
             {appliedResults.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-border/40">
-                <p className="text-xs font-medium text-muted-foreground">Resultados:</p>
-                {appliedResults.map((r) => (
-                  <p key={r.id} className="text-xs font-mono">{r.details}</p>
+              <div className="space-y-2 border-t border-border/50 pt-3">
+                <p className="text-xs font-medium text-muted-foreground">Resultado do patch</p>
+                {appliedResults.map((result) => (
+                  <p key={result.id} className="text-xs font-mono">{result.details}</p>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Output */}
         {outputJson && (
-          <Card className="border-green-500/30">
+          <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" /> JSON Corrigido
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Check className="h-4 w-4 text-primary" /> JSON corrigido
                   </CardTitle>
-                  <CardDescription>Copie e cole no n8n (importar workflow)</CardDescription>
+                  <CardDescription>
+                    {outputDiagnosis ? `${outputDiagnosis.statusLabel} — ${outputDiagnosis.patchSignature}` : "Workflow corrigido pronto para importar no n8n."}
+                  </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={() => setShowPreview(!showPreview)} variant="outline" size="sm">
-                    {showPreview ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => setShowPreview((current) => !current)} variant="outline" size="sm">
+                    {showPreview ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
                     {showPreview ? "Ocultar" : "Preview"}
                   </Button>
-                  <Button onClick={handleCopyOutput} size="sm">
-                    <Copy className="h-4 w-4 mr-1" /> Copiar JSON
+                  <Button onClick={() => handleCopy(outputJson, "JSON corrigido copiado.")} size="sm">
+                    <Copy className="mr-1 h-4 w-4" /> Copiar JSON
                   </Button>
                 </div>
               </div>
             </CardHeader>
             {showPreview && (
               <CardContent>
-                <pre className="text-xs font-mono bg-muted/50 p-4 rounded-lg overflow-auto max-h-[400px] whitespace-pre-wrap break-all">
+                <pre className="max-h-[420px] overflow-auto rounded-lg bg-muted/40 p-4 text-xs font-mono whitespace-pre-wrap break-all">
                   {outputJson}
                 </pre>
               </CardContent>
@@ -387,56 +427,73 @@ export default function WorkflowsEditor() {
           </Card>
         )}
 
-        {/* Pre-fixed Workflows */}
-        {fixedWorkflows.length > 0 && (
-          <Card className="border-primary/30">
+        {savedWorkflows.length > 0 && (
+          <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" /> Workflows Corrigidos (prontos para importar)
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FolderOpen className="h-4 w-4 text-primary" /> Workflows salvos no navegador
               </CardTitle>
-              <CardDescription>JSONs já corrigidos — copie e importe no n8n</CardDescription>
+              <CardDescription>Os JSONs corrigidos ficam aqui para você reabrir, copiar e manter versões.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {fixedWorkflows.map((wf, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <FileJson className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">{wf.name}</span>
-                    <Badge variant="secondary" className="text-[10px]">
-                      {JSON.parse(wf.json).nodes?.length || 0} nodes
-                    </Badge>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setOutputJson(wf.json);
-                        setShowPreview(true);
-                        toast.success(`Preview do ${wf.name} carregado`);
-                      }}
-                    >
-                      <ChevronDown className="h-4 w-4 mr-1" /> Preview
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(wf.json);
-                          toast.success(`${wf.name} copiado! Cole no n8n (importar workflow)`);
-                        } catch {
-                          toast.error("Erro ao copiar");
-                        }
-                      }}
-                    >
-                      <Copy className="h-4 w-4 mr-1" /> Copiar JSON
-                    </Button>
-                  </div>
-                </div>
+              {savedWorkflows.map((workflow) => (
+                <WorkflowListItem key={workflow.id} workflow={workflow} onCopy={handleCopy} onLoad={loadWorkflowIntoEditor} />
               ))}
             </CardContent>
           </Card>
         )}
+
+        {presetWorkflows.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileJson className="h-4 w-4 text-primary" /> Presets prontos para importar
+              </CardTitle>
+              <CardDescription>WF-01 corrigido e versionado dentro do próprio editor.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {presetWorkflows.map((workflow) => (
+                <WorkflowListItem key={workflow.id} workflow={workflow} onCopy={handleCopy} onLoad={loadWorkflowIntoEditor} />
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WorkflowListItem({
+  workflow,
+  onCopy,
+  onLoad,
+}: {
+  workflow: StoredWorkflowEntry;
+  onCopy: (json: string, successMessage: string) => Promise<void>;
+  onLoad: (workflow: StoredWorkflowEntry) => void;
+}) {
+  const parsed = parseWorkflowJson(workflow.json);
+  const nodesCount = parsed && parsed !== "invalid" ? parsed.nodes?.length || 0 : 0;
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-muted/20 p-3 md:flex-row md:items-center md:justify-between">
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium">{workflow.name}</span>
+          <Badge variant={workflow.source === "preset" ? "outline" : "secondary"}>{workflow.source === "preset" ? "preset" : "salvo"}</Badge>
+          <Badge variant={badgeVariantByStatus[workflow.diagnosis.status]}>{workflow.diagnosis.statusLabel}</Badge>
+          <Badge variant="outline">{nodesCount} nodes</Badge>
+        </div>
+        <p className="text-xs text-muted-foreground">{workflow.diagnosis.patchSignature} · {new Date(workflow.updatedAt).toLocaleString("pt-BR")}</p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={() => onLoad(workflow)}>
+          <FolderOpen className="mr-1 h-4 w-4" /> Abrir no editor
+        </Button>
+        <Button size="sm" onClick={() => void onCopy(workflow.json, `${workflow.name} copiado.`)}>
+          <Copy className="mr-1 h-4 w-4" /> Copiar JSON
+        </Button>
       </div>
     </div>
   );
