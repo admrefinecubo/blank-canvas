@@ -14,46 +14,6 @@ const sanitizeFileName = (fileName: string) =>
 
 const decodeBase64 = (value: string) => Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
 
-async function generateEmbedding(text: string): Promise<number[] | null> {
-  const openaiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!openaiKey) {
-    console.warn("OPENAI_API_KEY not set — skipping embedding generation");
-    return null;
-  }
-
-  const res = await fetch("https://api.openai.com/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openaiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      input: text,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    console.error("OpenAI embedding error:", err);
-    return null;
-  }
-
-  const json = await res.json();
-  return json.data?.[0]?.embedding ?? null;
-}
-
-function buildEmbeddingText(produto: Record<string, unknown>): string {
-  const parts = [
-    produto.nome,
-    produto.descricao,
-    produto.categoria,
-    produto.especificacoes,
-    produto.tags,
-    produto.variacoes,
-  ].filter(Boolean);
-  return parts.join(" | ");
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -134,39 +94,6 @@ Deno.serve(async (req) => {
       if (!webhookResponse.ok) {
         throw new Error(`Webhook retornou erro ${webhookResponse.status}`);
       }
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (action === "generate_embedding") {
-      if (!produto_id) throw new Error("produto_id obrigatório para gerar embedding");
-
-      const { data: produto, error: produtoError } = await supabase
-        .from("produtos")
-        .select("nome, descricao, categoria, especificacoes, tags, variacoes")
-        .eq("id", produto_id)
-        .single();
-
-      if (produtoError || !produto) throw new Error("Produto não encontrado");
-
-      const text = buildEmbeddingText(produto);
-      const embedding = await generateEmbedding(text);
-
-      if (!embedding) {
-        return new Response(JSON.stringify({ success: false, reason: "embedding_unavailable" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const embeddingStr = `[${embedding.join(",")}]`;
-      const { error: updateError } = await supabase
-        .from("produtos")
-        .update({ embedding: embeddingStr })
-        .eq("id", produto_id);
-
-      if (updateError) throw updateError;
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
