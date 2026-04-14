@@ -41,6 +41,7 @@ import LojaCampanhas from "@/pages/LojaCampanhas";
 import LojaVendas from "@/pages/LojaVendas";
 import LojaPosVenda from "@/pages/LojaPosVenda";
 import NotFound from "./pages/NotFound";
+import Roadmap from "./pages/Roadmap";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -79,6 +80,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/roadmap" element={<Roadmap />} />
             <Route path="/" element={<RootRedirect />} />
             <Route element={<ProtectedRoute requiredMode="client"><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
