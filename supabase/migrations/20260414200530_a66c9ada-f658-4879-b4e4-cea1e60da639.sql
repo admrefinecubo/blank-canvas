@@ -1,0 +1,10 @@
+ALTER TABLE lojas ADD COLUMN IF NOT EXISTS dias_funcionamento TEXT DEFAULT 'seg,ter,qua,qui,sex,sab';
+ALTER TABLE lojas ADD COLUMN IF NOT EXISTS regras_personalidade TEXT;
+ALTER TABLE lojas ADD COLUMN IF NOT EXISTS plataforma_ecommerce TEXT DEFAULT 'manual';
+ALTER TABLE lojas ADD COLUMN IF NOT EXISTS checkout_base_url TEXT;
+ALTER TABLE lojas ADD COLUMN IF NOT EXISTS montagem_disponivel BOOLEAN DEFAULT FALSE;
+ALTER TABLE lojas ADD COLUMN IF NOT EXISTS desconto_carrinho_abandonado NUMERIC DEFAULT 5;
+ALTER TABLE lojas ADD COLUMN IF NOT EXISTS desconto_promocao_nao_respondida NUMERIC DEFAULT 10;
+ALTER TABLE lojas ADD COLUMN IF NOT EXISTS desconto_followup_orcamento NUMERIC DEFAULT 5;
+ALTER TABLE historico_mensagens ADD COLUMN IF NOT EXISTS telefone TEXT;
+UPDATE lojas SET dias_funcionamento = 'seg,ter,qua,qui,sex,sab' WHERE id = '7da66bc8-9e7e-49de-88f0-72b8a43292f8';
