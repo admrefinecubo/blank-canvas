@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 import arthosBadge from "@/assets/arthos-badge.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -156,6 +157,9 @@ export default function Roadmap() {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">
               LojaADS — Roadmap do Projeto
             </h1>
+            <div className="ml-auto">
+              <ThemeToggle />
+            </div>
           </div>
           <p className="text-sm text-muted-foreground ml-11">
             Agente de IA para WhatsApp · Loja de Móveis e Colchões
@@ -221,7 +225,7 @@ export default function Roadmap() {
                   <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-35} textAnchor="end" height={70} />
                   <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                   <Tooltip
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
                     formatter={(value: number, name: string) => {
                       const labels: Record<string, string> = { done: "Feitos", inProgress: "Em progresso", pending: "Pendentes" };
                       return [value, labels[name] || name];
@@ -252,7 +256,7 @@ export default function Roadmap() {
                     ))}
                   </Pie>
                   <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }} />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
