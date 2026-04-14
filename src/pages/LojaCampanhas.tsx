@@ -104,37 +104,11 @@ export default function LojaCampanhas() {
 
   const dispatchMutation = useMutation({
     mutationFn: async (campaignId: string) => {
-      const campaign = campaigns?.find((c) => c.id === campaignId);
-      if (!campaign) throw new Error("Campanha não encontrada");
-
-      const webhookUrl = import.meta.env.VITE_WF13_WEBHOOK_URL;
-      if (!webhookUrl) throw new Error("Webhook WF-13 não configurado");
-
-      const segmentConfig = campaign.segment_config as Record<string, string> | null;
-      const segmentValue = segmentConfig
-        ? Object.values(segmentConfig)[0] ?? null
-        : null;
-
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          loja_id: activeLojaId,
-          campanha_id: campaign.id,
-          segmento: segmentValue,
-          orcamento_faixa: null,
-          mensagem: campaign.message_template,
-          desconto: campaign.discount_percent ?? 0,
-        }),
+      const { data, error } = await supabase.functions.invoke("campaign-dispatch", {
+        body: { campaign_id: campaignId, loja_id: activeLojaId },
       });
-
-      if (!res.ok) throw new Error(`Erro no webhook: ${res.status}`);
-
-      const { error } = await supabase
-        .from("promotional_campaigns")
-        .update({ status: "disparada", launched_at: new Date().toISOString() })
-        .eq("id", campaignId);
-      if (error) throw error;
+      if (error) throw new Error(error.message || "Erro ao disparar campanha");
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["loja-campanhas", activeLojaId] });
