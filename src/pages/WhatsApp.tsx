@@ -217,7 +217,7 @@ export default function WhatsApp() {
     return getLeadName(lead.nome, lead.telefone);
   };
 
-
+  const toggleBotMutation = useMutation({
     mutationFn: async (botActive: boolean) => {
       if (!selectedLead?.id) throw new Error("Selecione um lead");
       if (!activeLojaId) throw new Error("Loja ativa não encontrada");
