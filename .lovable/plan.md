@@ -1,47 +1,73 @@
 
 
-# Plano: Atualizar Roadmap com status real do projeto
+# Diagnóstico: Referências "Clinic" e "CUBO" no projeto
 
-## Análise do que está implementado
+## O que encontrei
 
-Baseado na análise do código (edge functions, migrations, páginas), aqui está o mapeamento real:
+### A tabela `clinics` NÃO é de clínicas médicas
+A tabela `clinics` é usada como **camada de contas/tenants** do sistema multi-tenant. Cada "clinic" = uma **conta de cliente** (lojista) que possui lojas. A relação é:
+- `clinics` → conta do lojista (nome, email, status)
+- `lojas` → loja vinculada via `clinic_id`
+- Todas as tabelas de negócio (patients, budgets, appointments, etc.) usam `clinic_id` para isolamento
 
-### Feito (done)
-- **Bloco 1 (Identidade)**: #1-6 — AdminLojaDetail tem nome, tom de voz, especialidades, regras de personalidade configuráveis por loja
-- **Bloco 2 (Regras)**: #8-12 — lógica no agent-tools (buscar_produto consulta catálogo real, filtra por loja_id)
-- **Bloco 5 (Catálogo/RAG)**: #31 (schema completo com variações, specs, checkout_url, preços), #32 (foto_principal, foto_detalhe, video_url), #33 (tags), #34 (estoque_disponivel + stock-webhook), #35 (preco_promocional), #36 (multi-tenant por loja_id)
-- **Bloco 6 (E-commerce)**: #43-44 (stock-webhook para sync estoque/preço em tempo real)
-- **Bloco 7 (Tool Calling)**: #47 (buscar_produto), #49 (agendar_visita), #51 (agendar_follow_up), #52 (cadastrar_lead), #53 (mover_pipeline), #55 (transferir_para_humano)
-- **Bloco 9 (Promoções)**: #63-64 — campaign-dispatch com segmentação por etapa, origem, interesse
-- **Bloco 10 (CRM/Pipeline)**: #67-70 — leads com cadastro automático, canal_origem, histórico, pipeline
-- **Bloco 12 (Regras Negócio)**: #78-85 — lojas table tem horário, endereço, maps_link, formas_pgto, politica_troca, prazo_entrega, frete_gratis, plataforma_ecommerce
-- **Bloco 16 (Transbordo)**: #98-105 — transferir_humano com resumo, prioridade, agente_pausado, is_bot_active, logs
-- **Bloco 17 (Drive-to-Store)**: #106-108 — visitas com data, endereço, maps, produtos_interesse
+**Não é seguro simplesmente deletar** — `clinic_id` é a chave de todo o sistema de permissões (RLS), autenticação e multi-tenancy.
 
-### Em progresso (in_progress)
-- **Bloco 11 (Envio Mídias/Checkout)**: #48 (enviar_midia existe no agent-tools mas não está efetivando), #72-76 — a edge function envia mas o agente no N8N não está processando corretamente
-- **Bloco 5**: #30 (RAG semântica — extension vector instalada, mas match_produtos não implementado ainda), #37 (re-indexação automática)
-- **Bloco 7**: #50 (gerar_orcamento — retorna HTML, mas não PDF formal), #54 (gerar_cobranca — placeholder, sem gateway)
+### Tabelas que usam `clinic_id` (14 tabelas)
+`appointments`, `audit_logs`, `automations`, `budgets`, `clinic_integrations`, `clinics`, `consent_terms`, `financial_installments`, `nps_responses`, `patients`, `post_procedure_templates`, `procedures`, `profiles`, `revenue_goals`
 
-### Pendente
-- **Bloco 3 (Fluxo Vendas)**: #13-21 — lógica de prompt/conversação no N8N, não no CRM
-- **Bloco 4 (Diagnóstico)**: #22-29 — idem, prompt do agente
-- **Bloco 6**: #38-42 (integrações Shopify/Nuvemshop/Tray/VTEX/VendiZap), #45-46 (checkout por variação, botão interativo)
-- **Bloco 8 (Follow-up)**: #56-62 — tabela follow_ups existe, mas automação cron pendente
-- **Bloco 9**: #65-66 (desconto configurável por tipo)
-- **Bloco 13 (Cross-sell)**: #86-88 — pendente
-- **Bloco 14 (Logística)**: #89-92 — campos existem mas sem fluxo no agente
-- **Bloco 15 (Pós-Venda)**: #93-97 — pendente
+### Tabelas que parecem legado clínico (sem uso real no fluxo de lojas)
+Estas tabelas existem no banco mas **não são usadas pelo fluxo de vendas/agente/loja**:
+1. `appointments` — agendamentos médicos (o sistema de visitas real usa `visitas`)
+2. `procedures` — procedimentos médicos (o catálogo real usa `produtos`)
+3. `consent_terms` / `patient_consents` — termos de consentimento médico
+4. `post_procedure_templates` — templates pós-procedimento médico
+5. `patients` — usado como "clientes", mas duplica a funcionalidade de `leads`
+6. `budgets` / `financial_installments` — orçamentos genéricos (vendas reais usam `vendas`)
 
-## O que vou fazer
+### Referências "CUBO" (8 arquivos, 45 ocorrências)
+- `index.html` — `cubo-theme` no localStorage
+- `src/main.tsx` — `cubo-theme`
+- `src/components/ThemeToggle.tsx` — `cubo-theme`
+- `src/pages/Roadmap.tsx` — footer "CUBO Consultoria"
+- `src/lib/handoff.ts` — URL `n8n.refinecubo.com.br`
+- `supabase/functions/agent-tools/index.ts` — URL `evoapi.refinecubo.com.br`
+- `supabase/functions/evolution-api/index.ts` — URL `evoapi.refinecubo.com.br`
+- `PROJETO_DOCUMENTACAO.md` — `cubo-whitelabel`
 
-1. **Atualizar `src/data/roadmap-data.ts`** — mudar o status de cada item conforme a análise acima (done/in_progress/pending)
-2. **Extrair o workflows-2.zip** — parsear os JSONs e atualizar a seção de workflows N8N com os dados atualizados
-3. **Marcar explicitamente o bloco 11 como "em progresso"** conforme indicado pelo usuário (mídia e checkout não efetivando)
+### Resumo numérico
+| Categoria | Quantidade |
+|-----------|-----------|
+| Tabelas com `clinic_id` | 14 |
+| Tabelas legado clínico (candidatas a remoção) | 6 |
+| Arquivos com referência "CUBO" | 8 |
+| Arquivos com referência "clinic" | 30 |
+| Páginas médicas (Patients, Procedures, etc.) | ~8 páginas |
 
-## Resumo de impacto
-- ~35+ itens passam de `pending` para `done`
-- ~6 itens passam para `in_progress`
-- Workflows N8N atualizados com o novo zip
-- Arquivo único alterado: `src/data/roadmap-data.ts`
+## O que proponho fazer
+
+### Fase 1 — Limpeza segura e imediata
+1. **Renomear `cubo-theme` → `lojaads-theme`** em `index.html`, `main.tsx`, `ThemeToggle.tsx`
+2. **Remover "CUBO Consultoria"** do footer do Roadmap, substituir por "LojaADS"
+3. **Remover URLs hardcoded `refinecubo.com.br`** — usar as env vars que já existem (`EVOLUTION_API_URL`, `N8N_WEBHOOK_URL`)
+
+### Fase 2 — Renomear conceito "clinic" → "conta" (refactor maior)
+Renomear a tabela `clinics` para `contas` e `clinic_id` para `conta_id` em todo o sistema. Isso envolve:
+- Migration SQL para renomear tabela e colunas
+- Atualizar todas as funções RLS (`has_clinic_access` → `has_conta_access`)
+- Atualizar AuthContext, todas as páginas, edge functions
+- **Risco**: alto, afeta 30+ arquivos e toda a camada de segurança
+
+### Fase 3 — Remover páginas/tabelas médicas não utilizadas
+Remover as páginas e tabelas que não fazem sentido para loja de móveis:
+- Páginas: `Patients.tsx`, `PatientDetail.tsx`, `PatientPipeline.tsx`, `Procedures.tsx`, `Agenda.tsx`, `BudgetPipeline.tsx`
+- Tabelas (migration): `appointments`, `procedures`, `consent_terms`, `patient_consents`, `post_procedure_templates`
+- Manter `patients` renomeada como tabela de backup (ou migrar dados para `leads`)
+
+### Recomendação
+**Fazer Fase 1 agora** (risco zero, limpeza rápida). Fases 2 e 3 são refactors grandes que devem ser feitos com cuidado para não quebrar o sistema em produção.
+
+## Detalhes técnicos
+- Fase 1: 6 arquivos editados, sem migration
+- Fase 2: ~35 arquivos + 1 migration grande + atualizar edge functions
+- Fase 3: ~8 páginas removidas + 1 migration para drop tables + atualizar App.tsx routes
 
