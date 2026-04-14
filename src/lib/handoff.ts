@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const N8N_HANDOFF_URL = "https://n8n.refinecubo.com.br/webhook/handoff-toggle";
+const N8N_HANDOFF_URL = `${import.meta.env.VITE_N8N_BASE_URL || "https://n8n.refinecubo.com.br"}/webhook/handoff-toggle`;
 
 interface HandoffParams {
   leadId: string;

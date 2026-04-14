@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const DEFAULT_API_URL = Deno.env.get("EVOLUTION_API_URL") || "https://evoapi.refinecubo.com.br";
+const DEFAULT_API_URL = Deno.env.get("EVOLUTION_API_URL") || "";
 const DEFAULT_API_KEY = Deno.env.get("EVOLUTION_API_KEY") || "";
 const N8N_WEBHOOK_URL = Deno.env.get("N8N_WEBHOOK_URL") || "";
 

@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const EVOLUTION_API_URL = (Deno.env.get("EVOLUTION_API_URL") || "https://evoapi.refinecubo.com.br").replace(/\/+$/, "");
+const EVOLUTION_API_URL = (Deno.env.get("EVOLUTION_API_URL") || "").replace(/\/+$/, "");
 const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY") || "";
 
 Deno.serve(async (req) => {

@@ -248,7 +248,7 @@ export default function Roadmap() {
 
         {/* Footer */}
         <footer className="text-center text-xs text-muted-foreground py-6 border-t border-border/40">
-          CUBO Consultoria · LojaADS CRM · Versão 1.0
+          LojaADS · CRM para Lojas de Móveis e Colchões · Versão 1.0
         </footer>
 
         {/* Arthos watermark — fixed above Lovable badge */}
