@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -181,6 +181,42 @@ export default function WhatsApp() {
     enabled: !!selectedLead?.id,
   });
 
+  // Fetch WhatsApp profile pictures for visible leads
+  const { data: profilePics = {} } = useQuery({
+    queryKey: ["whatsapp-profile-pics", activeLojaId, conversations.map(c => c.id).join(",")],
+    queryFn: async () => {
+      const pics: Record<string, { url: string | null; pushName: string | null }> = {};
+      const batch = conversations.slice(0, 20);
+      const results = await Promise.allSettled(
+        batch.map(async (lead) => {
+          try {
+            const { data } = await supabase.functions.invoke("evolution-api", {
+              body: { action: "profile_picture", loja_id: activeLojaId, phone: lead.telefone },
+            });
+            return { id: lead.id, url: data?.profilePictureUrl || null, pushName: data?.pushName || null };
+          } catch {
+            return { id: lead.id, url: null, pushName: null };
+          }
+        })
+      );
+      results.forEach((r) => {
+        if (r.status === "fulfilled" && r.value) {
+          pics[r.value.id] = { url: r.value.url, pushName: r.value.pushName };
+        }
+      });
+      return pics;
+    },
+    enabled: !!activeLojaId && conversations.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const getDisplayName = (lead: ConversationSummary) => {
+    const pic = profilePics[lead.id];
+    if (pic?.pushName) return pic.pushName;
+    return getLeadName(lead.nome, lead.telefone);
+  };
+
   const toggleBotMutation = useMutation({
     mutationFn: async (botActive: boolean) => {
       if (!selectedLead?.id) throw new Error("Selecione um lead");
@@ -277,10 +313,12 @@ export default function WhatsApp() {
   };
 
   const getLeadInitials = (lead: ConversationSummary) => {
-    const name = getLeadName(lead.nome, lead.telefone).trim();
+    const name = getDisplayName(lead).trim();
     const parts = name.split(" ").filter(Boolean).slice(0, 2);
     return parts.map((part) => part[0]?.toUpperCase() || "").join("") || "LD";
   };
+
+  const getLeadPic = (lead: ConversationSummary) => profilePics[lead.id]?.url || undefined;
 
   if (!activeLojaId) {
     return (
@@ -344,13 +382,14 @@ export default function WhatsApp() {
                       >
                         <div className="flex items-start gap-3">
                           <Avatar className="h-11 w-11 border border-border">
+                            {getLeadPic(lead) && <AvatarImage src={getLeadPic(lead)} alt={getDisplayName(lead)} />}
                             <AvatarFallback>{getLeadInitials(lead)}</AvatarFallback>
                           </Avatar>
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="truncate font-medium">{getLeadName(lead.nome, lead.telefone)}</p>
+                                <p className="truncate font-medium">{getDisplayName(lead)}</p>
                                 <p className="truncate text-xs text-muted-foreground">{lead.telefone}</p>
                               </div>
                               <span className="shrink-0 text-[11px] text-muted-foreground">
@@ -384,10 +423,11 @@ export default function WhatsApp() {
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12 border border-border">
+                    {selectedLead && getLeadPic(selectedLead) && <AvatarImage src={getLeadPic(selectedLead)} alt={getDisplayName(selectedLead)} />}
                     <AvatarFallback>{getLeadInitials(selectedLead)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-base">{getLeadName(selectedLead.nome, selectedLead.telefone)}</CardTitle>
+                    <CardTitle className="text-base">{getDisplayName(selectedLead)}</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">{selectedLead.telefone}</p>
                   </div>
                 </div>
@@ -454,7 +494,7 @@ export default function WhatsApp() {
                     <ChatMessages
                       messages={messages}
                       assistantName={lojaContext?.nome_assistente || "Assistente"}
-                      leadName={getLeadName(selectedLead.nome, selectedLead.telefone)}
+                      leadName={getDisplayName(selectedLead)}
                     />
                   )}
                 </div>
