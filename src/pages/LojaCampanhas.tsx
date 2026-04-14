@@ -4,12 +4,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { LEAD_STAGE_OPTIONS } from "@/lib/whatsapp-admin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -47,6 +49,36 @@ export default function LojaCampanhas() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [confirmDispatch, setConfirmDispatch] = useState<string | null>(null);
 
+  // --- Distinct values for filters ---
+  const { data: distinctOrigens } = useQuery({
+    queryKey: ["distinct-origens", activeLojaId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("leads")
+        .select("origem")
+        .eq("loja_id", activeLojaId!)
+        .not("origem", "is", null);
+      const unique = [...new Set((data ?? []).map(d => d.origem).filter(Boolean))] as string[];
+      return unique.sort();
+    },
+    enabled: !!activeLojaId,
+  });
+
+  const { data: distinctInteresses } = useQuery({
+    queryKey: ["distinct-interesses", activeLojaId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("leads")
+        .select("interesse")
+        .eq("loja_id", activeLojaId!)
+        .not("interesse", "is", null);
+      const unique = [...new Set((data ?? []).map(d => d.interesse).filter(Boolean))] as string[];
+      return unique.sort();
+    },
+    enabled: !!activeLojaId,
+  });
+
+  // --- Campaigns list ---
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["loja-campanhas", activeLojaId],
     queryFn: async () => {
@@ -61,6 +93,32 @@ export default function LojaCampanhas() {
     enabled: !!activeLojaId,
   });
 
+  // --- Leads preview for dispatch confirmation ---
+  const selectedCampaign = campaigns?.find(c => c.id === confirmDispatch);
+
+  const { data: dispatchLeads, isLoading: loadingLeads } = useQuery({
+    queryKey: ["dispatch-leads-preview", confirmDispatch],
+    queryFn: async () => {
+      if (!selectedCampaign || !activeLojaId) return [];
+      let query = supabase.from("leads").select("id, nome, telefone").eq("loja_id", activeLojaId);
+      const config = selectedCampaign.segment_config as Record<string, string> | null;
+
+      if (selectedCampaign.segment_type === "interesse" && config?.interesse) {
+        query = query.ilike("interesse", `%${config.interesse}%`);
+      } else if (selectedCampaign.segment_type === "etapa_pipeline" && config?.etapa_pipeline) {
+        query = query.eq("etapa_pipeline", config.etapa_pipeline);
+      } else if (selectedCampaign.segment_type === "origem" && config?.origem) {
+        query = query.eq("origem", config.origem);
+      }
+
+      const { data, error } = await query.order("nome").limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!confirmDispatch && !!selectedCampaign,
+  });
+
+  // --- Mutations ---
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error("Informe o nome da campanha");
@@ -120,6 +178,71 @@ export default function LojaCampanhas() {
       toast.error("Erro ao disparar campanha", { description: e.message });
     },
   });
+
+  // --- Segment value selector ---
+  const renderSegmentValueField = () => {
+    if (form.segment_type === "todos") return null;
+
+    if (form.segment_type === "etapa_pipeline") {
+      return (
+        <div>
+          <Label>Etapa do funil</Label>
+          <Select value={form.segment_value} onValueChange={(v) => setForm(f => ({ ...f, segment_value: v }))}>
+            <SelectTrigger><SelectValue placeholder="Selecione a etapa" /></SelectTrigger>
+            <SelectContent>
+              {LEAD_STAGE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    if (form.segment_type === "origem") {
+      const options = distinctOrigens ?? [];
+      return (
+        <div>
+          <Label>Origem</Label>
+          {options.length ? (
+            <Select value={form.segment_value} onValueChange={(v) => setForm(f => ({ ...f, segment_value: v }))}>
+              <SelectTrigger><SelectValue placeholder="Selecione a origem" /></SelectTrigger>
+              <SelectContent>
+                {options.map((o) => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <p className="text-sm text-muted-foreground mt-1">Nenhuma origem cadastrada nos leads.</p>
+          )}
+        </div>
+      );
+    }
+
+    if (form.segment_type === "interesse") {
+      const options = distinctInteresses ?? [];
+      return (
+        <div>
+          <Label>Interesse</Label>
+          {options.length ? (
+            <Select value={form.segment_value} onValueChange={(v) => setForm(f => ({ ...f, segment_value: v }))}>
+              <SelectTrigger><SelectValue placeholder="Selecione o interesse" /></SelectTrigger>
+              <SelectContent>
+                {options.map((o) => (
+                  <SelectItem key={o} value={o}>{o}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <p className="text-sm text-muted-foreground mt-1">Nenhum interesse cadastrado nos leads.</p>
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   if (!activeLojaId) {
     return <div className="rounded-2xl border border-dashed border-border p-8 text-sm text-muted-foreground">Nenhuma loja operacional vinculada a esta conta.</div>;
@@ -207,19 +330,14 @@ export default function LojaCampanhas() {
             </div>
             <div>
               <Label>Segmentação</Label>
-              <Select value={form.segment_type} onValueChange={(v) => setForm(f => ({ ...f, segment_type: v }))}>
+              <Select value={form.segment_type} onValueChange={(v) => setForm(f => ({ ...f, segment_type: v, segment_value: "" }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SEGMENT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            {form.segment_type !== "todos" && (
-              <div>
-                <Label>Valor do filtro</Label>
-                <Input placeholder={form.segment_type === "interesse" ? "Ex: colchão" : form.segment_type === "etapa_pipeline" ? "Ex: qualificado" : "Ex: whatsapp"} value={form.segment_value} onChange={(e) => setForm(f => ({ ...f, segment_value: e.target.value }))} />
-              </div>
-            )}
+            {renderSegmentValueField()}
             <div>
               <Label>Desconto (%)</Label>
               <Input type="number" placeholder="Ex: 10" value={form.discount_percent} onChange={(e) => setForm(f => ({ ...f, discount_percent: e.target.value }))} />
@@ -238,19 +356,46 @@ export default function LojaCampanhas() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirm dispatch dialog */}
+      {/* Confirm dispatch dialog with leads preview */}
       <AlertDialog open={!!confirmDispatch} onOpenChange={(open) => !open && setConfirmDispatch(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Disparar campanha?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza? Isso enviará mensagem para todos os leads do segmento selecionado. Esta ação não pode ser desfeita.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Tem certeza? Esta ação não pode ser desfeita.</p>
+
+                {loadingLeads ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Carregando contatos...
+                  </div>
+                ) : (
+                  <>
+                    <p className="font-medium text-foreground">
+                      {(dispatchLeads ?? []).length} lead(s) receberão esta campanha:
+                    </p>
+                    <ScrollArea className="max-h-52 rounded-md border">
+                      <div className="divide-y divide-border">
+                        {(dispatchLeads ?? []).map((lead) => (
+                          <div key={lead.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                            <span className="truncate font-medium">{lead.nome || "Sem nome"}</span>
+                            <span className="ml-2 shrink-0 text-muted-foreground">{lead.telefone}</span>
+                          </div>
+                        ))}
+                        {!(dispatchLeads ?? []).length && (
+                          <div className="px-3 py-4 text-center text-sm text-muted-foreground">Nenhum lead encontrado para este segmento.</div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={dispatchMutation.isPending}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              disabled={dispatchMutation.isPending}
+              disabled={dispatchMutation.isPending || !(dispatchLeads ?? []).length}
               onClick={() => confirmDispatch && dispatchMutation.mutate(confirmDispatch)}
             >
               {dispatchMutation.isPending ? (
