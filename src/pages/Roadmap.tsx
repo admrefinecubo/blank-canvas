@@ -129,6 +129,14 @@ export default function Roadmap() {
 
   const progressPercent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
+  const inProgressItems = useMemo(() =>
+    checklistBlocks.flatMap((block) =>
+      block.items
+        .filter((item) => item.status === "in_progress")
+        .map((item) => ({ ...item, blockName: block.name }))
+    ),
+  []);
+
   const filters: { key: FilterType; label: string; count: number }[] = [
     { key: "all", label: "Todos", count: stats.total },
     { key: "done", label: "Feitos", count: stats.done },
