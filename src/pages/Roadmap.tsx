@@ -363,13 +363,18 @@ export default function Roadmap() {
                     <AccordionContent className="px-3 pb-3">
                       <ul className="space-y-2">
                         {block.items.map((item) => (
-                          <li key={item.number} className="flex items-start gap-2.5 text-sm py-1">
-                            {statusIcon(item.status)}
-                            <span className={item.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}>
-                              <span className="text-muted-foreground mr-1.5 text-xs font-mono">#{item.number}</span>
-                              {item.functionality}
-                            </span>
-                            <span className="ml-auto shrink-0">{priorityBadge(item.priority)}</span>
+                          <li key={item.number} className="flex flex-col gap-0.5 py-1.5 border-b border-border/30 last:border-0">
+                            <div className="flex items-start gap-2.5 text-sm">
+                              {statusIcon(item.status)}
+                              <span className={item.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}>
+                                <span className="text-muted-foreground mr-1.5 text-xs font-mono">#{item.number}</span>
+                                {item.functionality}
+                              </span>
+                              <span className="ml-auto shrink-0">{priorityBadge(item.priority)}</span>
+                            </div>
+                            {item.description && (
+                              <p className="text-xs text-muted-foreground ml-[26px] leading-relaxed">{item.description}</p>
+                            )}
                           </li>
                         ))}
                       </ul>
