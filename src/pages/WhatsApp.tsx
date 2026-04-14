@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Loader2, MessageSquareText, Search, SendHorizontal, Store, UserRound } from "lucide-react";
@@ -436,12 +436,11 @@ export default function WhatsApp() {
                         checked={selectedLead.is_bot_active !== false}
                         disabled={toggleBotMutation.isPending}
                         onCheckedChange={(checked) => toggleBotMutation.mutate(checked)}
-                        className={cn(
-                          "transition-all duration-500",
+                        className={`transition-all duration-500 ${
                           selectedLead.is_bot_active === false
                             ? "data-[state=unchecked]:bg-destructive data-[state=unchecked]:shadow-[0_0_12px_hsl(var(--destructive)/0.5)] data-[state=unchecked]:ring-2 data-[state=unchecked]:ring-destructive/30"
                             : ""
-                        )}
+                        }`}
                       />
                     </div>
                   </div>
