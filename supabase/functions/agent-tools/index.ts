@@ -76,13 +76,27 @@ Deno.serve(async (req) => {
         ? `${EVOLUTION_API_URL}/message/sendMedia/${instName}`
         : `${EVOLUTION_API_URL}/message/sendMedia/${instName}`;
 
+      let mediaData = media_url;
+      if (media_url.startsWith("http")) {
+        try {
+          const res = await fetch(media_url);
+          const blob = await res.blob();
+          const buffer = await blob.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+          mediaData = `data:${blob.type};base64,${base64}`;
+        } catch (e) {
+          console.error("Erro ao converter URL para base64:", e);
+          // Fallback para a URL original se falhar
+        }
+      }
+
       const sendRes = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY },
         body: JSON.stringify({
           number: phone.replace(/\D/g, ""),
           mediatype: media_type === "video" ? "video" : "image",
-          media: media_url,
+          media: mediaData,
           caption: caption || "",
         }),
       });
