@@ -417,7 +417,7 @@ export default function Roadmap() {
 
         {/* Arthos watermark */}
         <div className="fixed bottom-0 right-0" style={{ zIndex: 2147483647 }}>
-          <img src={arthosBadge} alt="Made by Arthos" className="h-[48px] drop-shadow-md rounded-xl" />
+          <img src={arthosBadge} alt="Made by Arthos" className="h-[48px] rounded-xl shadow-lg shadow-black/20" />
         </div>
       </main>
     </div>
