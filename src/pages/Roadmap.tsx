@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
 import arthosBadge from "@/assets/arthos-badge.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -164,6 +165,11 @@ export default function Roadmap() {
           <p className="text-sm text-muted-foreground ml-11">
             Agente de IA para WhatsApp · Loja de Móveis e Colchões
           </p>
+          <div className="flex items-center gap-2 ml-11 mt-2">
+            <CalendarDays className="h-3.5 w-3.5 text-emerald-500" />
+            <span className="text-xs font-medium text-emerald-600">Início: 03/04 · Prazo final: 15/04 · Sprint de 2 semanas</span>
+            <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-600">Fase final</Badge>
+          </div>
         </div>
       </header>
 
