@@ -99,7 +99,6 @@ export default function WhatsApp() {
         (supabase.from("leads") as any)
           .select("id, nome, telefone, etapa_pipeline, is_bot_active, bot_paused_until")
           .eq("loja_id", activeLojaId!),
-          .eq("loja_id", activeLojaId!),
         supabase
           .from("historico_mensagens")
           .select("id, lead_id, content, created_at")
