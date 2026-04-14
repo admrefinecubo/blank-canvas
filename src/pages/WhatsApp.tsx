@@ -313,10 +313,12 @@ export default function WhatsApp() {
   };
 
   const getLeadInitials = (lead: ConversationSummary) => {
-    const name = getLeadName(lead.nome, lead.telefone).trim();
+    const name = getDisplayName(lead).trim();
     const parts = name.split(" ").filter(Boolean).slice(0, 2);
     return parts.map((part) => part[0]?.toUpperCase() || "").join("") || "LD";
   };
+
+  const getLeadPic = (lead: ConversationSummary) => profilePics[lead.id]?.url || undefined;
 
   if (!activeLojaId) {
     return (
