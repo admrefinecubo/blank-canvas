@@ -392,6 +392,66 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ─── ACTION: profile_picture ───
+    if (action === "profile_picture") {
+      const { phone } = body;
+      if (!phone) throw new Error("phone obrigatório");
+
+      let instName: string;
+      let ppApiUrl = apiUrl;
+      let ppApiKey = apiKey;
+
+      if (loja_id) {
+        const { data: loja, error: lojaErr } = await supabase
+          .from("lojas")
+          .select("instance")
+          .eq("id", loja_id)
+          .single();
+        if (lojaErr || !loja?.instance) throw new Error("Loja sem instância WhatsApp configurada");
+        instName = loja.instance;
+      } else {
+        const { data: integration } = await supabase
+          .from("clinic_integrations")
+          .select("*")
+          .eq("clinic_id", clinic_id)
+          .eq("provider", "evolution_api")
+          .maybeSingle();
+        if (!integration) throw new Error("WhatsApp não conectado");
+        const cfg = integration.config as any;
+        instName = cfg.instance_name;
+        ppApiUrl = cfg.api_url || apiUrl;
+        ppApiKey = cfg.api_key || apiKey;
+      }
+
+      const number = phone.replace(/\D/g, "");
+
+      // Fetch profile picture
+      const picRes = await fetch(`${ppApiUrl}/chat/fetchProfilePictureUrl/${instName}?number=${number}`, {
+        headers: { apikey: ppApiKey },
+      });
+      const picData = await picRes.json();
+      const profilePictureUrl = picData?.profilePictureUrl || picData?.url || null;
+
+      // Fetch contact info (pushName)
+      let pushName: string | null = null;
+      try {
+        const contactRes = await fetch(`${ppApiUrl}/chat/findContacts/${instName}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: ppApiKey },
+          body: JSON.stringify({ where: { id: `${number}@s.whatsapp.net` } }),
+        });
+        const contactData = await contactRes.json();
+        if (Array.isArray(contactData) && contactData.length > 0) {
+          pushName = contactData[0].pushName || contactData[0].name || null;
+        }
+      } catch { /* ignore */ }
+
+      return new Response(JSON.stringify({
+        profilePictureUrl,
+        pushName,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     throw new Error(`Ação desconhecida: ${action}`);
 
   } catch (error: any) {
