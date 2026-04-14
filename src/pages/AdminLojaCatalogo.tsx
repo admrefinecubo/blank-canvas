@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, ChangeEvent } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import {
-  Plus, Pencil, Trash2, ImageIcon, Loader2, Package,
+  Plus, Pencil, Trash2, ImageIcon, Loader2, Package, Upload,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -174,6 +174,67 @@ export default function AdminLojaCatalogo() {
   });
 
 
+  const [uploadingField, setUploadingField] = useState<"foto_principal" | "foto_detalhe" | null>(null);
+  const principalInputRef = useRef<HTMLInputElement | null>(null);
+  const detailInputRef = useRef<HTMLInputElement | null>(null);
+
+  const uploadMutation = useMutation({
+    mutationFn: async ({ file, field }: { file: File; field: "foto_principal" | "foto_detalhe" }) => {
+      if (!lojaId) throw new Error("Loja não encontrada");
+      if (!file.type.startsWith("image/")) throw new Error("Envie apenas arquivos de imagem");
+      if (file.size > 5 * 1024 * 1024) throw new Error("A imagem deve ter no máximo 5MB");
+
+      const fileToBase64 = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result;
+            if (typeof result !== "string") {
+              reject(new Error("Falha ao processar arquivo"));
+              return;
+            }
+            resolve(result.split(",")[1] ?? "");
+          };
+          reader.onerror = () => reject(new Error("Falha ao ler arquivo"));
+          reader.readAsDataURL(file);
+        });
+
+      const base64 = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke("catalog-actions", {
+        body: {
+          action: "upload_product_image",
+          loja_id: lojaId,
+          target_field: field,
+          file_name: file.name,
+          content_type: file.type,
+          base64,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      return { field, url: data?.publicUrl as string };
+    },
+    onMutate: ({ field }) => setUploadingField(field),
+    onSuccess: ({ field, url }) => {
+      set(field, url);
+      toast.success("Imagem enviada com sucesso!");
+    },
+    onError: (e: any) => toast.error("Erro ao enviar imagem", { description: e.message }),
+    onSettled: () => setUploadingField(null),
+  });
+
+  const handleImageSelected = async (
+    event: ChangeEvent<HTMLInputElement>,
+    field: "foto_principal" | "foto_detalhe",
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    await uploadMutation.mutateAsync({ file, field });
+  };
+
   const set = (key: string, value: any) => setForm((f) => ({ ...f, [key]: value }));
 
   const formatPrice = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -340,13 +401,57 @@ export default function AdminLojaCatalogo() {
               </div>
               <Switch checked={form.estoque_disponivel} onCheckedChange={(v) => set("estoque_disponivel", v)} />
             </div>
-            <div>
-              <Label>URL da foto principal</Label>
-              <Input type="url" placeholder="https://..." value={form.foto_principal} onChange={(e) => set("foto_principal", e.target.value)} />
+            <div className="space-y-2">
+              <Label>Foto principal</Label>
+              <div className="flex flex-col gap-3">
+                {form.foto_principal ? (
+                  <div className="relative group w-32 h-32 rounded-lg overflow-hidden border border-border">
+                    <img src={form.foto_principal} className="w-full h-full object-cover" alt="Principal" />
+                    <button 
+                      type="button"
+                      className="absolute top-1 right-1 p-1 bg-destructive text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => set("foto_principal", "")}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center bg-muted/30">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+                  </div>
+                )}
+                <input ref={principalInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => void handleImageSelected(event, "foto_principal")} />
+                <Button type="button" variant="outline" className="w-full gap-2" onClick={() => principalInputRef.current?.click()} disabled={uploadingField === "foto_principal"}>
+                  {uploadingField === "foto_principal" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {form.foto_principal ? "Alterar foto principal" : "Enviar foto principal"}
+                </Button>
+              </div>
             </div>
-            <div>
-              <Label>URL da foto de detalhe</Label>
-              <Input type="url" placeholder="https://..." value={form.foto_detalhe} onChange={(e) => set("foto_detalhe", e.target.value)} />
+            <div className="space-y-2">
+              <Label>Foto de detalhe</Label>
+              <div className="flex flex-col gap-3">
+                {form.foto_detalhe ? (
+                  <div className="relative group w-32 h-32 rounded-lg overflow-hidden border border-border">
+                    <img src={form.foto_detalhe} className="w-full h-full object-cover" alt="Detalhe" />
+                    <button 
+                      type="button"
+                      className="absolute top-1 right-1 p-1 bg-destructive text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => set("foto_detalhe", "")}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center bg-muted/30">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+                  </div>
+                )}
+                <input ref={detailInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => void handleImageSelected(event, "foto_detalhe")} />
+                <Button type="button" variant="outline" className="w-full gap-2" onClick={() => detailInputRef.current?.click()} disabled={uploadingField === "foto_detalhe"}>
+                  {uploadingField === "foto_detalhe" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {form.foto_detalhe ? "Alterar foto detalhe" : "Enviar foto detalhe"}
+                </Button>
+              </div>
             </div>
             <div>
               <Label>URL do vídeo demonstrativo</Label>

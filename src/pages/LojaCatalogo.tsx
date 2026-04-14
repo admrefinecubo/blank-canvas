@@ -409,22 +409,56 @@ export default function LojaCatalogo() {
             <div className="md:col-span-2"><Label>Variações (JSON)</Label><Textarea value={form.variacoes} onChange={(e) => set("variacoes", e.target.value)} placeholder='[{"tamanho":"Queen","preco":1899}]' rows={4} /></div>
             <div className="md:col-span-2"><Label>Checkout URL</Label><Input value={form.checkout_url} onChange={(e) => set("checkout_url", e.target.value)} placeholder="https://checkout.sualoja.com/produto" /></div>
             <div className="space-y-2">
-              <Label>Foto principal URL</Label>
-              <Input value={form.foto_principal} onChange={(e) => set("foto_principal", e.target.value)} placeholder="https://..." />
-              <input ref={principalInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => void handleImageSelected(event, "foto_principal")} />
-              <Button type="button" variant="outline" className="w-full gap-2" onClick={() => principalInputRef.current?.click()} disabled={uploadingField === "foto_principal"}>
-                {uploadingField === "foto_principal" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Upload para Storage
-              </Button>
+              <Label>Foto principal</Label>
+              <div className="flex flex-col gap-3">
+                {form.foto_principal ? (
+                  <div className="relative group w-32 h-32 rounded-lg overflow-hidden border border-border">
+                    <img src={form.foto_principal} className="w-full h-full object-cover" alt="Principal" />
+                    <button 
+                      type="button"
+                      className="absolute top-1 right-1 p-1 bg-destructive text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => set("foto_principal", "")}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center bg-muted/30">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+                  </div>
+                )}
+                <input ref={principalInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => void handleImageSelected(event, "foto_principal")} />
+                <Button type="button" variant="outline" className="w-full gap-2" onClick={() => principalInputRef.current?.click()} disabled={uploadingField === "foto_principal"}>
+                  {uploadingField === "foto_principal" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {form.foto_principal ? "Alterar foto principal" : "Enviar foto principal"}
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Foto detalhe URL</Label>
-              <Input value={form.foto_detalhe} onChange={(e) => set("foto_detalhe", e.target.value)} placeholder="https://..." />
-              <input ref={detailInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => void handleImageSelected(event, "foto_detalhe")} />
-              <Button type="button" variant="outline" className="w-full gap-2" onClick={() => detailInputRef.current?.click()} disabled={uploadingField === "foto_detalhe"}>
-                {uploadingField === "foto_detalhe" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Upload para Storage
-              </Button>
+              <Label>Foto detalhe</Label>
+              <div className="flex flex-col gap-3">
+                {form.foto_detalhe ? (
+                  <div className="relative group w-32 h-32 rounded-lg overflow-hidden border border-border">
+                    <img src={form.foto_detalhe} className="w-full h-full object-cover" alt="Detalhe" />
+                    <button 
+                      type="button"
+                      className="absolute top-1 right-1 p-1 bg-destructive text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => set("foto_detalhe", "")}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center bg-muted/30">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+                  </div>
+                )}
+                <input ref={detailInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => void handleImageSelected(event, "foto_detalhe")} />
+                <Button type="button" variant="outline" className="w-full gap-2" onClick={() => detailInputRef.current?.click()} disabled={uploadingField === "foto_detalhe"}>
+                  {uploadingField === "foto_detalhe" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {form.foto_detalhe ? "Alterar foto detalhe" : "Enviar foto detalhe"}
+                </Button>
+              </div>
             </div>
             <div className="md:col-span-2"><Label>Vídeo</Label><Input value={form.video_url} onChange={(e) => set("video_url", e.target.value)} placeholder="https://..." /></div>
             <div className="md:col-span-2 flex items-center justify-between rounded-xl border border-border p-4">
