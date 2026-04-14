@@ -11,10 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { activateHandoff, deactivateHandoff } from "@/lib/handoff";
 import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
 import { formatDateTime, getLeadName, getEtapaLabel } from "@/lib/whatsapp-admin";
 
@@ -25,7 +23,6 @@ type ConversationSummary = {
   etapa_pipeline: string;
   is_bot_active?: boolean;
   bot_paused_until?: string | null;
-  agente_pausado?: boolean | null;
   ultima_msg?: string | null;
   ultima_data?: string | null;
 };
@@ -94,12 +91,12 @@ export default function WhatsApp() {
     enabled: !!activeLojaId,
   });
 
-  const { data: conversations = [], isLoading } = useQuery<ConversationSummary[]>({
+  const { data: conversations = [], isLoading } = useQuery({
     queryKey: ["whatsapp-conversations", activeLojaId],
     queryFn: async () => {
       const [leadsResult, messagesResult] = await Promise.all([
         (supabase.from("leads") as any)
-          .select("id, nome, telefone, etapa_pipeline, is_bot_active, bot_paused_until, agente_pausado")
+          .select("id, nome, telefone, etapa_pipeline, is_bot_active, bot_paused_until")
           .eq("loja_id", activeLojaId!),
         supabase
           .from("historico_mensagens")
@@ -182,17 +179,26 @@ export default function WhatsApp() {
   const toggleBotMutation = useMutation({
     mutationFn: async (nextValue: boolean) => {
       if (!selectedLead?.id) throw new Error("Selecione um lead");
-      const params = {
-        leadId: selectedLead.id,
-        telefone: selectedLead.telefone,
-        lojaId: activeLojaId!,
-        instance: lojaContext?.instance,
-      };
-      if (nextValue) {
-        await deactivateHandoff(params);
-      } else {
-        await activateHandoff(params);
-      }
+      if (!activeLojaId) throw new Error("Loja ativa não encontrada");
+
+      const { error } = await supabase
+        .from("leads")
+        .update({ is_bot_active: nextValue })
+        .eq("id", selectedLead.id);
+
+      if (error) throw error;
+
+      fetch("https://n8n.refinecubo.com.br/webhook/handoff-toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telefone: selectedLead.telefone,
+          instance: lojaContext?.instance ?? "",
+          loja_id: activeLojaId,
+          action: nextValue ? "resume" : "pause",
+        }),
+      }).catch(() => {});
+
       return nextValue;
     },
     onSuccess: (nextValue) => {
@@ -244,21 +250,26 @@ export default function WhatsApp() {
       if (messageInsert.error) throw messageInsert.error;
       if (leadUpdate.error) throw leadUpdate.error;
 
-      // Ativa handoff automaticamente ao enviar mensagem manual
+      // Auto-pause bot when human sends message from CRM
       if (selectedLead.is_bot_active !== false) {
-        await activateHandoff({
-          leadId: selectedLead.id,
-          telefone: selectedLead.telefone,
-          lojaId: activeLojaId!,
-          instance: lojaContext?.instance,
-        });
+        await supabase.from("leads").update({ is_bot_active: false }).eq("id", selectedLead.id);
+        fetch("https://n8n.refinecubo.com.br/webhook/handoff-toggle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            telefone: selectedLead.telefone,
+            instance: lojaContext?.instance ?? "",
+            loja_id: activeLojaId,
+            action: "pause",
+          }),
+        }).catch(() => {});
       }
     },
     onSuccess: () => {
       setDraftMessage("");
       queryClient.invalidateQueries({ queryKey: ["whatsapp-conversations", activeLojaId] });
       queryClient.invalidateQueries({ queryKey: ["whatsapp-chat-messages", selectedLead?.id] });
-      toast.success("Mensagem enviada com sucesso");
+      toast.success("Mensagem enviada");
     },
     onError: (error: Error) => {
       toast.error("Erro ao enviar mensagem", { description: error.message });
@@ -424,12 +435,11 @@ export default function WhatsApp() {
                         checked={selectedLead.is_bot_active !== false}
                         disabled={toggleBotMutation.isPending}
                         onCheckedChange={(checked) => toggleBotMutation.mutate(checked)}
-                        className={cn(
-                          "transition-all duration-500",
+                        className={`transition-all duration-500 ${
                           selectedLead.is_bot_active === false
                             ? "data-[state=unchecked]:bg-destructive data-[state=unchecked]:shadow-[0_0_12px_hsl(var(--destructive)/0.5)] data-[state=unchecked]:ring-2 data-[state=unchecked]:ring-destructive/30"
                             : ""
-                        )}
+                        }`}
                       />
                     </div>
                   </div>
