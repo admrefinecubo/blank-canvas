@@ -252,8 +252,8 @@ export default function Roadmap() {
         </footer>
 
         {/* Arthos watermark — fixed above Lovable badge */}
-        <div className="fixed bottom-14 right-4 z-50">
-          <img src={arthosBadge} alt="Made by Arthos" className="h-[34px] opacity-90 drop-shadow-md" />
+        <div className="fixed bottom-[52px] right-4 z-50">
+          <img src={arthosBadge} alt="Made by Arthos" className="h-[40px] opacity-95 drop-shadow-md rounded-lg" />
         </div>
       </main>
     </div>
