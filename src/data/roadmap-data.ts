@@ -295,6 +295,30 @@ export const workflows: Workflow[] = [
   },
 ];
 
+// Changelog — últimas mudanças do projeto
+export interface ChangelogEntry {
+  date: string; // ISO
+  title: string;
+  description: string;
+  type: "feature" | "fix" | "progress" | "infra";
+}
+
+export const changelog: ChangelogEntry[] = [
+  { date: "2026-04-14T16:00:00", title: "Limpeza de referências CUBO", description: "Removidas todas as referências à CUBO Consultoria. Tema renomeado para lojaads-theme. URLs hardcoded substituídas por env vars.", type: "infra" },
+  { date: "2026-04-14T14:30:00", title: "Roadmap atualizado — 74 itens concluídos", description: "Auditoria completa do projeto. 24 itens adicionais marcados como feitos após análise das edge functions e prompts.", type: "progress" },
+  { date: "2026-04-13T10:00:00", title: "WF-13 Campanha Promocional", description: "Workflow de disparo de campanhas promocionais com segmentação por perfil de interesse implementado e testado.", type: "feature" },
+  { date: "2026-04-12T18:00:00", title: "WF-14 Sync Estoque E-commerce", description: "Webhook de sincronização de estoque e preço com plataformas de e-commerce ativo.", type: "feature" },
+  { date: "2026-04-12T11:00:00", title: "Follow-ups automáticos (WF-02)", description: "Cron de follow-up com regras para carrinho abandonado, orçamento pendente e promoção não respondida.", type: "feature" },
+  { date: "2026-04-11T16:00:00", title: "Handoff Toggle (WF-12)", description: "Pausar/retomar agente de IA via webhook. Integração com Redis para controle de estado.", type: "feature" },
+  { date: "2026-04-11T09:00:00", title: "Transbordo para humano (WF-05)", description: "Transferência automática com resumo da conversa enviado ao vendedor. Prioridade configurável.", type: "feature" },
+  { date: "2026-04-10T14:00:00", title: "Agendar Visita + Google Calendar", description: "WF-08 agenda visita presencial com integração Google Calendar e link do Google Maps.", type: "feature" },
+  { date: "2026-04-09T17:00:00", title: "Agent-tools edge function", description: "Todas as 9 ferramentas do agente implementadas: buscar_produto, enviar_midia, agendar_visita, cadastrar_lead, etc.", type: "feature" },
+  { date: "2026-04-08T12:00:00", title: "Catálogo com embeddings", description: "Tabela produtos com suporte a vetorização. Função match_produtos para busca semântica.", type: "feature" },
+  { date: "2026-04-07T10:00:00", title: "Pipeline de leads no CRM", description: "Funil de vendas com etapas: novo → qualificado → orçamento → negociação → fechado.", type: "feature" },
+  { date: "2026-04-05T15:00:00", title: "Multi-tenant com RLS", description: "Isolamento completo de dados por loja via Row Level Security. has_loja_access e has_clinic_access.", type: "infra" },
+  { date: "2026-04-03T09:00:00", title: "Setup inicial do projeto", description: "Estrutura React + Vite + Supabase. Autenticação, rotas protegidas, layout responsivo.", type: "infra" },
+];
+
 // Computed stats
 export function getRoadmapStats() {
   const allItems = checklistBlocks.flatMap((b) => b.items);
@@ -305,4 +329,15 @@ export function getRoadmapStats() {
   const highPriority = allItems.filter((i) => i.priority === "Alta").length;
   const highPriorityDone = allItems.filter((i) => i.priority === "Alta" && i.status === "done").length;
   return { total, done, inProgress, pending, highPriority, highPriorityDone };
+}
+
+// Per-block stats for charts
+export function getBlockStats() {
+  return checklistBlocks.map((block) => {
+    const done = block.items.filter((i) => i.status === "done").length;
+    const inProgress = block.items.filter((i) => i.status === "in_progress").length;
+    const pending = block.items.filter((i) => i.status === "pending").length;
+    const shortName = block.name.replace(/^\d+\.\s*/, "").substring(0, 20);
+    return { name: shortName, done, inProgress, pending, total: block.items.length };
+  });
 }
