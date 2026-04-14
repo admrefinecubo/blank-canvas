@@ -392,6 +392,9 @@ export default function WhatsApp() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setProfileOpen(true)}>
+                    <Info className="h-3.5 w-3.5" /> Perfil
+                  </Button>
                   <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2">
                     <span className={`h-2.5 w-2.5 rounded-full ${selectedLead.is_bot_active === false ? "bg-destructive" : "bg-primary"}`} />
                     <span className="text-sm font-medium">{selectedLead.is_bot_active === false ? "Bot pausado" : "Bot ativo"}</span>
