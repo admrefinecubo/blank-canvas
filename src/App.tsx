@@ -42,8 +42,6 @@ import LojaVendas from "@/pages/LojaVendas";
 import LojaPosVenda from "@/pages/LojaPosVenda";
 import NotFound from "./pages/NotFound";
 import Roadmap from "./pages/Roadmap";
-import WorkflowsEditor from "./pages/WorkflowsEditor";
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -82,7 +80,6 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/roadmap" element={<Roadmap />} />
-            <Route path="/workflows-editor" element={<WorkflowsEditor />} />
             <Route path="/" element={<RootRedirect />} />
             <Route element={<ProtectedRoute requiredMode="client"><AppLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
