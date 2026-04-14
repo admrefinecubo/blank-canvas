@@ -11,6 +11,7 @@ export interface ChecklistItem {
 
 export interface ChecklistBlock {
   name: string;
+  description: string;
   items: ChecklistItem[];
 }
 
