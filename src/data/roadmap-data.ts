@@ -24,29 +24,29 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "1. Identidade e Personalidade",
     items: [
-      { number: 1, functionality: "Nome personalizável do assistente por loja/tenant", status: "pending", priority: "Alta" },
-      { number: 2, functionality: "Especialidades configuráveis (colchões, sofás, móveis planejados, etc.)", status: "pending", priority: "Alta" },
-      { number: 3, functionality: "Tom de voz configurável por loja", status: "pending", priority: "Alta" },
-      { number: 4, functionality: "Regras de personalidade configuráveis por loja", status: "pending", priority: "Alta" },
-      { number: 5, functionality: "Atuação como consultor — não apenas atendente", status: "pending", priority: "Alta" },
-      { number: 6, functionality: "Comunicação natural, educada, amigável e objetiva", status: "pending", priority: "Alta" },
+      { number: 1, functionality: "Nome personalizável do assistente por loja/tenant", status: "done", priority: "Alta", observations: "Campo nome_assistente_ia em lojas" },
+      { number: 2, functionality: "Especialidades configuráveis (colchões, sofás, móveis planejados, etc.)", status: "done", priority: "Alta", observations: "Campo especialidades em lojas" },
+      { number: 3, functionality: "Tom de voz configurável por loja", status: "done", priority: "Alta", observations: "Campo tom_voz em lojas" },
+      { number: 4, functionality: "Regras de personalidade configuráveis por loja", status: "done", priority: "Alta", observations: "Campo regras_personalidade em lojas" },
+      { number: 5, functionality: "Atuação como consultor — não apenas atendente", status: "done", priority: "Alta", observations: "Configurado via prompt no N8N" },
+      { number: 6, functionality: "Comunicação natural, educada, amigável e objetiva", status: "done", priority: "Alta", observations: "Configurado via prompt no N8N" },
       { number: 7, functionality: "Respostas curtas que avançam a conversa", status: "pending", priority: "Média" },
     ],
   },
   {
     name: "2. Regras Absolutas e Segurança",
     items: [
-      { number: 8, functionality: "NUNCA inventar produtos, preços ou disponibilidade", status: "pending", priority: "Alta" },
-      { number: 9, functionality: "Sempre consultar catálogo antes de oferecer produto (buscar_produto_no_catalogo)", status: "pending", priority: "Alta" },
-      { number: 10, functionality: "Vender apenas produtos da loja configurada (tenant)", status: "pending", priority: "Alta" },
-      { number: 11, functionality: "Informar indisponibilidade e sugerir alternativas", status: "pending", priority: "Alta" },
-      { number: 12, functionality: "Nunca iniciar conversa com preço — entender necessidade antes", status: "pending", priority: "Alta" },
+      { number: 8, functionality: "NUNCA inventar produtos, preços ou disponibilidade", status: "done", priority: "Alta", observations: "Agent-tools consulta catálogo real" },
+      { number: 9, functionality: "Sempre consultar catálogo antes de oferecer produto (buscar_produto_no_catalogo)", status: "done", priority: "Alta", observations: "Tool buscar_produto implementada" },
+      { number: 10, functionality: "Vender apenas produtos da loja configurada (tenant)", status: "done", priority: "Alta", observations: "Filtro por loja_id no agent-tools" },
+      { number: 11, functionality: "Informar indisponibilidade e sugerir alternativas", status: "done", priority: "Alta", observations: "Lógica no agent-tools" },
+      { number: 12, functionality: "Nunca iniciar conversa com preço — entender necessidade antes", status: "done", priority: "Alta", observations: "Regra no prompt do agente" },
     ],
   },
   {
     name: "3. Fluxo de Vendas",
     items: [
-      { number: 13, functionality: "Recepção / saudação inicial", status: "pending", priority: "Alta" },
+      { number: 13, functionality: "Recepção / saudação inicial", status: "pending", priority: "Alta", observations: "Depende do prompt N8N" },
       { number: 14, functionality: "Diagnóstico do cliente (perguntas estratégicas)", status: "pending", priority: "Alta" },
       { number: 15, functionality: "Entendimento do ambiente ou necessidade", status: "pending", priority: "Alta" },
       { number: 16, functionality: "Construção de valor (ajudar a imaginar o resultado)", status: "pending", priority: "Alta" },
@@ -60,7 +60,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "4. Diagnóstico e Qualificação",
     items: [
-      { number: 22, functionality: "Diagnóstico geral: produto, ambiente, tamanho do espaço, estilo", status: "pending", priority: "Alta" },
+      { number: 22, functionality: "Diagnóstico geral: produto, ambiente, tamanho do espaço, estilo", status: "pending", priority: "Alta", observations: "Depende do prompt do agente" },
       { number: 23, functionality: "Diagnóstico para Sala (rack, painel, TV, sofá)", status: "pending", priority: "Alta" },
       { number: 24, functionality: "Diagnóstico para Quarto (cama, guarda-roupa, criado-mudo)", status: "pending", priority: "Alta" },
       { number: 25, functionality: "Diagnóstico para Sala de Jantar (mesa, cadeiras, aparador)", status: "pending", priority: "Alta" },
@@ -73,14 +73,14 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "5. Catálogo e RAG",
     items: [
-      { number: 30, functionality: "Busca semântica no catálogo via RAG (vetorização por produto)", status: "pending", priority: "Alta" },
-      { number: 31, functionality: "Schema completo: nome, descrição, specs, variações, preços, estoque, checkout", status: "pending", priority: "Alta" },
-      { number: 32, functionality: "Mídias por produto: foto principal, foto detalhe, vídeo demonstrativo", status: "pending", priority: "Alta" },
-      { number: 33, functionality: "Tags por produto para busca semântica", status: "pending", priority: "Alta" },
-      { number: 34, functionality: "Campo estoque_disponivel sincronizado em tempo real", status: "pending", priority: "Alta" },
-      { number: 35, functionality: "Preço promocional por variação de produto", status: "pending", priority: "Alta" },
-      { number: 36, functionality: "Suporte multi-tenant (catálogo separado por loja)", status: "pending", priority: "Alta" },
-      { number: 37, functionality: "Re-indexação automática ao atualizar produto no catálogo", status: "pending", priority: "Alta" },
+      { number: 30, functionality: "Busca semântica no catálogo via RAG (vetorização por produto)", status: "in_progress", priority: "Alta", observations: "Extension vector instalada, match_produtos criado mas falta testar end-to-end" },
+      { number: 31, functionality: "Schema completo: nome, descrição, specs, variações, preços, estoque, checkout", status: "done", priority: "Alta", observations: "Tabela produtos com todos os campos" },
+      { number: 32, functionality: "Mídias por produto: foto principal, foto detalhe, vídeo demonstrativo", status: "done", priority: "Alta", observations: "foto_principal, foto_detalhe, video_url" },
+      { number: 33, functionality: "Tags por produto para busca semântica", status: "done", priority: "Alta", observations: "Campo tags na tabela produtos" },
+      { number: 34, functionality: "Campo estoque_disponivel sincronizado em tempo real", status: "done", priority: "Alta", observations: "stock-webhook + decrementar_estoque" },
+      { number: 35, functionality: "Preço promocional por variação de produto", status: "done", priority: "Alta", observations: "Campo preco_promocional" },
+      { number: 36, functionality: "Suporte multi-tenant (catálogo separado por loja)", status: "done", priority: "Alta", observations: "loja_id em produtos" },
+      { number: 37, functionality: "Re-indexação automática ao atualizar produto no catálogo", status: "in_progress", priority: "Alta", observations: "WF-11 existe mas precisa trigger automático" },
     ],
   },
   {
@@ -91,8 +91,8 @@ export const checklistBlocks: ChecklistBlock[] = [
       { number: 40, functionality: "Tray", status: "pending", priority: "Média" },
       { number: 41, functionality: "VTEX", status: "pending", priority: "Média" },
       { number: 42, functionality: "VendiZap", status: "pending", priority: "Média" },
-      { number: 43, functionality: "Webhook de atualização de estoque e preço em tempo real", status: "pending", priority: "Alta" },
-      { number: 44, functionality: "Sync automático do catálogo ao receber webhook", status: "pending", priority: "Alta" },
+      { number: 43, functionality: "Webhook de atualização de estoque e preço em tempo real", status: "done", priority: "Alta", observations: "stock-webhook edge function + WF-14" },
+      { number: 44, functionality: "Sync automático do catálogo ao receber webhook", status: "done", priority: "Alta", observations: "WF-14 Sync Estoque e Preço" },
       { number: 45, functionality: "Links de checkout por variação de produto", status: "pending", priority: "Alta" },
       { number: 46, functionality: "Botão interativo 'Comprar Agora' via WhatsApp Business API", status: "pending", priority: "Alta" },
     ],
@@ -100,21 +100,21 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "7. Ferramentas do Agente (Tool Calling)",
     items: [
-      { number: 47, functionality: "buscar_produto_no_catalogo — filtros: query, categoria, tamanho, preço, disponível", status: "pending", priority: "Alta" },
-      { number: 48, functionality: "enviar_midia_whatsapp — fotos e vídeos direto no chat (com legenda e delay)", status: "pending", priority: "Alta" },
-      { number: 49, functionality: "agendar_visita_loja_fisica — visita presencial com confirmação + Google Maps", status: "pending", priority: "Alta" },
-      { number: 50, functionality: "gerar_orcamento_formal — PDF com itens, descontos, pagamento e validade", status: "pending", priority: "Alta" },
-      { number: 51, functionality: "agendar_follow_up_medidas — follow-up automático (medidas, carrinho, orçamento)", status: "pending", priority: "Alta" },
-      { number: 52, functionality: "cadastrar_lead — CRM com nome, telefone, e-mail, interesse e origem", status: "pending", priority: "Alta" },
-      { number: 53, functionality: "mover_pipeline — mover card no funil de vendas entre etapas", status: "pending", priority: "Alta" },
-      { number: 54, functionality: "gerar_cobranca — gerar link de pagamento", status: "pending", priority: "Alta" },
-      { number: 55, functionality: "transferir_para_humano — transbordo com resumo e prioridade", status: "pending", priority: "Alta" },
+      { number: 47, functionality: "buscar_produto_no_catalogo — filtros: query, categoria, tamanho, preço, disponível", status: "done", priority: "Alta", observations: "Implementado no agent-tools" },
+      { number: 48, functionality: "enviar_midia_whatsapp — fotos e vídeos direto no chat (com legenda e delay)", status: "in_progress", priority: "Alta", observations: "Edge function existe mas agente N8N não está processando corretamente" },
+      { number: 49, functionality: "agendar_visita_loja_fisica — visita presencial com confirmação + Google Maps", status: "done", priority: "Alta", observations: "WF-08 + Google Calendar + tabela visitas" },
+      { number: 50, functionality: "gerar_orcamento_formal — PDF com itens, descontos, pagamento e validade", status: "in_progress", priority: "Alta", observations: "WF-09 retorna HTML, falta gerar PDF formal" },
+      { number: 51, functionality: "agendar_follow_up_medidas — follow-up automático (medidas, carrinho, orçamento)", status: "done", priority: "Alta", observations: "Implementado no agent-tools + tabela follow_ups" },
+      { number: 52, functionality: "cadastrar_lead — CRM com nome, telefone, e-mail, interesse e origem", status: "done", priority: "Alta", observations: "Cadastro automático via agent-tools" },
+      { number: 53, functionality: "mover_pipeline — mover card no funil de vendas entre etapas", status: "done", priority: "Alta", observations: "mover_pipeline no agent-tools" },
+      { number: 54, functionality: "gerar_cobranca — gerar link de pagamento", status: "in_progress", priority: "Alta", observations: "WF-10 placeholder, sem gateway de pagamento integrado" },
+      { number: 55, functionality: "transferir_para_humano — transbordo com resumo e prioridade", status: "done", priority: "Alta", observations: "WF-05 + WF-12 + handoff.ts" },
     ],
   },
   {
     name: "8. Automações de Follow-up",
     items: [
-      { number: 56, functionality: "Follow-up para clientes que interagiram pouco (msgs iniciais sem avançar)", status: "pending", priority: "Alta" },
+      { number: 56, functionality: "Follow-up para clientes que interagiram pouco (msgs iniciais sem avançar)", status: "pending", priority: "Alta", observations: "Tabela follow_ups existe, automação cron pendente" },
       { number: 57, functionality: "Follow-up de carrinho abandonado (com oferta de desconto 5% ou 10%)", status: "pending", priority: "Alta" },
       { number: 58, functionality: "Follow-up de promoção não respondida (com oferta de desconto 5% ou 10%)", status: "pending", priority: "Alta" },
       { number: 59, functionality: "Follow-up de orçamento pendente", status: "pending", priority: "Alta" },
@@ -126,29 +126,29 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "9. Promoções e Segmentação",
     items: [
-      { number: 63, functionality: "Disparo de promoções para clientes com perfil adequado no CRM", status: "pending", priority: "Alta" },
-      { number: 64, functionality: "Segmentação por perfil de interesse (ex: colchão premium → promoção de colchão)", status: "pending", priority: "Alta" },
-      { number: 65, functionality: "Desconto configurável para recuperação de carrinho abandonado", status: "pending", priority: "Alta" },
-      { number: 66, functionality: "Desconto configurável para follow-up de promoção não respondida", status: "pending", priority: "Alta" },
+      { number: 63, functionality: "Disparo de promoções para clientes com perfil adequado no CRM", status: "done", priority: "Alta", observations: "WF-13 + campaign-dispatch edge function" },
+      { number: 64, functionality: "Segmentação por perfil de interesse (ex: colchão premium → promoção de colchão)", status: "done", priority: "Alta", observations: "segment_type + segment_config na tabela promotional_campaigns" },
+      { number: 65, functionality: "Desconto configurável para recuperação de carrinho abandonado", status: "pending", priority: "Alta", observations: "Campo desconto_carrinho_abandonado existe na tabela lojas" },
+      { number: 66, functionality: "Desconto configurável para follow-up de promoção não respondida", status: "pending", priority: "Alta", observations: "Campo desconto_promocao_nao_respondida existe na tabela lojas" },
     ],
   },
   {
     name: "10. CRM e Pipeline de Vendas",
     items: [
-      { number: 67, functionality: "Cadastro automático de lead ao primeiro contato", status: "pending", priority: "Alta" },
-      { number: 68, functionality: "Registro do canal de origem (WhatsApp, tráfego pago, Instagram, Google, etc.)", status: "pending", priority: "Alta" },
-      { number: 69, functionality: "Histórico do cliente: última interação, produtos vistos, status, follow-ups", status: "pending", priority: "Alta" },
-      { number: 70, functionality: "Movimentação automática no funil após cada etapa da venda", status: "pending", priority: "Alta" },
+      { number: 67, functionality: "Cadastro automático de lead ao primeiro contato", status: "done", priority: "Alta", observations: "cadastrar_lead no agent-tools" },
+      { number: 68, functionality: "Registro do canal de origem (WhatsApp, tráfego pago, Instagram, Google, etc.)", status: "done", priority: "Alta", observations: "Campo canal_origem + origem na tabela leads" },
+      { number: 69, functionality: "Histórico do cliente: última interação, produtos vistos, status, follow-ups", status: "done", priority: "Alta", observations: "historico_mensagens + ultima_interacao + midias_enviadas" },
+      { number: 70, functionality: "Movimentação automática no funil após cada etapa da venda", status: "done", priority: "Alta", observations: "mover_pipeline via agent-tools" },
       { number: 71, functionality: "Tracking de visualização de produto ao enviar mídia", status: "pending", priority: "Média" },
     ],
   },
   {
     name: "11. Envio de Mídias e Checkout",
     items: [
-      { number: 72, functionality: "Envio de fotos do produto com legenda no WhatsApp", status: "pending", priority: "Alta" },
-      { number: 73, functionality: "Envio de vídeos demonstrativos do produto no WhatsApp", status: "pending", priority: "Alta" },
-      { number: 74, functionality: "Delay entre envios (anti-spam, 1,5s entre itens)", status: "pending", priority: "Alta" },
-      { number: 75, functionality: "Ordem correta de processamento: mídia → texto → CRM", status: "pending", priority: "Alta" },
+      { number: 72, functionality: "Envio de fotos do produto com legenda no WhatsApp", status: "in_progress", priority: "Alta", observations: "WF-04/WF-06 existem mas agente não está efetivando o envio" },
+      { number: 73, functionality: "Envio de vídeos demonstrativos do produto no WhatsApp", status: "in_progress", priority: "Alta", observations: "WF-04/WF-06 suportam vídeo mas não está funcionando end-to-end" },
+      { number: 74, functionality: "Delay entre envios (anti-spam, 1,5s entre itens)", status: "in_progress", priority: "Alta", observations: "WF-04 tem node Wait mas precisa validar" },
+      { number: 75, functionality: "Ordem correta de processamento: mídia → texto → CRM", status: "in_progress", priority: "Alta", observations: "Lógica existe no WF-04 mas não está processando" },
       { number: 76, functionality: "Botão interativo 'Comprar Agora' com link de checkout e foto", status: "pending", priority: "Alta" },
       { number: 77, functionality: "Follow-up automático de carrinho abandonado 24h após envio do link", status: "pending", priority: "Alta" },
     ],
@@ -156,14 +156,14 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "12. Regras de Negócio por Loja",
     items: [
-      { number: 78, functionality: "Horário de funcionamento configurável", status: "pending", priority: "Alta" },
-      { number: 79, functionality: "Endereço da loja configurável", status: "pending", priority: "Alta" },
-      { number: 80, functionality: "Link do Google Maps configurável", status: "pending", priority: "Alta" },
-      { number: 81, functionality: "Formas de pagamento aceitas configuráveis", status: "pending", priority: "Alta" },
-      { number: 82, functionality: "Política de troca configurável", status: "pending", priority: "Alta" },
-      { number: 83, functionality: "Prazo de entrega configurável", status: "pending", priority: "Alta" },
-      { number: 84, functionality: "Frete grátis acima de valor configurável", status: "pending", priority: "Alta" },
-      { number: 85, functionality: "Plataforma de e-commerce utilizada configurável", status: "pending", priority: "Alta" },
+      { number: 78, functionality: "Horário de funcionamento configurável", status: "done", priority: "Alta", observations: "horario_inicio + horario_fim + dias_funcionamento" },
+      { number: 79, functionality: "Endereço da loja configurável", status: "done", priority: "Alta", observations: "Campo endereco na tabela lojas" },
+      { number: 80, functionality: "Link do Google Maps configurável", status: "done", priority: "Alta", observations: "Campo maps_link na tabela lojas" },
+      { number: 81, functionality: "Formas de pagamento aceitas configuráveis", status: "done", priority: "Alta", observations: "Campo formas_pagamento na tabela lojas" },
+      { number: 82, functionality: "Política de troca configurável", status: "done", priority: "Alta", observations: "Campo politica_troca na tabela lojas" },
+      { number: 83, functionality: "Prazo de entrega configurável", status: "done", priority: "Alta", observations: "Campo prazo_entrega na tabela lojas" },
+      { number: 84, functionality: "Frete grátis acima de valor configurável", status: "done", priority: "Alta", observations: "Campo frete_gratis_acima na tabela lojas" },
+      { number: 85, functionality: "Plataforma de e-commerce utilizada configurável", status: "done", priority: "Alta", observations: "Campo plataforma_ecommerce na tabela lojas" },
     ],
   },
   {
@@ -177,10 +177,10 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "14. Logística",
     items: [
-      { number: 89, functionality: "Confirmação de preferência: retirada na loja ou entrega em casa", status: "pending", priority: "Alta" },
+      { number: 89, functionality: "Confirmação de preferência: retirada na loja ou entrega em casa", status: "pending", priority: "Alta", observations: "Campos existem mas sem fluxo no agente" },
       { number: 90, functionality: "Informação de prazo de entrega por região", status: "pending", priority: "Alta" },
-      { number: 91, functionality: "Serviço de montagem disponível", status: "pending", priority: "Média" },
-      { number: 92, functionality: "Frete grátis acima do valor configurado", status: "pending", priority: "Alta" },
+      { number: 91, functionality: "Serviço de montagem disponível", status: "pending", priority: "Média", observations: "Campo montagem_disponivel existe na tabela lojas" },
+      { number: 92, functionality: "Frete grátis acima do valor configurado", status: "pending", priority: "Alta", observations: "Campo existe, falta lógica no agente" },
     ],
   },
   {
@@ -196,23 +196,23 @@ export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "16. Transbordo para Humano",
     items: [
-      { number: 98, functionality: "Transferência quando cliente solicitar explicitamente", status: "pending", priority: "Alta" },
-      { number: 99, functionality: "Transferência para negociações especiais de preço", status: "pending", priority: "Alta" },
-      { number: 100, functionality: "Transferência em casos de reclamação", status: "pending", priority: "Alta" },
-      { number: 101, functionality: "Transferência para troca/devolução", status: "pending", priority: "Alta" },
-      { number: 102, functionality: "Transferência para projetos de móveis planejados", status: "pending", priority: "Alta" },
-      { number: 103, functionality: "Transferência quando agente não conseguir resolver", status: "pending", priority: "Alta" },
-      { number: 104, functionality: "Resumo automático da conversa enviado ao vendedor humano", status: "pending", priority: "Alta" },
-      { number: 105, functionality: "Nível de prioridade configurável (baixa, média, alta)", status: "pending", priority: "Média" },
+      { number: 98, functionality: "Transferência quando cliente solicitar explicitamente", status: "done", priority: "Alta", observations: "transferir_humano no agent-tools" },
+      { number: 99, functionality: "Transferência para negociações especiais de preço", status: "done", priority: "Alta", observations: "Lógica no prompt do agente" },
+      { number: 100, functionality: "Transferência em casos de reclamação", status: "done", priority: "Alta", observations: "Handoff automático" },
+      { number: 101, functionality: "Transferência para troca/devolução", status: "done", priority: "Alta", observations: "Handoff automático" },
+      { number: 102, functionality: "Transferência para projetos de móveis planejados", status: "done", priority: "Alta", observations: "Handoff automático" },
+      { number: 103, functionality: "Transferência quando agente não conseguir resolver", status: "done", priority: "Alta", observations: "Fallback no agent-tools" },
+      { number: 104, functionality: "Resumo automático da conversa enviado ao vendedor humano", status: "done", priority: "Alta", observations: "WF-05 envia resumo ao transbordar" },
+      { number: 105, functionality: "Nível de prioridade configurável (baixa, média, alta)", status: "done", priority: "Média", observations: "Parâmetro prioridade no transferir_humano" },
     ],
   },
   {
     name: "17. Drive-to-Store",
     items: [
-      { number: 106, functionality: "Agendamento de visita presencial para testar colchão ou ver móvel", status: "pending", priority: "Alta" },
-      { number: 107, functionality: "Confirmação com endereço, data/hora e link do Google Maps", status: "pending", priority: "Alta" },
-      { number: 108, functionality: "Registro dos produtos de interesse para a visita", status: "pending", priority: "Média" },
-      { number: 109, functionality: "Atribuição de vendedor responsável pela visita (opcional)", status: "pending", priority: "Baixa" },
+      { number: 106, functionality: "Agendamento de visita presencial para testar colchão ou ver móvel", status: "done", priority: "Alta", observations: "WF-08 + Google Calendar + tabela visitas" },
+      { number: 107, functionality: "Confirmação com endereço, data/hora e link do Google Maps", status: "done", priority: "Alta", observations: "maps_link + data_visita na tabela visitas" },
+      { number: 108, functionality: "Registro dos produtos de interesse para a visita", status: "done", priority: "Média", observations: "Campo produtos_interesse na tabela visitas" },
+      { number: 109, functionality: "Atribuição de vendedor responsável pela visita (opcional)", status: "pending", priority: "Baixa", observations: "Campo vendedor_responsavel existe mas não é usado pelo agente" },
     ],
   },
 ];
@@ -221,12 +221,12 @@ export const workflows: Workflow[] = [
   {
     id: "WF-00",
     name: "Setup Supabase — Criar Tabelas e Funções SQL",
-    nodes: ["ManualTrigger", "Set", "Code", "HTTP Request", "If"],
+    nodes: ["Manual Trigger", "Set", "HTTP Request", "Code", "If"],
   },
   {
     id: "WF-01",
     name: "Agente de Vendas WhatsApp (Principal)",
-    nodes: ["Webhook", "If", "Code", "AI Agent (OpenAI)", "Memory Buffer", "Tool HTTP Request", "Tool Workflow", "Evolution API", "Redis", "Respond to Webhook"],
+    nodes: ["Webhook", "If", "Respond to Webhook", "Code", "HTTP Request", "AI Agent (OpenAI)", "Tool Workflow", "Tool HTTP Request", "Evolution API", "Redis", "Memory Buffer Window"],
   },
   {
     id: "WF-02",
@@ -236,27 +236,27 @@ export const workflows: Workflow[] = [
   {
     id: "WF-03",
     name: "Buscar Produto no Catálogo (RAG)",
-    nodes: ["Execute Workflow Trigger", "Code", "If", "HTTP Request", "Set"],
+    nodes: ["Execute Workflow Trigger", "Set", "Code", "If", "HTTP Request"],
   },
   {
     id: "WF-04",
     name: "Enviar Mídia WhatsApp",
-    nodes: ["Execute Workflow Trigger", "If", "Code", "Split in Batches", "Supabase", "Wait", "HTTP Request", "Set"],
+    nodes: ["Execute Workflow Trigger", "Code", "Split in Batches", "HTTP Request", "Wait", "Supabase", "If", "Set"],
   },
   {
     id: "WF-05",
     name: "Transferir para Humano (Transbordo)",
-    nodes: ["Execute Workflow Trigger", "Redis", "If", "Set", "HTTP Request", "Code", "Supabase"],
+    nodes: ["Execute Workflow Trigger", "Supabase", "Code", "HTTP Request", "If", "Set", "Redis"],
   },
   {
     id: "WF-06",
     name: "Enviar Mídia WhatsApp (v2)",
-    nodes: ["Execute Workflow Trigger", "Evolution API", "Code", "If", "HTTP Request"],
+    nodes: ["Execute Workflow Trigger", "HTTP Request", "If", "Evolution API", "Code"],
   },
   {
     id: "WF-07",
     name: "Buscar Produto RAG (v2)",
-    nodes: ["Execute Workflow Trigger", "Code", "HTTP Request"],
+    nodes: ["Execute Workflow Trigger", "HTTP Request", "Code"],
   },
   {
     id: "WF-08",
@@ -276,7 +276,7 @@ export const workflows: Workflow[] = [
   {
     id: "WF-11",
     name: "Indexar Embeddings dos Produtos",
-    nodes: ["Manual Trigger", "Webhook", "Code", "HTTP Request"],
+    nodes: ["Manual Trigger", "Webhook", "HTTP Request", "Code"],
   },
   {
     id: "WF-12",
@@ -286,12 +286,12 @@ export const workflows: Workflow[] = [
   {
     id: "WF-13",
     name: "Disparar Campanha Promocional",
-    nodes: ["Webhook", "Supabase", "Code", "Split in Batches", "HTTP Request", "If", "Respond to Webhook"],
+    nodes: ["Webhook", "Code", "Supabase", "If", "Split in Batches", "HTTP Request", "Respond to Webhook"],
   },
   {
     id: "WF-14",
     name: "Sync Estoque e Preço (E-commerce)",
-    nodes: ["Webhook", "Supabase", "If", "Code", "HTTP Request", "Respond to Webhook"],
+    nodes: ["Webhook", "Code", "Supabase", "If", "HTTP Request", "Respond to Webhook"],
   },
 ];
 
