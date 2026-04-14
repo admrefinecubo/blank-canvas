@@ -24,6 +24,7 @@ export interface Workflow {
 export const checklistBlocks: ChecklistBlock[] = [
   {
     name: "1. Identidade e Personalidade",
+    description: "Como a IA se apresenta pro cliente: nome, tom de voz, estilo de conversa. Cada loja pode personalizar o jeito da assistente falar.",
     items: [
       { number: 1, functionality: "Nome personalizável do assistente por loja/tenant", status: "done", priority: "Alta", observations: "Campo nome_assistente_ia em lojas" },
       { number: 2, functionality: "Especialidades configuráveis (colchões, sofás, móveis planejados, etc.)", status: "done", priority: "Alta", observations: "Campo especialidades em lojas" },
@@ -36,6 +37,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "2. Regras Absolutas e Segurança",
+    description: "Regras que a IA nunca pode quebrar: não inventar produto, não dar preço errado, sempre consultar o catálogo real antes de oferecer algo.",
     items: [
       { number: 8, functionality: "NUNCA inventar produtos, preços ou disponibilidade", status: "done", priority: "Alta", observations: "Agent-tools consulta catálogo real" },
       { number: 9, functionality: "Sempre consultar catálogo antes de oferecer produto (buscar_produto_no_catalogo)", status: "done", priority: "Alta", observations: "Tool buscar_produto implementada" },
@@ -46,6 +48,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "3. Fluxo de Vendas",
+    description: "O passo a passo da venda pelo WhatsApp: desde a saudação até o fechamento, passando por diagnóstico, apresentação de opções e tratamento de objeções.",
     items: [
       { number: 13, functionality: "Recepção / saudação inicial", status: "done", priority: "Alta", observations: "WF-01 agente principal com saudação configurada" },
       { number: 14, functionality: "Diagnóstico do cliente (perguntas estratégicas)", status: "done", priority: "Alta", observations: "Prompt do agente WF-01 faz diagnóstico" },
@@ -60,6 +63,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "4. Diagnóstico e Qualificação",
+    description: "Perguntas inteligentes que a IA faz para entender o que o cliente precisa: qual ambiente, tamanho, estilo, orçamento. Funciona pra sala, quarto, colchão, planejados, etc.",
     items: [
       { number: 22, functionality: "Diagnóstico geral: produto, ambiente, tamanho do espaço, estilo", status: "done", priority: "Alta", observations: "Prompt do agente WF-01 faz diagnóstico completo" },
       { number: 23, functionality: "Diagnóstico para Sala (rack, painel, TV, sofá)", status: "done", priority: "Alta", observations: "Coberto pelo prompt do agente + catálogo" },
@@ -73,6 +77,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "5. Catálogo e RAG",
+    description: "O catálogo de produtos com busca inteligente por IA (RAG). A IA encontra o produto certo mesmo quando o cliente descreve de um jeito diferente. Inclui fotos, vídeos, preços e estoque em tempo real.",
     items: [
       { number: 30, functionality: "Busca semântica no catálogo via RAG (vetorização por produto)", status: "in_progress", priority: "Alta", observations: "Extension vector instalada, match_produtos criado mas falta testar end-to-end" },
       { number: 31, functionality: "Schema completo: nome, descrição, specs, variações, preços, estoque, checkout", status: "done", priority: "Alta", observations: "Tabela produtos com todos os campos" },
@@ -86,6 +91,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "6. Enviar Link de Produtos E-commerce",
+    description: "Integração com plataformas de e-commerce (Shopify, Nuvemshop, Tray, etc.) pra enviar links de compra direto no WhatsApp e sincronizar estoque automaticamente.",
     items: [
       { number: 38, functionality: "Shopify", status: "pending", priority: "Alta" },
       { number: 39, functionality: "Nuvemshop", status: "pending", priority: "Alta" },
@@ -100,6 +106,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "7. Ferramentas do Agente (Tool Calling)",
+    description: "As 9 ferramentas que a IA usa durante a conversa: buscar produto, enviar foto/vídeo, agendar visita, cadastrar lead, gerar orçamento, mover no funil, cobrar e transferir pro vendedor.",
     items: [
       { number: 47, functionality: "buscar_produto_no_catalogo — filtros: query, categoria, tamanho, preço, disponível", status: "done", priority: "Alta", observations: "Implementado no agent-tools" },
       { number: 48, functionality: "enviar_midia_whatsapp — fotos e vídeos direto no chat (com legenda e delay)", status: "in_progress", priority: "Alta", observations: "Edge function existe mas agente N8N não está processando corretamente" },
@@ -114,6 +121,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "8. Automações de Follow-up",
+    description: "Mensagens automáticas de acompanhamento: carrinho abandonado, orçamento pendente, promoção ignorada, pós-visita. Cada tipo pode ter desconto configurável.",
     items: [
       { number: 56, functionality: "Follow-up para clientes que interagiram pouco (msgs iniciais sem avançar)", status: "in_progress", priority: "Alta", observations: "WF-02 cron existe + tabela follow_ups, falta refinamento das regras" },
       { number: 57, functionality: "Follow-up de carrinho abandonado (com oferta de desconto 5% ou 10%)", status: "in_progress", priority: "Alta", observations: "WF-02 + campo desconto_carrinho_abandonado na loja" },
@@ -126,6 +134,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "9. Promoções e Segmentação",
+    description: "Disparo de promoções direcionadas pra clientes certos. Ex: quem perguntou de colchão recebe promoção de colchão. Descontos configuráveis por tipo de campanha.",
     items: [
       { number: 63, functionality: "Disparo de promoções para clientes com perfil adequado no CRM", status: "done", priority: "Alta", observations: "WF-13 + campaign-dispatch edge function" },
       { number: 64, functionality: "Segmentação por perfil de interesse (ex: colchão premium → promoção de colchão)", status: "done", priority: "Alta", observations: "segment_type + segment_config na tabela promotional_campaigns" },
@@ -135,6 +144,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "10. CRM e Pipeline de Vendas",
+    description: "O sistema que organiza todos os clientes num funil: novo → qualificado → orçamento → negociação → fechado. Registra toda a história de cada cliente automaticamente.",
     items: [
       { number: 67, functionality: "Cadastro automático de lead ao primeiro contato", status: "done", priority: "Alta", observations: "cadastrar_lead no agent-tools" },
       { number: 68, functionality: "Registro do canal de origem (WhatsApp, tráfego pago, Instagram, Google, etc.)", status: "done", priority: "Alta", observations: "Campo canal_origem + origem na tabela leads" },
@@ -145,6 +155,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "11. Envio de Mídias e Checkout",
+    description: "Envio de fotos e vídeos dos produtos direto no WhatsApp, com botão de 'Comprar Agora' e link de checkout. Inclui anti-spam com delay entre mensagens.",
     items: [
       { number: 72, functionality: "Envio de fotos do produto com legenda no WhatsApp", status: "in_progress", priority: "Alta", observations: "WF-04/WF-06 existem mas agente não está efetivando o envio" },
       { number: 73, functionality: "Envio de vídeos demonstrativos do produto no WhatsApp", status: "in_progress", priority: "Alta", observations: "WF-04/WF-06 suportam vídeo mas não está funcionando end-to-end" },
@@ -156,6 +167,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "12. Regras de Negócio por Loja",
+    description: "Configurações específicas de cada loja: horário, endereço, formas de pagamento, política de troca, prazo de entrega, frete grátis e plataforma de e-commerce.",
     items: [
       { number: 78, functionality: "Horário de funcionamento configurável", status: "done", priority: "Alta", observations: "horario_inicio + horario_fim + dias_funcionamento" },
       { number: 79, functionality: "Endereço da loja configurável", status: "done", priority: "Alta", observations: "Campo endereco na tabela lojas" },
@@ -169,6 +181,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "13. Cross-sell e Upsell",
+    description: "Sugestões inteligentes de produtos complementares. Ex: comprou cama? A IA sugere colchão. Comprou rack? Sugere painel. Monta combos por ambiente.",
     items: [
       { number: 86, functionality: "Sugestão por ambiente: sala (rack+painel+mesa centro), quarto (cama+colchão+criado)", status: "pending", priority: "Alta" },
       { number: 87, functionality: "Upsell: cama → colchão; colchão → travesseiro; rack → painel", status: "pending", priority: "Alta" },
@@ -177,6 +190,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "14. Logística",
+    description: "Tudo sobre entrega: retirada na loja ou entrega em casa, prazo por região, serviço de montagem e frete grátis acima de um valor configurável.",
     items: [
       { number: 89, functionality: "Confirmação de preferência: retirada na loja ou entrega em casa", status: "done", priority: "Alta", observations: "Prompt do agente orienta a perguntar; dados na tabela lojas" },
       { number: 90, functionality: "Informação de prazo de entrega por região", status: "done", priority: "Alta", observations: "Campo prazo_entrega configurável na loja" },
@@ -186,6 +200,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "15. Pós-Venda",
+    description: "Acompanhamento depois da compra: perguntar se o móvel ficou bom, se o colchão é confortável, pedir avaliação e oferecer produtos complementares.",
     items: [
       { number: 93, functionality: "Mensagem pós-entrega verificando se tudo ocorreu bem", status: "pending", priority: "Média" },
       { number: 94, functionality: "Mensagem específica pós-colchão ('Como foi sua primeira noite?')", status: "pending", priority: "Média" },
@@ -196,6 +211,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "16. Transbordo para Humano",
+    description: "Quando a IA transfere pro vendedor humano: reclamação, troca, negociação especial, móvel planejado. Envia um resumo completo da conversa pro vendedor.",
     items: [
       { number: 98, functionality: "Transferência quando cliente solicitar explicitamente", status: "done", priority: "Alta", observations: "transferir_humano no agent-tools" },
       { number: 99, functionality: "Transferência para negociações especiais de preço", status: "done", priority: "Alta", observations: "Lógica no prompt do agente" },
@@ -209,6 +225,7 @@ export const checklistBlocks: ChecklistBlock[] = [
   },
   {
     name: "17. Drive-to-Store",
+    description: "Levar o cliente pra loja física: agendar visita, enviar endereço com Google Maps, registrar produtos de interesse e atribuir vendedor responsável.",
     items: [
       { number: 106, functionality: "Agendamento de visita presencial para testar colchão ou ver móvel", status: "done", priority: "Alta", observations: "WF-08 + Google Calendar + tabela visitas" },
       { number: 107, functionality: "Confirmação com endereço, data/hora e link do Google Maps", status: "done", priority: "Alta", observations: "maps_link + data_visita na tabela visitas" },
