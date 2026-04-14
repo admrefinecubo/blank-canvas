@@ -4,6 +4,7 @@ export type Priority = "Alta" | "Média" | "Baixa";
 export interface ChecklistItem {
   number: number;
   functionality: string;
+  description?: string;
   status: ItemStatus;
   priority: Priority;
   observations?: string;
