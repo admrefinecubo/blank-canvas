@@ -688,6 +688,7 @@ export type Database = {
           clinic_id: string | null
           created_at: string
           desconto_carrinho_abandonado: number | null
+          desconto_followup_orcamento: number | null
           desconto_promocao_nao_respondida: number | null
           descricao_loja: string | null
           dias_funcionamento: string | null
@@ -717,6 +718,7 @@ export type Database = {
           clinic_id?: string | null
           created_at?: string
           desconto_carrinho_abandonado?: number | null
+          desconto_followup_orcamento?: number | null
           desconto_promocao_nao_respondida?: number | null
           descricao_loja?: string | null
           dias_funcionamento?: string | null
@@ -746,6 +748,7 @@ export type Database = {
           clinic_id?: string | null
           created_at?: string
           desconto_carrinho_abandonado?: number | null
+          desconto_followup_orcamento?: number | null
           desconto_promocao_nao_respondida?: number | null
           descricao_loja?: string | null
           dias_funcionamento?: string | null
