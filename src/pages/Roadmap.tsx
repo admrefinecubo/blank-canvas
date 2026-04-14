@@ -252,7 +252,7 @@ export default function Roadmap() {
         </footer>
 
         {/* Arthos watermark — fixed above Lovable badge */}
-        <div className="fixed bottom-3 right-3" style={{ zIndex: 2147483647 }}>
+        <div className="fixed bottom-1 right-1" style={{ zIndex: 2147483647 }}>
           <img src={arthosBadge} alt="Made by Arthos" className="h-[48px] drop-shadow-md rounded-xl" />
         </div>
       </main>
