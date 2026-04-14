@@ -158,6 +158,25 @@ export default function WorkflowsEditor() {
   const [appliedResults, setAppliedResults] = useState<{ id: string; details: string; changed: boolean }[]>([]);
   const [outputJson, setOutputJson] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [fixedWorkflows, setFixedWorkflows] = useState<{ name: string; json: string }[]>([]);
+
+  // Load pre-fixed workflows
+  const loadFixedWF01 = async () => {
+    try {
+      const res = await fetch("/workflows/WF-01-fixed.json");
+      const data = await res.json();
+      const jsonStr = JSON.stringify(data, null, 2);
+      setFixedWorkflows(prev => {
+        const exists = prev.find(w => w.name === "WF-01");
+        if (exists) return prev;
+        return [...prev, { name: "WF-01 · Agente de Vendas (CORRIGIDO)", json: jsonStr }];
+      });
+    } catch (e) {
+      console.error("Erro ao carregar WF-01 fixado:", e);
+    }
+  };
+
+  useState(() => { loadFixedWF01(); });
 
   const parsedInput = useMemo(() => {
     if (!inputJson.trim()) return null;
