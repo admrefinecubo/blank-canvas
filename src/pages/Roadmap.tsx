@@ -340,13 +340,18 @@ export default function Roadmap() {
                 return (
                   <AccordionItem key={block.name} value={block.name} className="border rounded-lg px-1">
                     <AccordionTrigger className="hover:no-underline px-3">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {block.name}
-                        </span>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
-                          {originalDone}/{originalTotal}
-                        </Badge>
+                      <div className="flex flex-col items-start gap-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-3 w-full">
+                          <span className="text-sm font-medium text-foreground truncate">
+                            {block.name}
+                          </span>
+                          <Badge variant="outline" className="text-[10px] shrink-0">
+                            {originalDone}/{originalTotal}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground text-left font-normal leading-relaxed">
+                          {block.description}
+                        </p>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-3 pb-3">
