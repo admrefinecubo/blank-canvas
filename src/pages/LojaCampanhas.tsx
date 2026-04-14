@@ -123,6 +123,7 @@ export default function LojaCampanhas() {
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error("Informe o nome da campanha");
       if (!form.message_template.trim()) throw new Error("Informe o template de mensagem");
+      if (form.segment_type !== "todos" && !form.segment_value) throw new Error("Selecione um valor para o segmento");
 
       const segmentConfig: Record<string, string> = {};
       if (form.segment_type !== "todos" && form.segment_value) {

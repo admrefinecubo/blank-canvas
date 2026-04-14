@@ -43,7 +43,33 @@ Deno.serve(async (req) => {
 
     if (!n8nWebhookUrl) throw new Error("Webhook N8N não configurado");
 
+    // Build leads query based on segment
     const segmentConfig = campaign.segment_config as Record<string, string> | null;
+    let leadsQuery = supabase
+      .from("leads")
+      .select("nome, telefone")
+      .eq("loja_id", loja_id);
+
+    if (campaign.segment_type === "etapa_pipeline" && segmentConfig?.etapa_pipeline) {
+      leadsQuery = leadsQuery.eq("etapa_pipeline", segmentConfig.etapa_pipeline);
+    } else if (campaign.segment_type === "origem" && segmentConfig?.origem) {
+      leadsQuery = leadsQuery.eq("origem", segmentConfig.origem);
+    } else if (campaign.segment_type === "interesse" && segmentConfig?.interesse) {
+      leadsQuery = leadsQuery.ilike("interesse", `%${segmentConfig.interesse}%`);
+    }
+
+    const { data: leads, error: leadsError } = await leadsQuery.limit(500);
+    if (leadsError) throw new Error("Erro ao buscar leads: " + leadsError.message);
+
+    if (!leads || leads.length === 0) {
+      throw new Error("Nenhum lead encontrado para este segmento. Campanha não disparada.");
+    }
+
+    const contatos = leads.map((l) => ({
+      nome: l.nome || "Sem nome",
+      telefone: l.telefone,
+    }));
+
     const segmentValue = segmentConfig ? Object.values(segmentConfig)[0] ?? null : null;
 
     const webhookRes = await fetch(n8nWebhookUrl, {
@@ -58,6 +84,8 @@ Deno.serve(async (req) => {
         orcamento_faixa: null,
         mensagem: campaign.message_template,
         desconto: campaign.discount_percent ?? 0,
+        contatos,
+        total_contatos: contatos.length,
       }),
     });
 
@@ -65,12 +93,16 @@ Deno.serve(async (req) => {
 
     const { error: updateError } = await supabase
       .from("promotional_campaigns")
-      .update({ status: "disparada", launched_at: new Date().toISOString() })
+      .update({
+        status: "disparada",
+        launched_at: new Date().toISOString(),
+        targeted_leads_count: contatos.length,
+      })
       .eq("id", campaign_id);
 
     if (updateError) throw updateError;
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, total_contatos: contatos.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
