@@ -1,35 +1,31 @@
 
+Diagnóstico rápido: o JSON que você testou ainda parece ser uma versão antiga do WF-01, porque o `_debug_horario.dias_func_db` veio `null`, enquanto o workflow corrigido que já está no projeto hoje retornaria esse campo preenchido de outro jeito. Então o problema não é só a lógica — falta deixar o editor como fonte única e rastreável do workflow corrigido.
 
-## Plano: Página de Gestão de Workflows n8n
+### Plano
+1. **Transformar o Workflows Editor em repositório de workflows**
+   - Adicionar upload de `.json` + colar JSON
+   - Salvar workflows no navegador com nome/slot (ex.: WF-01 atual, WF-01 corrigido)
+   - Permitir abrir um workflow salvo direto no editor, sem depender do chat
 
-Criar uma página `/workflows-editor` pública (como o roadmap) onde você pode colar, editar e copiar JSONs dos workflows n8n. Foco no fix do bug de horário comercial.
+2. **Criar patch específico e verificável do WF-01**
+   - Aplicar fix no node `Code - Checar Horário + Montar Contexto do Agente`
+   - Garantir `dentroHorario` + `dentro_horario` no retorno
+   - Corrigir `dias_funcionamento` com parse robusto e debug mostrando o valor parseado de verdade
+   - Corrigir o IF `Dentro do Horário` para validação booleana estrita
 
-### O que será feito
+3. **Adicionar diagnóstico visual no editor**
+   - Mostrar se o workflow carregado está “desatualizado”, “corrigido” ou “não reconhecido”
+   - Exibir quais nodes foram encontrados e alterados
+   - Mostrar um resumo do branch crítico: `Code horário -> IF dentro horário -> mensagem fora de horário`
 
-1. **Nova página `/workflows-editor`** — página pública sem login
-   - Área de texto grande pra colar JSON do workflow
-   - Botão "Colar JSON" e "Copiar JSON corrigido"
-   - Validação de JSON com feedback visual
-   - Seção com os fixes conhecidos pré-aplicáveis (checkbox):
-     - **Fix Horário Comercial**: Corrige a lógica de comparação BRT — o bug provável é que `diasNumericos` mapeia "seg,ter,qua..." mas o campo pode estar em outro formato, ou a comparação de horário está usando string ao invés de número
-   - Preview do JSON formatado com syntax highlight básico
+4. **Deixar o WF-01 corrigido disponível dentro do próprio editor**
+   - Atualizar o preset carregado na seção de workflows prontos
+   - Incluir versão/assinatura do patch para você saber que está importando o JSON certo no n8n
 
-2. **Fix automático do horário comercial** — botão que aplica o patch no JSON:
-   - Localiza o node de checagem de horário no WF-01
-   - Corrige a lógica de conversão UTC→BRT (garantir `getUTCHours() - 3` com wrap correto)
-   - Corrige o mapeamento de dias (aceitar "seg", "segunda", "Segunda-feira" etc.)
-   - Corrige comparação de horário (converter "08:00" pra minutos antes de comparar)
+5. **Evitar retrabalho no próximo envio**
+   - Quando você mandar JSON no chat ou colar no editor, eu passo a deixar o resultado salvo lá no `/workflows-editor`, pronto para preview e cópia, em vez de responder com JSON no chat
 
-3. **Rota no App.tsx** — adicionar `/workflows-editor` como rota pública (igual `/roadmap`)
-
-### Arquivos alterados
-- `src/pages/WorkflowsEditor.tsx` — nova página
-- `src/App.tsx` — nova rota pública
-
-### Sobre o bug do horário comercial
-
-Baseado na análise do WF-01, o problema mais provável é:
-- A conversão UTC→BRT usa `new Date().getHours() - 3` ao invés de `getUTCHours() - 3`, que no servidor n8n pode já estar em outro timezone
-- Ou o `dias_funcionamento` da loja está em formato diferente do esperado pelo mapeamento
-- O fix vai normalizar ambos os lados da comparação
-
+### Arquivos que vou alterar
+- `src/pages/WorkflowsEditor.tsx`
+- `public/workflows/WF-01-fixed.json`
+- possivelmente um helper novo para centralizar patches, ex.: `src/lib/workflow-patches.ts`
