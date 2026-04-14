@@ -33,7 +33,7 @@ export default function LojaVisitas() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState("todos");
-  const [form, setForm] = useState({ lead_id: "", data_visita: "", observacoes: "", produtos_interesse: "" });
+  const [form, setForm] = useState({ lead_id: "", data_visita: "", observacoes: "", produtos_interesse: "", vendedor_responsavel: "" });
 
   const { data: visitas, isLoading } = useQuery({
     queryKey: ["loja-visitas", activeLojaId],
@@ -100,13 +100,14 @@ export default function LojaVisitas() {
         data_visita: new Date(form.data_visita).toISOString(),
         observacoes: form.observacoes || null,
         produtos_interesse: form.produtos_interesse || null,
+        vendedor_responsavel: form.vendedor_responsavel || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["loja-visitas", activeLojaId] });
       setShowCreate(false);
-      setForm({ lead_id: "", data_visita: "", observacoes: "", produtos_interesse: "" });
+      setForm({ lead_id: "", data_visita: "", observacoes: "", produtos_interesse: "", vendedor_responsavel: "" });
       toast.success("Visita agendada");
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
@@ -168,6 +169,7 @@ export default function LojaVisitas() {
                   <TableHead>Data/Hora</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="hidden md:table-cell">Produtos de interesse</TableHead>
+                  <TableHead className="hidden md:table-cell">Vendedor</TableHead>
                   <TableHead className="hidden lg:table-cell">Observações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -194,6 +196,7 @@ export default function LojaVisitas() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden max-w-[200px] truncate md:table-cell">{(v as any).produtos_interesse || "—"}</TableCell>
+                      <TableCell className="hidden md:table-cell">{v.vendedor_responsavel || "—"}</TableCell>
                       <TableCell className="hidden max-w-[200px] truncate lg:table-cell">{v.observacoes || "—"}</TableCell>
                     </TableRow>
                   );
@@ -230,6 +233,10 @@ export default function LojaVisitas() {
             <div>
               <Label>Observações</Label>
               <Textarea rows={3} placeholder="Ex: Cliente quer testar colchão" value={form.observacoes} onChange={(e) => setForm(f => ({ ...f, observacoes: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Vendedor responsável</Label>
+              <Input placeholder="Nome do vendedor" value={form.vendedor_responsavel} onChange={(e) => setForm(f => ({ ...f, vendedor_responsavel: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>

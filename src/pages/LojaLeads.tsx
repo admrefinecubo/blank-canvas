@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { activateHandoff } from "@/lib/handoff";
+import { activateHandoff, deactivateHandoff } from "@/lib/handoff";
 import WhatsAppChatBubble from "@/components/WhatsAppChatBubble";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -150,10 +150,27 @@ export default function LojaLeads() {
     },
     onSuccess: (_, lead) => {
       queryClient.invalidateQueries({ queryKey: ["loja-leads", activeLojaId] });
-      setSelectedLead((current) => current && current.id === lead.id ? { ...current, is_bot_active: false, agente_pausado: true } : current);
+      setSelectedLead((current) => current && current.id === lead.id ? { ...current, is_bot_active: false } : current);
       toast.success("Bot pausado — atendimento humano ativado");
     },
     onError: (error: Error) => toast.error("Erro ao pausar bot", { description: error.message }),
+  });
+
+  const resumeBotMutation = useMutation({
+    mutationFn: async (lead: { id: string; telefone: string }) => {
+      await deactivateHandoff({
+        leadId: lead.id,
+        telefone: lead.telefone,
+        lojaId: activeLojaId!,
+        instance: null,
+      });
+    },
+    onSuccess: (_, lead) => {
+      queryClient.invalidateQueries({ queryKey: ["loja-leads", activeLojaId] });
+      setSelectedLead((current) => current && current.id === lead.id ? { ...current, is_bot_active: true } : current);
+      toast.success("Bot reativado — atendimento devolvido à IA");
+    },
+    onError: (error: Error) => toast.error("Erro ao reativar bot", { description: error.message }),
   });
 
   const createLeadMutation = useMutation({
@@ -407,15 +424,27 @@ export default function LojaLeads() {
                   </p>
                 </div>
 
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  disabled={!selectedLead.is_bot_active || pauseBotMutation.isPending}
-                  onClick={() => pauseBotMutation.mutate({ id: selectedLead.id, telefone: selectedLead.telefone })}
-                >
-                  <PauseCircle className="h-4 w-4" />
-                  {pauseBotMutation.isPending ? "Pausando..." : "Pausar bot"}
-                </Button>
+                {selectedLead.is_bot_active ? (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    disabled={pauseBotMutation.isPending}
+                    onClick={() => pauseBotMutation.mutate({ id: selectedLead.id, telefone: selectedLead.telefone })}
+                  >
+                    <PauseCircle className="h-4 w-4" />
+                    {pauseBotMutation.isPending ? "Pausando..." : "Pausar bot"}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    className="gap-2"
+                    disabled={resumeBotMutation.isPending}
+                    onClick={() => resumeBotMutation.mutate({ id: selectedLead.id, telefone: selectedLead.telefone })}
+                  >
+                    <Bot className="h-4 w-4" />
+                    {resumeBotMutation.isPending ? "Reativando..." : "Devolver ao bot"}
+                  </Button>
+                )}
               </div>
             )}
 
