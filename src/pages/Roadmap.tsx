@@ -223,6 +223,41 @@ export default function Roadmap() {
           </CardContent>
         </Card>
 
+        {/* Trabalhando Agora */}
+        {inProgressItems.length > 0 && (
+          <Card className="border-amber-500/40 bg-amber-500/5">
+            <CardHeader className="pb-2 px-4 pt-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-500 animate-pulse" />
+                Trabalhando Agora
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{inProgressItems.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <ul className="space-y-2">
+                {inProgressItems.map((item) => (
+                  <li key={item.number} className="flex flex-col gap-0.5 py-1.5 border-b border-border/30 last:border-0">
+                    <div className="flex items-start gap-2.5 text-sm">
+                      <Clock className="h-4 w-4 text-amber-500 shrink-0 animate-pulse mt-0.5" />
+                      <span className="text-foreground">
+                        <span className="text-muted-foreground mr-1.5 text-xs font-mono">#{item.number}</span>
+                        {item.functionality}
+                      </span>
+                      <span className="ml-auto shrink-0 flex items-center gap-1.5">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">{item.blockName}</Badge>
+                        {priorityBadge(item.priority)}
+                      </span>
+                    </div>
+                    {item.description && (
+                      <p className="text-xs text-muted-foreground ml-[26px] leading-relaxed">{item.description}</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Bar chart — progress by block */}
