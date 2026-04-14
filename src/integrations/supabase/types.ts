@@ -1184,6 +1184,7 @@ export type Database = {
           descricao: string | null
           embedding: string | null
           especificacoes: string | null
+          estoque: number | null
           estoque_disponivel: boolean
           foto_detalhe: string | null
           foto_principal: string | null
@@ -1204,6 +1205,7 @@ export type Database = {
           descricao?: string | null
           embedding?: string | null
           especificacoes?: string | null
+          estoque?: number | null
           estoque_disponivel?: boolean
           foto_detalhe?: string | null
           foto_principal?: string | null
@@ -1224,6 +1226,7 @@ export type Database = {
           descricao?: string | null
           embedding?: string | null
           especificacoes?: string | null
+          estoque?: number | null
           estoque_disponivel?: boolean
           foto_detalhe?: string | null
           foto_principal?: string | null
@@ -1400,6 +1403,67 @@ export type Database = {
           },
         ]
       }
+      vendas: {
+        Row: {
+          checkout_url: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          lead_id: string | null
+          loja_id: string | null
+          produto_id: string | null
+          status: string | null
+          updated_at: string | null
+          valor_total: number | null
+        }
+        Insert: {
+          checkout_url?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          lead_id?: string | null
+          loja_id?: string | null
+          produto_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valor_total?: number | null
+        }
+        Update: {
+          checkout_url?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          lead_id?: string | null
+          loja_id?: string | null
+          produto_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visitas: {
         Row: {
           created_at: string
@@ -1459,6 +1523,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrementar_estoque: {
+        Args: { p_produto_id: string; p_quantidade?: number }
+        Returns: undefined
+      }
       has_clinic_access: {
         Args: { _clinic_id: string; _user_id: string }
         Returns: boolean
