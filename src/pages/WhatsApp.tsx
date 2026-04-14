@@ -382,13 +382,14 @@ export default function WhatsApp() {
                       >
                         <div className="flex items-start gap-3">
                           <Avatar className="h-11 w-11 border border-border">
+                            {getLeadPic(lead) && <AvatarImage src={getLeadPic(lead)} alt={getDisplayName(lead)} />}
                             <AvatarFallback>{getLeadInitials(lead)}</AvatarFallback>
                           </Avatar>
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="truncate font-medium">{getLeadName(lead.nome, lead.telefone)}</p>
+                                <p className="truncate font-medium">{getDisplayName(lead)}</p>
                                 <p className="truncate text-xs text-muted-foreground">{lead.telefone}</p>
                               </div>
                               <span className="shrink-0 text-[11px] text-muted-foreground">
@@ -422,10 +423,11 @@ export default function WhatsApp() {
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12 border border-border">
+                    {selectedLead && getLeadPic(selectedLead) && <AvatarImage src={getLeadPic(selectedLead)} alt={getDisplayName(selectedLead)} />}
                     <AvatarFallback>{getLeadInitials(selectedLead)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-base">{getLeadName(selectedLead.nome, selectedLead.telefone)}</CardTitle>
+                    <CardTitle className="text-base">{getDisplayName(selectedLead)}</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">{selectedLead.telefone}</p>
                   </div>
                 </div>
@@ -492,7 +494,7 @@ export default function WhatsApp() {
                     <ChatMessages
                       messages={messages}
                       assistantName={lojaContext?.nome_assistente || "Assistente"}
-                      leadName={getLeadName(selectedLead.nome, selectedLead.telefone)}
+                      leadName={getDisplayName(selectedLead)}
                     />
                   )}
                 </div>
