@@ -168,7 +168,7 @@ export const checklistBlocks: ChecklistBlock[] = [
     name: "12. Regras de Negócio por Loja",
     description: "Configurações específicas de cada loja: horário, endereço, formas de pagamento, política de troca, prazo de entrega, frete grátis e plataforma de e-commerce.",
     items: [
-      { number: 76, functionality: "Horário de funcionamento", description: "A IA sabe o horário da loja e avisa o cliente quando tá fechado.", status: "done", priority: "Alta", observations: "horario_inicio + horario_fim + dias_funcionamento" },
+      { number: 76, functionality: "Horário de funcionamento", description: "A IA sabe o horário da loja e avisa o cliente quando tá fechado. Bug ativo: agente respondendo fora do horário mesmo dentro do expediente — fix em andamento.", status: "in_progress", priority: "Alta", observations: "horario_inicio + horario_fim + dias_funcionamento — debug _debug_horario adicionado no WF-01 pra diagnosticar" },
       { number: 77, functionality: "Endereço da loja", description: "Endereço configurável. A IA manda quando o cliente pergunta onde fica.", status: "done", priority: "Alta", observations: "Campo endereco na tabela lojas" },
       { number: 78, functionality: "Link do Google Maps", description: "Manda o link clicável do Google Maps pra o cliente ir direto na loja.", status: "done", priority: "Alta", observations: "Campo maps_link na tabela lojas" },
       { number: 79, functionality: "Formas de pagamento", description: "Pix, cartão, boleto, parcelamento — a IA sabe o que a loja aceita e informa.", status: "done", priority: "Alta", observations: "Campo formas_pagamento na tabela lojas" },
@@ -321,6 +321,9 @@ export interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  { date: "2026-04-15T01:00:00", title: "🐛 Fix: Agente respondendo fora do horário comercial", description: "Bug onde o agente diz que está fora do expediente mesmo dentro do horário. Debug _debug_horario adicionado no WF-01 pra diagnosticar cálculo BRT vs UTC e dias_funcionamento.", type: "fix" },
+  { date: "2026-04-15T00:30:00", title: "WF-05 Transbordo — Redis + Grupo vendedores", description: "Adicionado Redis SET com TTL 24h para marcar pausa do agente. Notificação automática ao grupo de vendedores no WhatsApp quando configurado.", type: "feature" },
+  { date: "2026-04-15T00:00:00", title: "WF-02 Follow-up — Config por loja + novos templates", description: "Follow-up agora carrega config da loja antes de montar contexto. Novos templates: pós-colchão, pós-móvel, pós-entrega, avaliação e complementar_ambiente.", type: "feature" },
   { date: "2026-04-14T23:00:00", title: "Sprint final com Claude Code — 15 itens concluídos", description: "Workflows WF-02, WF-04, WF-06, WF-09, WF-11 finalizados. Envio de mídias, follow-ups e orçamento corrigidos e testados end-to-end.", type: "progress" },
   { date: "2026-04-14T20:00:00", title: "RAG + Busca semântica validada", description: "match_produtos testado end-to-end com embeddings reais. Re-indexação automática (WF-11) ativada com trigger.", type: "feature" },
   { date: "2026-04-14T18:00:00", title: "Envio de mídias corrigido (WF-04/WF-06)", description: "Pipeline de envio de fotos e vídeos no WhatsApp funcionando. Delay anti-spam e ordem mídia→texto→CRM validados.", type: "fix" },
