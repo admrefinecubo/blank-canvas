@@ -528,6 +528,10 @@ export default function SettingsPage() {
     montagem_disponivel: false,
     desconto_carrinho_abandonado: "",
     desconto_promocao_nao_respondida: "",
+    checkout_base_url: "",
+    dias_funcionamento: "",
+    desconto_followup_orcamento: "",
+    plataforma_ecommerce: "",
   });
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
   const [newMember, setNewMember] = useState({ email: "", password: "", role: "clinic_staff" });
@@ -555,7 +559,7 @@ export default function SettingsPage() {
       if (!activeLojaId) return null;
       const { data, error } = await supabase
         .from("lojas")
-        .select("id, nome_loja, nome_assistente, tom_voz, descricao_loja, especialidades, regras_personalidade, horario_inicio, horario_fim, formas_pagamento, politica_troca, prazo_entrega, frete_gratis_acima, montagem_disponivel, desconto_carrinho_abandonado, desconto_promocao_nao_respondida")
+        .select("id, nome_loja, nome_assistente, tom_voz, descricao_loja, especialidades, regras_personalidade, horario_inicio, horario_fim, formas_pagamento, politica_troca, prazo_entrega, frete_gratis_acima, montagem_disponivel, desconto_carrinho_abandonado, desconto_promocao_nao_respondida, checkout_base_url, dias_funcionamento, desconto_followup_orcamento, plataforma_ecommerce")
         .eq("id", activeLojaId)
         .single();
 
@@ -586,6 +590,10 @@ export default function SettingsPage() {
       montagem_disponivel: !!activeLoja.montagem_disponivel,
       desconto_carrinho_abandonado: activeLoja.desconto_carrinho_abandonado?.toString() || "",
       desconto_promocao_nao_respondida: activeLoja.desconto_promocao_nao_respondida?.toString() || "",
+      checkout_base_url: activeLoja.checkout_base_url || "",
+      dias_funcionamento: activeLoja.dias_funcionamento || "seg,ter,qua,qui,sex",
+      desconto_followup_orcamento: activeLoja.desconto_followup_orcamento?.toString() || "",
+      plataforma_ecommerce: activeLoja.plataforma_ecommerce || "",
     });
   }, [activeLoja]);
 
@@ -659,6 +667,10 @@ export default function SettingsPage() {
           montagem_disponivel: storeForm.montagem_disponivel,
           desconto_carrinho_abandonado: descontoCarrinho,
           desconto_promocao_nao_respondida: descontoPromocao,
+          checkout_base_url: storeForm.checkout_base_url.trim() || null,
+          dias_funcionamento: storeForm.dias_funcionamento.trim() || null,
+          desconto_followup_orcamento: storeForm.desconto_followup_orcamento ? parseFloat(storeForm.desconto_followup_orcamento) : null,
+          plataforma_ecommerce: storeForm.plataforma_ecommerce.trim() || null,
         })
         .eq("id", activeLojaId);
 
@@ -814,6 +826,28 @@ export default function SettingsPage() {
                   <div>
                     <Label>Desconto promoção não respondida %</Label>
                     <Input type="number" min="0" max="100" step="0.01" value={storeForm.desconto_promocao_nao_respondida} onChange={e => setStoreForm(f => ({ ...f, desconto_promocao_nao_respondida: e.target.value }))} placeholder="5" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-sm">E-commerce & Checkout</CardTitle></CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>Plataforma de e-commerce</Label>
+                    <Input value={storeForm.plataforma_ecommerce} onChange={e => setStoreForm(f => ({ ...f, plataforma_ecommerce: e.target.value }))} placeholder="Ex: Nuvemshop, Shopify, Tray" />
+                  </div>
+                  <div>
+                    <Label>URL base de checkout</Label>
+                    <Input value={storeForm.checkout_base_url} onChange={e => setStoreForm(f => ({ ...f, checkout_base_url: e.target.value }))} placeholder="Ex: https://sualoja.nuvemshop.com.br/checkout" />
+                  </div>
+                  <div>
+                    <Label>Desconto follow-up orçamento %</Label>
+                    <Input type="number" min="0" max="100" step="0.01" value={storeForm.desconto_followup_orcamento} onChange={e => setStoreForm(f => ({ ...f, desconto_followup_orcamento: e.target.value }))} placeholder="10" />
+                  </div>
+                  <div>
+                    <Label>Dias de funcionamento</Label>
+                    <Input value={storeForm.dias_funcionamento} onChange={e => setStoreForm(f => ({ ...f, dias_funcionamento: e.target.value }))} placeholder="Ex: seg,ter,qua,qui,sex,sab" />
                   </div>
                 </CardContent>
               </Card>
