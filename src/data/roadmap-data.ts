@@ -109,7 +109,7 @@ export const checklistBlocks: ChecklistBlock[] = [
     description: "As 9 ferramentas que a IA usa durante a conversa: buscar produto, enviar foto/vídeo, agendar visita, cadastrar lead, gerar orçamento, mover no funil, cobrar e transferir pro vendedor.",
     items: [
       { number: 46, functionality: "Buscar produto no catálogo", description: "A IA busca por nome, categoria, tamanho, preço ou disponibilidade. Encontra o produto certo pro cliente.", status: "done", priority: "Alta", observations: "Implementado no agent-tools" },
-      { number: 47, functionality: "Enviar foto/vídeo no WhatsApp", description: "A IA manda foto e vídeo do produto direto no chat, com legenda explicando e delay anti-spam.", status: "done", priority: "Alta", observations: "Edge function corrigida — envio funcional" },
+      { number: 47, functionality: "Enviar foto/vídeo no WhatsApp", description: "A IA manda foto e vídeo do produto direto no chat, com legenda explicando e delay anti-spam.", status: "done", priority: "Alta", observations: "Fix: enviar_midia_whatsapp migrado de toolHttpRequest → toolWorkflow + rename. Envio funcional end-to-end." },
       { number: 48, functionality: "Agendar visita à loja", description: "Agenda visita presencial com data/hora, manda endereço com Google Maps e confirma pro cliente.", status: "done", priority: "Alta", observations: "WF-08 + Google Calendar + tabela visitas" },
       { number: 49, functionality: "Gerar orçamento formal", description: "Gera um orçamento com todos os itens, descontos, forma de pagamento e validade. Manda pro cliente.", status: "done", priority: "Alta", observations: "WF-09 gera orçamento HTML/PDF." },
       { number: 50, functionality: "Agendar follow-up automático", description: "Agenda lembretes automáticos: 'medir o espaço', 'finalizar compra', 'ver orçamento pendente'.", status: "done", priority: "Alta", observations: "Implementado no agent-tools + tabela follow_ups" },
@@ -243,7 +243,7 @@ export const workflows: Workflow[] = [
   {
     id: "WF-01",
     name: "Agente de Vendas WhatsApp (Principal)",
-    nodes: ["Webhook", "If", "Respond to Webhook", "Code", "HTTP Request", "AI Agent (OpenAI)", "Tool Workflow", "Tool HTTP Request", "Evolution API", "Redis", "Memory Buffer Window"],
+    nodes: ["Webhook", "If", "Respond to Webhook", "Code", "HTTP Request", "AI Agent (OpenAI)", "Tool Workflow", "Evolution API", "Redis", "Memory Buffer Window"],
   },
   {
     id: "WF-02",
@@ -321,6 +321,10 @@ export interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  { date: "2026-04-15T04:00:00", title: "🔥 Seção Promoções em Destaque no Catálogo", description: "Nova seção visual na página LojaCatalogo com cards de produtos em promoção: badge PROMOÇÃO, foto, preço riscado, % OFF, estoque e botão editar. Renderização condicional.", type: "feature" },
+  { date: "2026-04-15T03:30:00", title: "🐛 Fix WF-05: lead_id undefined no Supabase", description: "Corrigido bug onde o nó 'Supabase - Buscar Histórico Completo' recebia lead_id undefined, causando falha na busca do histórico durante transbordo.", type: "fix" },
+  { date: "2026-04-15T03:00:00", title: "🐛 Fix WF-01: Filtro de áudio no IF Validar Payload", description: "Adicionado filtro para ignorar mensagens de áudio (audioMessage) no IF de validação do webhook, evitando auto-resposta em áudios.", type: "fix" },
+  { date: "2026-04-15T02:30:00", title: "🔧 Fix enviar_midia: toolHttpRequest → toolWorkflow", description: "Ferramenta enviar_midia_whatsapp migrada de Tool HTTP Request para Tool Workflow no WF-01, corrigindo envio de mídias pelo agente. Renomeada para consistência.", type: "fix" },
   { date: "2026-04-15T01:00:00", title: "🐛 Fix: Agente respondendo fora do horário comercial", description: "Bug onde o agente diz que está fora do expediente mesmo dentro do horário. Debug _debug_horario adicionado no WF-01 pra diagnosticar cálculo BRT vs UTC e dias_funcionamento.", type: "fix" },
   { date: "2026-04-15T00:30:00", title: "WF-05 Transbordo — Redis + Grupo vendedores", description: "Adicionado Redis SET com TTL 24h para marcar pausa do agente. Notificação automática ao grupo de vendedores no WhatsApp quando configurado.", type: "feature" },
   { date: "2026-04-15T00:00:00", title: "WF-02 Follow-up — Config por loja + novos templates", description: "Follow-up agora carrega config da loja antes de montar contexto. Novos templates: pós-colchão, pós-móvel, pós-entrega, avaliação e complementar_ambiente.", type: "feature" },

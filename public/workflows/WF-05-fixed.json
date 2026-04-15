@@ -1,0 +1,360 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "ec375170-dda2-4fa1-b0c5-bff9728d77d7",
+      "name": "Trigger - Receber Dados do Lead",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "historico_mensagens",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "lead_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.lead_id || '00000000-0000-0000-0000-000000000000' }}"
+            }
+          ]
+        }
+      },
+      "id": "0c223752-f75a-4e6e-9897-bf7348485a64",
+      "name": "Supabase - Buscar Histórico Completo",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        128
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "PZDtZr001b01TX37",
+          "name": "Supabase Prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const historico = items.map(i => i.json);\nconst lead_id = $('Trigger - Receber Dados do Lead').item.json.lead_id;\nconst telefone = $('Trigger - Receber Dados do Lead').item.json.telefone;\nconst nome = $('Trigger - Receber Dados do Lead').item.json.nome || 'Não informado';\nconst interesse = $('Trigger - Receber Dados do Lead').item.json.interesse || 'Não identificado';\nconst etapa = $('Trigger - Receber Dados do Lead').item.json.etapa_pipeline || 'novo_contato';\nconst motivo = $('Trigger - Receber Dados do Lead').item.json.motivo_transbordo || 'Solicitação do cliente';\n\n// Formata as últimas 10 mensagens como resumo\nconst ultimas = historico\n  .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))\n  .slice(-10)\n  .map(m => `[${m.role === 'user' ? '👤 Cliente' : '🤖 Agente'}]: ${m.content}`)\n  .join('\\n');\n\nconst resumo_whatsapp = `🔔 *TRANSBORDO PARA HUMANO*\\n\\n` +\n  `👤 *Cliente:* ${nome}\\n` +\n  `📞 *Telefone:* ${telefone}\\n` +\n  `🎯 *Interesse:* ${interesse}\\n` +\n  `📊 *Etapa no funil:* ${etapa}\\n` +\n  `⚠️ *Motivo:* ${motivo}\\n\\n` +\n  `📝 *Últimas mensagens:*\\n${ultimas}\\n\\n` +\n  `_Responda diretamente nesse número para continuar o atendimento._`;\n\nconst msg_cliente = `Olá! 😊 Vou transferir você para um de nossos consultores especializados que poderá te ajudar melhor.\\n\\nAguarde um momento — em breve alguém da nossa equipe vai entrar em contato! 🏠`;\n\nreturn [{\n  json: {\n    lead_id,\n    telefone,\n    resumo_whatsapp,\n    msg_cliente,\n    instance: $('Trigger - Receber Dados do Lead').item.json.instance,\n    grupo_vendedores: $('Trigger - Receber Dados do Lead').item.json.grupo_vendedores || null\n  }\n}];"
+      },
+      "id": "9f017529-9734-457d-a44f-fdd4c0e7b7c3",
+      "name": "Code - Gerar Resumo para Humano",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evoapi.refinecubo.com.br/message/sendText/{{ $json.instance }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "cubo_Rer0KZLrqYDuwbXVxrcpltTDKbkXH6lR70V9wGtAtC3oPCX948wkr6wkDmdLFsmy9qOD2F6l9qEByfqCcH5nbVvOZas8cXnkjbRG9Bo8zqVVPSN3CaghpJ9G8ZmMYJA5"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.telefone }}\",\n  \"text\": \"{{ $json.msg_cliente }}\",\n  \"delay\": 1000\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "03c9bd2d-1a65-4ad5-be6f-009871565066",
+      "name": "EvolutionAPI - Avisar Cliente (aguarda atendimento)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-grupo",
+              "leftValue": "={{ $json.grupo_vendedores }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ee84b3fd-6542-43ea-be57-5ee79927098d",
+      "name": "IF - Grupo de Vendedores Configurado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evoapi.refinecubo.com.br/message/sendText/{{ $('Code - Gerar Resumo para Humano').item.json.instance }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "cubo_Rer0KZLrqYDuwbXVxrcpltTDKbkXH6lR70V9wGtAtC3oPCX948wkr6wkDmdLFsmy9qOD2F6l9qEByfqCcH5nbVvOZas8cXnkjbRG9Bo8zqVVPSN3CaghpJ9G8ZmMYJA5"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $('Code - Gerar Resumo para Humano').item.json.grupo_vendedores }}\",\n  \"text\": \"{{ $('Code - Gerar Resumo para Humano').item.json.resumo_whatsapp }}\",\n  \"delay\": 500\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "a3b956a6-e95f-4507-bd3e-88357f7c7793",
+      "name": "EvolutionAPI - Notificar Grupo Vendedores",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        272,
+        144
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Code - Gerar Resumo para Humano').item.json.lead_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "agente_pausado",
+              "fieldValue": true
+            },
+            {
+              "fieldId": "etapa_pipeline",
+              "fieldValue": "atendimento_humano"
+            },
+            {
+              "fieldId": "ultima_interacao",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "is_bot_active",
+              "fieldValue": false
+            }
+          ]
+        }
+      },
+      "id": "dab47f85-b55e-4266-bb0a-c1ebb895b835",
+      "name": "Supabase - Pausar Agente IA para este Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        528,
+        128
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "PZDtZr001b01TX37",
+          "name": "Supabase Prod"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f030",
+              "name": "status",
+              "value": "transferido_para_humano",
+              "type": "string"
+            },
+            {
+              "id": "f031",
+              "name": "agente_pausado",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a9625128-f4d8-49a4-b1dc-2c39e60ad957",
+      "name": "Set - Confirmar Transbordo",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1056,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=paused:{{ $json.telefone }}",
+        "value": "1",
+        "expire": true,
+        "ttl": 86400
+      },
+      "id": "redis-set-001-pausar",
+      "name": "Redis SET - Marcar Pausa",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        800,
+        128
+      ],
+      "credentials": {
+        "redis": {
+          "id": "ecIwCgBhStRabISA",
+          "name": "Redis account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Trigger - Receber Dados do Lead": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Buscar Histórico Completo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Buscar Histórico Completo": {
+      "main": [
+        [
+          {
+            "node": "Code - Gerar Resumo para Humano",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Gerar Resumo para Humano": {
+      "main": [
+        [
+          {
+            "node": "EvolutionAPI - Avisar Cliente (aguarda atendimento)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF - Grupo de Vendedores Configurado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EvolutionAPI - Avisar Cliente (aguarda atendimento)": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Pausar Agente IA para este Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Grupo de Vendedores Configurado?": {
+      "main": [
+        [
+          {
+            "node": "EvolutionAPI - Notificar Grupo Vendedores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EvolutionAPI - Notificar Grupo Vendedores": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Pausar Agente IA para este Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Pausar Agente IA para este Lead": {
+      "main": [
+        [
+          {
+            "node": "Redis SET - Marcar Pausa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis SET - Marcar Pausa": {
+      "main": [
+        [
+          {
+            "node": "Set - Confirmar Transbordo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b7cd6e3f604deb65ae2ac072e57079254f1fab84f1b0d23ff66785f029793ae7"
+  }
+}
