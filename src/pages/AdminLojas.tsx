@@ -100,24 +100,53 @@ export default function AdminLojas() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      // Auto-generate instance name from loja name
+      const instanceName = createForm.nome_loja
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 40) || "loja";
+
       const { data, error } = await supabase
         .from("lojas")
         .insert({
           clinic_id: createForm.clinic_id,
           nome_loja: createForm.nome_loja,
           nome_assistente_ia: createForm.nome_assistente_ia,
-          instance: createForm.instance,
+          instance: instanceName,
         } as any)
-        .select("id")
+        .select("id, clinic_id")
         .single();
       if (error) throw error;
+
+      // Auto-create instance on Evolution API
+      try {
+        setCreatingInstance(true);
+        const { data: evoData, error: evoErr } = await supabase.functions.invoke("evolution-api", {
+          body: {
+            action: "create_instance",
+            clinic_id: data.clinic_id,
+            instance_name: instanceName,
+          },
+        });
+        if (!evoErr && evoData?.qrcode) {
+          setQrCode(evoData.qrcode);
+          setQrDialog(true);
+        }
+      } catch (e) {
+        console.error("Evolution API error:", e);
+      } finally {
+        setCreatingInstance(false);
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-lojas"] });
       setShowCreate(false);
-      setCreateForm({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia", instance: "" });
-      toast({ title: "Loja criada com sucesso!" });
+      setCreateForm({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia" });
+      toast({ title: "Loja criada com sucesso!", description: qrCode ? "Escaneie o QR Code para conectar o WhatsApp." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro ao criar loja", description: e.message, variant: "destructive" }),
   });
