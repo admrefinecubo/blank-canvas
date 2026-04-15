@@ -699,6 +699,7 @@ export type Database = {
           frete_gratis_acima: number | null
           horario_fim: string | null
           horario_inicio: string | null
+          horarios_especiais: Json | null
           id: string
           instance: string | null
           maps_link: string | null
@@ -730,6 +731,7 @@ export type Database = {
           frete_gratis_acima?: number | null
           horario_fim?: string | null
           horario_inicio?: string | null
+          horarios_especiais?: Json | null
           id?: string
           instance?: string | null
           maps_link?: string | null
@@ -761,6 +763,7 @@ export type Database = {
           frete_gratis_acima?: number | null
           horario_fim?: string | null
           horario_inicio?: string | null
+          horarios_especiais?: Json | null
           id?: string
           instance?: string | null
           maps_link?: string | null

@@ -1,0 +1,1 @@
+ALTER TABLE public.lojas ADD COLUMN horarios_especiais jsonb DEFAULT '{}'::jsonb;
