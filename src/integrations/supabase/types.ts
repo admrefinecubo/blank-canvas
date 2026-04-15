@@ -692,6 +692,7 @@ export type Database = {
           desconto_promocao_nao_respondida: number | null
           descricao_loja: string | null
           dias_funcionamento: string | null
+          ecommerce_api_key: string | null
           endereco: string | null
           especialidades: string | null
           formas_pagamento: string | null
@@ -722,6 +723,7 @@ export type Database = {
           desconto_promocao_nao_respondida?: number | null
           descricao_loja?: string | null
           dias_funcionamento?: string | null
+          ecommerce_api_key?: string | null
           endereco?: string | null
           especialidades?: string | null
           formas_pagamento?: string | null
@@ -752,6 +754,7 @@ export type Database = {
           desconto_promocao_nao_respondida?: number | null
           descricao_loja?: string | null
           dias_funcionamento?: string | null
+          ecommerce_api_key?: string | null
           endereco?: string | null
           especialidades?: string | null
           formas_pagamento?: string | null

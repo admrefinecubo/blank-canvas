@@ -1,0 +1,1 @@
+ALTER TABLE lojas ADD COLUMN IF NOT EXISTS ecommerce_api_key text;
