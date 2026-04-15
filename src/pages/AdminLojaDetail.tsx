@@ -398,7 +398,7 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                   </div>
                   <div className="flex items-center gap-2">
                     {statusBadge}
-                    <Button variant="ghost" size="icon" onClick={checkWhatsAppStatus} disabled={checkingStatus}>
+                    <Button variant="ghost" size="icon" onClick={checkWhatsAppStatus} disabled={checkingStatus} title="Verificar status">
                       <RefreshCw className={`h-4 w-4 ${checkingStatus ? "animate-spin" : ""}`} />
                     </Button>
                   </div>
