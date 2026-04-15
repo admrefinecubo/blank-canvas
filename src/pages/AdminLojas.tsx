@@ -380,11 +380,7 @@ export default function AdminLojas() {
               <Label>Nome da Assistente IA</Label>
               <Input placeholder="Sofia" value={createForm.nome_assistente_ia} onChange={(e) => setCreateForm((f) => ({ ...f, nome_assistente_ia: e.target.value }))} />
             </div>
-            <div>
-              <Label>Instance Evolution *</Label>
-              <Input placeholder="minha-loja" value={createForm.instance} onChange={(e) => setCreateForm((f) => ({ ...f, instance: e.target.value }))} />
-              <p className="mt-1 text-xs text-muted-foreground">Identificador da instância na Evolution API</p>
-            </div>
+            <p className="text-xs text-muted-foreground">A instância WhatsApp será criada automaticamente ao salvar.</p>
             {!clinics.length && !isLoadingClinics ? (
               <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                 Crie a conta do cliente em <code>/admin</code> antes de cadastrar a loja.
@@ -393,8 +389,8 @@ export default function AdminLojas() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
-            <Button onClick={() => createMutation.mutate()} disabled={!createForm.clinic_id || !createForm.nome_loja || !createForm.instance || createMutation.isPending || !clinics.length}>
-              {createMutation.isPending ? "Criando..." : "Criar Loja"}
+            <Button onClick={() => createMutation.mutate()} disabled={!createForm.clinic_id || !createForm.nome_loja || createMutation.isPending || creatingInstance || !clinics.length}>
+              {createMutation.isPending || creatingInstance ? "Criando..." : "Criar Loja"}
             </Button>
           </DialogFooter>
         </DialogContent>
