@@ -461,6 +461,33 @@ export default function AdminLojas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* QR Code Dialog */}
+      <Dialog open={qrDialog} onOpenChange={setQrDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              Escaneie o QR Code
+            </DialogTitle>
+            <DialogDescription>
+              Abra o WhatsApp no celular → Menu → Dispositivos conectados → Conectar dispositivo
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4">
+            {qrCode ? (
+              <img src={`data:image/png;base64,${qrCode}`} alt="QR Code" className="h-64 w-64" />
+            ) : (
+              <p className="text-muted-foreground">QR Code não disponível</p>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setQrDialog(false)}>
+              Já escaneei
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
