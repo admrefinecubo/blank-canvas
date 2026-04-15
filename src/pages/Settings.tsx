@@ -717,7 +717,7 @@ export default function SettingsPage() {
       if (!activeLojaId) return null;
       const { data, error } = await supabase
         .from("lojas")
-        .select("id, nome_loja, nome_assistente, tom_voz, descricao_loja, especialidades, regras_personalidade, horario_inicio, horario_fim, formas_pagamento, politica_troca, prazo_entrega, frete_gratis_acima, montagem_disponivel, desconto_carrinho_abandonado, desconto_promocao_nao_respondida, checkout_base_url, dias_funcionamento, desconto_followup_orcamento, plataforma_ecommerce, ecommerce_api_key")
+        .select("id, nome_loja, nome_assistente, tom_voz, descricao_loja, especialidades, regras_personalidade, horario_inicio, horario_fim, formas_pagamento, politica_troca, prazo_entrega, frete_gratis_acima, montagem_disponivel, desconto_carrinho_abandonado, desconto_promocao_nao_respondida, checkout_base_url, dias_funcionamento, horarios_especiais, desconto_followup_orcamento, plataforma_ecommerce, ecommerce_api_key")
         .eq("id", activeLojaId)
         .single();
 
