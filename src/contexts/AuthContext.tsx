@@ -210,7 +210,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check if user's clinic is active
     const userRoles = await fetchRolesWithRetry(data.user.id);
     setRoles(userRoles);
+    rolesRef.current = userRoles;
     setLastHydratedUserId(data.user.id);
+    lastHydratedUserIdRef.current = data.user.id;
 
     const isAdmin = userRoles.some(r => r.role === 'platform_admin');
     if (!isAdmin && userRoles.length) {
