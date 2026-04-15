@@ -250,13 +250,9 @@ export default function AdminLojaDetail() {
                   <Input placeholder="Ex: Conforto" value={form.nome_loja || ""} onChange={(e) => set("nome_loja", e.target.value)} />
                 </div>
                 <div>
-                  <Label>Nome da IA (exibição)</Label>
-                  <Input placeholder="Ex: Sofia" value={form.nome_assistente || ""} onChange={(e) => set("nome_assistente", e.target.value)} />
-                </div>
-                <div>
-                  <Label>Nome interno da IA</Label>
-                  <Input placeholder="Ex: sofia_moveis" value={form.nome_assistente_ia || ""} onChange={(e) => set("nome_assistente_ia", e.target.value)} />
-                  <p className="mt-1 text-xs text-muted-foreground">Usado internamente nos fluxos N8N</p>
+                  <Label>Nome da Assistente IA</Label>
+                  <Input placeholder="Ex: Sofia" value={form.nome_assistente_ia || ""} onChange={(e) => set("nome_assistente_ia", e.target.value)} />
+                  <p className="mt-1 text-xs text-muted-foreground">Nome usado pela IA nas conversas e nos fluxos N8N</p>
                 </div>
                 <div>
                   <Label>Tom de Voz</Label>

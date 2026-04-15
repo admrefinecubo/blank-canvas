@@ -28,7 +28,7 @@ type LojaRow = {
   id: string;
   clinic_id?: string | null;
   nome_loja: string;
-  nome_assistente?: string | null;
+  nome_assistente_ia?: string | null;
   instance?: string | null;
   ativo?: boolean | null;
   created_at?: string | null;
@@ -56,7 +56,7 @@ export default function AdminLojas() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-   const [createForm, setCreateForm] = useState({ clinic_id: "", nome_loja: "", nome_assistente: "Sofia", instance: "" });
+   const [createForm, setCreateForm] = useState({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia", instance: "" });
    const [linkForm, setLinkForm] = useState({ lojaId: null as string | null, clinic_id: "" });
 
   const { data: lojas, isLoading } = useQuery({
@@ -102,7 +102,7 @@ export default function AdminLojas() {
         .insert({
           clinic_id: createForm.clinic_id,
           nome_loja: createForm.nome_loja,
-          nome_assistente: createForm.nome_assistente,
+          nome_assistente_ia: createForm.nome_assistente_ia,
           instance: createForm.instance,
         } as any)
         .select("id")
@@ -113,7 +113,7 @@ export default function AdminLojas() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-lojas"] });
       setShowCreate(false);
-      setCreateForm({ clinic_id: "", nome_loja: "", nome_assistente: "Sofia", instance: "" });
+      setCreateForm({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia", instance: "" });
       toast({ title: "Loja criada com sucesso!" });
     },
     onError: (e: any) => toast({ title: "Erro ao criar loja", description: e.message, variant: "destructive" }),
@@ -236,7 +236,7 @@ export default function AdminLojas() {
                          )}
                        </div>
                      </TableCell>
-                     <TableCell className="hidden md:table-cell text-muted-foreground">{loja.nome_assistente || "—"}</TableCell>
+                     <TableCell className="hidden md:table-cell text-muted-foreground">{loja.nome_assistente_ia || "—"}</TableCell>
                     <TableCell className="hidden lg:table-cell">
                       <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{loja.instance || "—"}</code>
                     </TableCell>
@@ -346,7 +346,7 @@ export default function AdminLojas() {
             </div>
             <div>
               <Label>Nome da Assistente IA</Label>
-              <Input placeholder="Sofia" value={createForm.nome_assistente} onChange={(e) => setCreateForm((f) => ({ ...f, nome_assistente: e.target.value }))} />
+              <Input placeholder="Sofia" value={createForm.nome_assistente_ia} onChange={(e) => setCreateForm((f) => ({ ...f, nome_assistente_ia: e.target.value }))} />
             </div>
             <div>
               <Label>Instance Evolution *</Label>

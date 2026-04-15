@@ -87,7 +87,7 @@ export default function WhatsApp() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lojas")
-        .select("nome_loja, nome_assistente, instance")
+        .select("nome_loja, nome_assistente_ia, instance")
         .eq("id", activeLojaId!)
         .maybeSingle();
       if (error) throw error;
@@ -493,7 +493,7 @@ export default function WhatsApp() {
                   ) : (
                     <ChatMessages
                       messages={messages}
-                      assistantName={lojaContext?.nome_assistente || "Assistente"}
+                      assistantName={lojaContext?.nome_assistente_ia || "Assistente"}
                       leadName={getDisplayName(selectedLead)}
                     />
                   )}
