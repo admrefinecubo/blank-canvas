@@ -73,6 +73,15 @@ export default function AdminLojaDetail() {
     if (loja?.clinic_id) checkWhatsAppStatus();
   }, [loja?.clinic_id]);
 
+  // Auto-polling every 15s while status is "pending"
+  useEffect(() => {
+    if (whatsappStatus !== "pending" || !loja?.clinic_id) return;
+    const interval = setInterval(() => {
+      checkWhatsAppStatus();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [whatsappStatus, loja?.clinic_id]);
+
   const checkWhatsAppStatus = async () => {
     if (!loja?.clinic_id) return;
     setCheckingStatus(true);
