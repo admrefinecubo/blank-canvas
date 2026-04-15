@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import DaysSchedulePicker from "@/components/DaysSchedulePicker";
+import type { HorariosEspeciais } from "@/lib/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -26,15 +28,6 @@ const ROLE_LABELS: Record<string, string> = {
   clinic_receptionist: "Recepcionista",
 };
 
-const WEEKDAYS = [
-  { value: "dom", label: "Dom" },
-  { value: "seg", label: "Seg" },
-  { value: "ter", label: "Ter" },
-  { value: "qua", label: "Qua" },
-  { value: "qui", label: "Qui" },
-  { value: "sex", label: "Sex" },
-  { value: "sab", label: "Sáb" },
-];
 
 const ECOMMERCE_PLATFORMS = [
   { value: "", label: "Nenhuma" },
@@ -693,6 +686,7 @@ export default function SettingsPage() {
     desconto_promocao_nao_respondida: "",
     checkout_base_url: "",
     dias_funcionamento: "",
+    horarios_especiais: {} as HorariosEspeciais,
     desconto_followup_orcamento: "",
     plataforma_ecommerce: "",
     ecommerce_api_key: "",
