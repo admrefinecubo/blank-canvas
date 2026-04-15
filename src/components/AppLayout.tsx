@@ -33,7 +33,6 @@ const adminNavItems = [
   { title: "Visão geral", url: "/admin", icon: ShieldCheck },
   { title: "Lojas", url: "/admin/lojas", icon: Store },
   { title: "Estatísticas", url: "/admin/stats", icon: BarChart3 },
-  { title: "Implantação / Equipe", url: "/settings", icon: Settings },
 ];
 
 const breadcrumbMap: Record<string, string> = {
