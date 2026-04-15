@@ -738,35 +738,17 @@ export default function SettingsPage() {
               <Card>
                 <CardHeader><CardTitle className="text-sm">Identidade</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label>Nome do assistente</Label>
-                      <Input value={storeForm.nome_assistente} onChange={e => setStoreForm(f => ({ ...f, nome_assistente: e.target.value }))} placeholder="Ex: Clara" />
-                    </div>
-                    <div>
-                      <Label>Tom de voz</Label>
-                      <Select value={storeForm.tom_voz} onValueChange={value => setStoreForm(f => ({ ...f, tom_voz: value }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="amigável">Amigável</SelectItem>
-                          <SelectItem value="formal">Formal</SelectItem>
-                          <SelectItem value="descontraído">Descontraído</SelectItem>
-                          <SelectItem value="consultivo">Consultivo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label>Nome do assistente</Label>
+                    <Input value={storeForm.nome_assistente} onChange={e => setStoreForm(f => ({ ...f, nome_assistente: e.target.value }))} placeholder="Ex: Clara" />
                   </div>
                   <div>
-                    <Label>Descrição da loja</Label>
-                    <Textarea value={storeForm.descricao_loja} onChange={e => setStoreForm(f => ({ ...f, descricao_loja: e.target.value }))} placeholder="Descreva sua loja, segmento e diferenciais." className="min-h-[110px]" />
+                    <Label>Tom de Voz / Personalidade</Label>
+                    <Textarea rows={4} value={storeForm.tom_voz} onChange={e => setStoreForm(f => ({ ...f, tom_voz: e.target.value }))} placeholder="Ex: Amigável, descontraído e consultivo. Usa gírias naturais do WhatsApp (vc, tb, pq). Demonstra entusiasmo com os produtos. Faz perguntas abertas para entender a necessidade do cliente." />
                   </div>
                   <div>
-                    <Label>Especialidades</Label>
-                    <Textarea value={storeForm.especialidades} onChange={e => setStoreForm(f => ({ ...f, especialidades: e.target.value }))} placeholder="Descreva em que o agente é especialista." className="min-h-[110px]" />
-                  </div>
-                  <div>
-                    <Label>Regras de personalidade</Label>
-                    <Textarea value={storeForm.regras_personalidade} onChange={e => setStoreForm(f => ({ ...f, regras_personalidade: e.target.value }))} placeholder="Ex: nunca prometer prazo sem confirmar estoque." className="min-h-[110px]" />
+                    <Label>Regras Personalizadas do Agente</Label>
+                    <Textarea rows={6} value={storeForm.regras_personalidade} onChange={e => setStoreForm(f => ({ ...f, regras_personalidade: e.target.value }))} placeholder="Ex: Sempre ofereça parcelamento em até 12x. Nunca mencione marcas concorrentes. Se o cliente perguntar sobre colchão ortopédico, enfatize sempre a densidade do espuma." />
                   </div>
                 </CardContent>
               </Card>
