@@ -76,7 +76,7 @@ export default function Reports() {
     queryKey: ["reports-loja", activeLojaId],
     queryFn: async () => {
       if (!activeLojaId) return null;
-      const { data, error } = await supabase.from("lojas").select("id, nome_loja, nome_assistente").eq("id", activeLojaId).single();
+      const { data, error } = await supabase.from("lojas").select("id, nome_loja, nome_assistente_ia").eq("id", activeLojaId).single();
       if (error) throw error;
       return data;
     },
@@ -405,7 +405,7 @@ export default function Reports() {
 
       <Card>
         <CardContent className="pt-6 text-sm text-muted-foreground">
-          Assistente considerado no cálculo de resposta: <span className="font-medium text-foreground">{loja?.nome_assistente || "Assistente"}</span>. O gráfico usa a primeira mensagem do cliente seguida da primeira resposta com <code>role = assistant</code> em cada lead no período.
+          Assistente considerado no cálculo de resposta: <span className="font-medium text-foreground">{loja?.nome_assistente_ia || "Assistente"}</span>. O gráfico usa a primeira mensagem do cliente seguida da primeira resposta com <code>role = assistant</code> em cada lead no período.
         </CardContent>
       </Card>
     </div>
