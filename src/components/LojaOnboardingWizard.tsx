@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Store, MapPin, Truck, Bot, ShoppingCart, ChevronRight, ChevronLeft, Check } from "lucide-react";
+import DaysSchedulePicker from "@/components/DaysSchedulePicker";
+import type { HorariosEspeciais } from "@/lib/constants";
 
 const REQUIRED_FIELDS = [
   "descricao_loja",
@@ -80,6 +82,7 @@ export default function LojaOnboardingWizard({ loja, open, onClose }: Props) {
     horario_inicio: loja.horario_inicio || "",
     horario_fim: loja.horario_fim || "",
     dias_funcionamento: loja.dias_funcionamento || "",
+    horarios_especiais: (loja.horarios_especiais as HorariosEspeciais) || {},
     formas_pagamento: loja.formas_pagamento || "",
     prazo_entrega: loja.prazo_entrega || "",
     frete_gratis_acima: loja.frete_gratis_acima || "",
@@ -184,32 +187,16 @@ export default function LojaOnboardingWizard({ loja, open, onClose }: Props) {
                   onChange={(e) => set("maps_link", e.target.value)}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Horário Início *</Label>
-                  <Input
-                    type="time"
-                    value={form.horario_inicio}
-                    onChange={(e) => set("horario_inicio", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Horário Fim *</Label>
-                  <Input
-                    type="time"
-                    value={form.horario_fim}
-                    onChange={(e) => set("horario_fim", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label>Dias de Funcionamento</Label>
-                <Input
-                  placeholder="Ex: Seg-Sáb"
-                  value={form.dias_funcionamento}
-                  onChange={(e) => set("dias_funcionamento", e.target.value)}
-                />
-              </div>
+              <DaysSchedulePicker
+                diasFuncionamento={form.dias_funcionamento}
+                onDiasChange={(v) => set("dias_funcionamento", v)}
+                horarioInicio={form.horario_inicio}
+                horarioFim={form.horario_fim}
+                onHorarioInicioChange={(v) => set("horario_inicio", v)}
+                onHorarioFimChange={(v) => set("horario_fim", v)}
+                horariosEspeciais={form.horarios_especiais}
+                onHorariosEspeciaisChange={(v) => set("horarios_especiais", v)}
+              />
             </>
           )}
 
