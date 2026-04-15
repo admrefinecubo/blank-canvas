@@ -333,6 +333,61 @@ export default function LojaCatalogo() {
         <Input placeholder="Buscar por nome..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
       </div>
 
+      {(() => {
+        const promos = (produtos ?? []).filter(
+          (p) => p.preco_promocional != null && Number(p.preco_promocional) > 0
+        );
+        if (!promos.length) return null;
+        return (
+          <>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight">🔥 Promoções em Destaque</h2>
+                <p className="text-sm text-muted-foreground">{promos.length} produto{promos.length > 1 ? "s" : ""} em oferta</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {promos.map((produto) => {
+                  const original = Number(produto.preco_original || 0);
+                  const promo = Number(produto.preco_promocional);
+                  const discount = original > 0 ? Math.round((1 - promo / original) * 100) : 0;
+                  return (
+                    <Card key={produto.id} className="relative overflow-hidden">
+                      <Badge className="absolute right-2 top-2 z-10 bg-destructive text-destructive-foreground">PROMOÇÃO</Badge>
+                      <div className="aspect-square w-full overflow-hidden bg-muted/40">
+                        {produto.foto_principal ? (
+                          <img src={produto.foto_principal} alt={produto.nome} className="h-full w-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+                          </div>
+                        )}
+                      </div>
+                      <CardContent className="space-y-2 p-3">
+                        <p className="truncate text-sm font-medium">{produto.nome}</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg font-bold text-destructive">{formatPrice(promo)}</span>
+                          {discount > 0 && (
+                            <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-semibold text-destructive">{discount}% OFF</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground line-through">{formatPrice(original)}</p>
+                        <Badge variant={produto.estoque_disponivel ? "default" : "secondary"} className="text-[10px]">
+                          {produto.estoque_disponivel ? "Disponível" : "Esgotado"}
+                        </Badge>
+                        <Button variant="outline" size="sm" className="mt-1 w-full gap-1.5" onClick={() => openEdit(produto.id)}>
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+            <Separator />
+          </>
+        );
+      })()}
+
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
