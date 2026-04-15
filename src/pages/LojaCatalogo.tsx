@@ -2,6 +2,7 @@ import { ChangeEvent, useMemo, useRef, useState } from "react";
 import {
   Plus, Pencil, Trash2, Loader2, Package, Upload, ImageIcon, ExternalLink,
 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
