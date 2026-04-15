@@ -30,7 +30,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 
 const ECOMMERCE_PLATFORMS = [
-  { value: "", label: "Nenhuma" },
+  { value: "none", label: "Nenhuma" },
   { value: "shopify", label: "Shopify" },
   { value: "nuvemshop", label: "Nuvemshop" },
   { value: "tray", label: "Tray" },
@@ -157,7 +157,7 @@ function IntegrationsTab({ clinicId, activeLojaId }: { clinicId: string; activeL
   useEffect(() => {
     if (lojaEcom) {
       setEcomForm({
-        plataforma: (lojaEcom as any).plataforma_ecommerce || "",
+        plataforma: (lojaEcom as any).plataforma_ecommerce || "none",
         checkout_url: (lojaEcom as any).checkout_base_url || "",
         api_key: (lojaEcom as any).ecommerce_api_key || "",
       });
@@ -168,7 +168,7 @@ function IntegrationsTab({ clinicId, activeLojaId }: { clinicId: string; activeL
     mutationFn: async () => {
       if (!activeLojaId) throw new Error("Nenhuma loja");
       const { error } = await supabase.from("lojas").update({
-        plataforma_ecommerce: ecomForm.plataforma.trim() || null,
+        plataforma_ecommerce: ecomForm.plataforma === "none" ? null : ecomForm.plataforma.trim() || null,
         checkout_base_url: ecomForm.checkout_url.trim() || null,
         ecommerce_api_key: ecomForm.api_key.trim() || null,
       } as any).eq("id", activeLojaId);
@@ -231,9 +231,10 @@ function IntegrationsTab({ clinicId, activeLojaId }: { clinicId: string; activeL
 
   const evConnected = evolutionStatus?.status === "connected";
   const gcConnected = gcalStatus?.status === "connected";
+  const hasPlataforma = ecomForm.plataforma && ecomForm.plataforma !== "none";
   const showApiKey = ["shopify", "nuvemshop"].includes(ecomForm.plataforma);
   const checkoutPlaceholder = PLATFORM_PLACEHOLDERS[ecomForm.plataforma] || PLATFORM_PLACEHOLDERS.default;
-  const instructions = ecomForm.plataforma ? (PLATFORM_INSTRUCTIONS[ecomForm.plataforma] || PLATFORM_INSTRUCTIONS.default) : "";
+  const instructions = hasPlataforma ? (PLATFORM_INSTRUCTIONS[ecomForm.plataforma] || PLATFORM_INSTRUCTIONS.default) : "";
 
   return (
     <>
@@ -251,7 +252,7 @@ function IntegrationsTab({ clinicId, activeLojaId }: { clinicId: string; activeL
                 <Select value={ecomForm.plataforma} onValueChange={v => { setEcomForm(f => ({ ...f, plataforma: v })); setTestResult(null); }}>
                   <SelectTrigger><SelectValue placeholder="Selecione a plataforma" /></SelectTrigger>
                   <SelectContent>
-                    {ECOMMERCE_PLATFORMS.map(p => <SelectItem key={p.value || "none"} value={p.value}>{p.label}</SelectItem>)}
+                    {ECOMMERCE_PLATFORMS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -286,7 +287,7 @@ function IntegrationsTab({ clinicId, activeLojaId }: { clinicId: string; activeL
                 {saveEcomMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Salvar
               </Button>
-              {ecomForm.plataforma && (
+              {hasPlataforma && (
                 <Button variant="outline" onClick={testConnection} disabled={testingConnection}>
                   {testingConnection && <Loader2 className="h-4 w-4 animate-spin" />}
                   Testar conexão
@@ -688,7 +689,7 @@ export default function SettingsPage() {
     dias_funcionamento: "",
     horarios_especiais: {} as HorariosEspeciais,
     desconto_followup_orcamento: "",
-    plataforma_ecommerce: "",
+    plataforma_ecommerce: "none",
     ecommerce_api_key: "",
   });
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
@@ -752,7 +753,7 @@ export default function SettingsPage() {
       dias_funcionamento: activeLoja.dias_funcionamento || "seg,ter,qua,qui,sex",
       horarios_especiais: ((activeLoja as any).horarios_especiais as HorariosEspeciais) || {},
       desconto_followup_orcamento: activeLoja.desconto_followup_orcamento?.toString() || "",
-      plataforma_ecommerce: activeLoja.plataforma_ecommerce || "",
+      plataforma_ecommerce: activeLoja.plataforma_ecommerce || "none",
       ecommerce_api_key: (activeLoja as any).ecommerce_api_key || "",
     });
   }, [activeLoja]);
@@ -831,7 +832,7 @@ export default function SettingsPage() {
           dias_funcionamento: storeForm.dias_funcionamento.trim() || null,
           horarios_especiais: storeForm.horarios_especiais || {},
           desconto_followup_orcamento: storeForm.desconto_followup_orcamento ? parseFloat(storeForm.desconto_followup_orcamento) : null,
-          plataforma_ecommerce: storeForm.plataforma_ecommerce.trim() || null,
+          plataforma_ecommerce: storeForm.plataforma_ecommerce === "none" ? null : storeForm.plataforma_ecommerce.trim() || null,
           ecommerce_api_key: (storeForm as any).ecommerce_api_key?.trim() || null,
         } as any)
         .eq("id", activeLojaId);
