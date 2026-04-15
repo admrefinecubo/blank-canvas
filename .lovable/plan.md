@@ -1,48 +1,57 @@
 
 
-# Plano: Auditoria Completa — Checklist + Workflows + CRM
+# Plano: Gerar Fila de Prompts para Sincronizar Workflows ↔ Supabase ↔ CRM
 
-Vou gerar um `.md` detalhado em `/mnt/documents/` com a auditoria completa cobrindo:
+Vou gerar um arquivo `/mnt/documents/FILA_PROMPTS.md` com dois blocos:
 
-## O que o documento vai conter
+## Bloco A — Prompts para Claude (alterações nos workflows n8n)
 
-### 1. Checklist dos 109 itens com status atualizado
-Cruzamento de cada item do checklist com:
-- O que já existe no Supabase (tabelas, colunas, RLS)
-- O que já existe nos workflows N8N (WF-00 a WF-14)
-- O que já existe no CRM/frontend (Settings, LojaLeads, etc.)
+São prompts que você cola no Claude que tem acesso à pasta `workflows/`. Cada prompt é autocontido e referencia o workflow específico.
 
-### 2. Problemas encontrados nos workflows
+### Prompt Claude #1: Segurança — Migrar keys hardcoded para Credentials
+- Em TODOS os workflows, trocar headers/campos com `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `EVOLUTION_API_KEY` hardcoded por **Predefined Credential Type** (Supabase API, Header Auth p/ OpenAI, Header Auth p/ Evolution)
+- Remover campos `supabase_key`, `openai_key` dos inputs de sub-workflows
 
-**Bugs/Riscos identificados:**
-- **WF-07 (Sync E-commerce)**: Faz upsert usando `external_id`, mas a tabela `produtos` no Supabase **não tem coluna `external_id` nem `plataforma`** — o upsert vai falhar. Migration necessária.
-- **WF-06 vs WF-04**: Dois workflows de envio de mídia com abordagens diferentes. WF-04 é o principal (usado pelo WF-01). WF-06 é legado (busca por `produto_id` com `supabase_key` vinda do input — frágil). WF-06 deve ser descontinuado.
-- **WF-07 vs WF-03**: Dois workflows de busca RAG. WF-03 é o principal (usado pelo WF-01, com embedding real). WF-07 é legado (espera `openai_key` e `supabase_key` no input). WF-07 deve ser descontinuado.
-- **Service role key exposta**: Vários workflows têm a service_role_key hardcoded no JSON. Risco de segurança se os JSONs forem versionados.
-- **OpenAI API key exposta**: WF-03, WF-07, WF-11 têm API key hardcoded.
-- **WF-02 (Follow-up Cron)**: Busca `follow_ups` mas o Code node referencia campos como `tipo_followup`, `mensagem_template`, `nome`, `interesse`, `instance`, `telefone` — estes vêm da tabela `follow_ups` que **não tem** esses campos (precisaria JOIN com `leads` + `lojas`). O workflow provavelmente falha silenciosamente.
-- **WF-01 Lead Upsert**: Usa `on_conflict=telefone,instance` mas a constraint única real na tabela `leads` é `loja_id,telefone` — possível conflito.
+### Prompt Claude #2: WF-01 — Corrigir on_conflict do Lead Upsert
+- Trocar `on_conflict=telefone,instance` por `on_conflict=loja_id,telefone`
 
-### 3. O que falta no CRM/Frontend
-- **Onboarding wizard**: Não existe fluxo de onboarding para loja preencher todos os campos do Supabase (endereço, maps_link, formas_pagamento, etc.)
-- **Campo webhook read-only na aba Integrações** com URL dinâmica do sync
-- **Página de Pós-Venda** (`LojaPosVenda.tsx`) — verificar se tem conteúdo funcional
-- **NPS pelo WhatsApp** — a coluna `nps_score`/`nps_comentario` existe em leads mas não há trigger automático
+### Prompt Claude #3: WF-02 — Corrigir query do Follow-up com JOIN
+- A query Supabase precisa fazer `select=*,leads(*),lojas(*)` ou equivalente
+- O Code node precisa referenciar `item.leads.nome`, `item.leads.telefone`, etc.
 
-### 4. O que está duplicado
-- `WF-06` e `WF-04`: mesma função (enviar mídia)
-- `WF-07` e `WF-03`: mesma função (buscar produto RAG)
-- `nome_assistente` e `nome_assistente_ia` na tabela `lojas` — confuso
+### Prompt Claude #4: WF-01 — Enriquecer System Prompt
+- Adicionar roteiros de diagnóstico por ambiente (sala, quarto, jantar, colchões, planejados)
+- Regras de cross-sell, objeções, logística, nunca inventar produtos
+- Todas as regras comportamentais dos itens 5-7, 8, 11-29 do checklist
 
-### 5. Otimizações sugeridas
-- Adicionar `external_id` e `plataforma` à tabela `produtos` (necessário pro WF-07)
-- Criar unique constraint `(external_id, loja_id)` para upsert funcionar
-- Wizard de onboarding pós-cadastro da loja
-- Limpar workflows legados (WF-06, WF-07 antigo)
+### Prompt Claude #5: Anti-spam — Delay entre envios de mídia
+- No WF-04 ou no WF-01, adicionar Wait node de 1.5s entre envios de mídia consecutivos
+
+### Prompt Claude #6: Descontinuar WF-06 e WF-07 RAG
+- Marcar como inativos ou remover da pasta
+- Garantir que WF-01 usa apenas WF-03 (RAG) e WF-04 (mídia)
+
+## Bloco B — Prompts para Lovable (alterações no CRM/Supabase)
+
+São prompts que você me envia aqui no Lovable, em fila.
+
+### Prompt Lovable #1: Migration `external_id` + `plataforma`
+- Adicionar colunas + unique index na tabela `produtos`
+
+### Prompt Lovable #2: Unificar `nome_assistente` / `nome_assistente_ia`
+- Deprecar `nome_assistente`, usar apenas `nome_assistente_ia` em todo o CRM
+
+### Prompt Lovable #3: Onboarding Wizard
+- Criar wizard de 4-5 passos pós-primeiro-login para loja preencher campos essenciais
+
+### Prompt Lovable #4: Implementar `gerar_cobranca` funcional
+- Integrar edge function agent-tools com checkout_url do produto como fallback
+
+### Prompt Lovable #5: Atualizar auditoria e roadmap
+- Marcar itens concluídos conforme formos resolvendo
 
 ## Implementação
-1. Gerar o arquivo `/mnt/documents/AUDITORIA_COMPLETA.md` via script Python
-2. Incluir todas as 109 linhas do checklist com ✅/⚠️/❌
-3. Seções separadas para Bugs, Duplicatas, Gaps do CRM, Otimizações
+- Um único arquivo `.md` em `/mnt/documents/FILA_PROMPTS.md`
+- Cada prompt é copiar-colar direto, autocontido
+- Instruções claras de qual enviar primeiro
 
-Não vou alterar nenhum arquivo do projeto — apenas gerar o documento de auditoria.
