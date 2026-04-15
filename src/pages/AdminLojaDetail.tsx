@@ -324,6 +324,7 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                 horariosEspeciais={(form.horarios_especiais as HorariosEspeciais) || {}}
                 onHorariosEspeciaisChange={(v) => set("horarios_especiais", v)}
               />
+              <div>
                 <Label>Endereço completo</Label>
                 <Input placeholder="Rua, número, bairro, cidade - UF" value={form.endereco || ""} onChange={(e) => set("endereco", e.target.value)} />
               </div>
