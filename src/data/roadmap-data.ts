@@ -168,7 +168,7 @@ export const checklistBlocks: ChecklistBlock[] = [
     name: "12. Regras de Negócio por Loja",
     description: "Configurações específicas de cada loja: horário, endereço, formas de pagamento, política de troca, prazo de entrega, frete grátis e plataforma de e-commerce.",
     items: [
-      { number: 76, functionality: "Horário de funcionamento", description: "A IA sabe o horário da loja e avisa o cliente quando tá fechado. Bug ativo: agente respondendo fora do horário mesmo dentro do expediente — fix em andamento.", status: "in_progress", priority: "Alta", observations: "horario_inicio + horario_fim + dias_funcionamento — debug _debug_horario adicionado no WF-01 pra diagnosticar" },
+      { number: 76, functionality: "Horário de funcionamento com horários especiais", description: "Checkboxes com dias da semana (nomes completos) + horário padrão + horários especiais por dia (ex: Domingo 10:00-14:00). Campo horarios_especiais JSONB.", status: "done", priority: "Alta", observations: "DaysSchedulePicker component + horarios_especiais JSONB. Implementado no Wizard, Settings e AdminLojaDetail." },
       { number: 77, functionality: "Endereço da loja", description: "Endereço configurável. A IA manda quando o cliente pergunta onde fica.", status: "done", priority: "Alta", observations: "Campo endereco na tabela lojas" },
       { number: 78, functionality: "Link do Google Maps", description: "Manda o link clicável do Google Maps pra o cliente ir direto na loja.", status: "done", priority: "Alta", observations: "Campo maps_link na tabela lojas" },
       { number: 79, functionality: "Formas de pagamento", description: "Pix, cartão, boleto, parcelamento — a IA sabe o que a loja aceita e informa.", status: "done", priority: "Alta", observations: "Campo formas_pagamento na tabela lojas" },
@@ -321,6 +321,8 @@ export interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  { date: "2026-04-15T20:00:00", title: "🐛 Fix tela branca aba Integrações", description: "SelectItem do Radix UI não aceita value vazio. Corrigido 'Nenhuma' de value='' para value='none' em Settings.tsx.", type: "fix" },
+  { date: "2026-04-15T19:30:00", title: "✅ Dias de funcionamento com horários especiais", description: "Checkboxes com nomes completos (Segunda-feira a Domingo) + horários especiais por dia. Novo componente DaysSchedulePicker reutilizado no Wizard, Settings e AdminLojaDetail. Migration horarios_especiais JSONB.", type: "feature" },
   { date: "2026-04-15T19:00:00", title: "✅ Onboarding Wizard para Lojas", description: "Wizard de 5 etapas (Identidade → Localização → Logística → IA → E-commerce) aparece automaticamente quando campos essenciais estão vazios.", type: "feature" },
   { date: "2026-04-15T18:30:00", title: "✅ Unificação nome_assistente → nome_assistente_ia", description: "Campos duplicados unificados. Migration copiou dados, frontend atualizado em 4 arquivos, coluna antiga marcada DEPRECATED.", type: "fix" },
   { date: "2026-04-15T18:00:00", title: "✅ gerar_cobranca funcional", description: "Edge function agent-tools: 3 cenários (checkout produto → checkout loja → pagamento manual). Registra venda + log.", type: "feature" },
