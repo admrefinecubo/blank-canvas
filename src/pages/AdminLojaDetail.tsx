@@ -73,6 +73,15 @@ export default function AdminLojaDetail() {
     if (loja?.clinic_id) checkWhatsAppStatus();
   }, [loja?.clinic_id]);
 
+  // Auto-polling every 15s while status is "pending"
+  useEffect(() => {
+    if (whatsappStatus !== "pending" || !loja?.clinic_id) return;
+    const interval = setInterval(() => {
+      checkWhatsAppStatus();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [whatsappStatus, loja?.clinic_id]);
+
   const checkWhatsAppStatus = async () => {
     if (!loja?.clinic_id) return;
     setCheckingStatus(true);
@@ -389,7 +398,7 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                   </div>
                   <div className="flex items-center gap-2">
                     {statusBadge}
-                    <Button variant="ghost" size="icon" onClick={checkWhatsAppStatus} disabled={checkingStatus}>
+                    <Button variant="ghost" size="icon" onClick={checkWhatsAppStatus} disabled={checkingStatus} title="Verificar status">
                       <RefreshCw className={`h-4 w-4 ${checkingStatus ? "animate-spin" : ""}`} />
                     </Button>
                   </div>
@@ -408,7 +417,7 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {whatsappStatus === "disconnected" || whatsappStatus === "error" ? (
+                  {(whatsappStatus === "disconnected" || whatsappStatus === "error") && !form.instance && (
                     <Button
                       onClick={() => createInstanceMutation.mutate()}
                       disabled={createInstanceMutation.isPending || !form.instance}
@@ -417,7 +426,20 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                       <QrCode className="h-4 w-4" />
                       {createInstanceMutation.isPending ? "Criando..." : "Criar Instância e Conectar"}
                     </Button>
-                  ) : whatsappStatus === "pending" ? (
+                  )}
+
+                  {(whatsappStatus === "disconnected" || whatsappStatus === "error") && !!form.instance && (
+                    <Button
+                      onClick={() => reconnectMutation.mutate()}
+                      disabled={reconnectMutation.isPending}
+                      className="gap-2"
+                    >
+                      <Wifi className="h-4 w-4" />
+                      {reconnectMutation.isPending ? "Reconectando..." : "Reconectar"}
+                    </Button>
+                  )}
+
+                  {whatsappStatus === "pending" && (
                     <Button
                       onClick={() => reconnectMutation.mutate()}
                       disabled={reconnectMutation.isPending}
@@ -427,7 +449,7 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                       <QrCode className="h-4 w-4" />
                       {reconnectMutation.isPending ? "Obtendo QR..." : "Obter QR Code"}
                     </Button>
-                  ) : null}
+                  )}
 
                   {whatsappStatus === "connected" && (
                     <Button
