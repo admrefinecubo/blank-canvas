@@ -82,6 +82,7 @@ export default function LojaOnboardingWizard({ loja, open, onClose }: Props) {
     horario_inicio: loja.horario_inicio || "",
     horario_fim: loja.horario_fim || "",
     dias_funcionamento: loja.dias_funcionamento || "",
+    horarios_especiais: (loja.horarios_especiais as HorariosEspeciais) || {},
     formas_pagamento: loja.formas_pagamento || "",
     prazo_entrega: loja.prazo_entrega || "",
     frete_gratis_acima: loja.frete_gratis_acima || "",
