@@ -205,6 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     setSession(data.session);
+    sessionRef.current = data.session;
     setUser(data.user);
     setImpersonatedClinicId(null);
     localStorage.removeItem('impersonated_clinic_id');
