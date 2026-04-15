@@ -68,7 +68,6 @@ Deno.serve(async (req) => {
           instanceName: instName,
           integration: "WHATSAPP-BAILEYS",
           qrcode: true,
-          rejectCall: true,
           groupsIgnore: true,
         }),
       });
@@ -85,17 +84,18 @@ Deno.serve(async (req) => {
         qrcode = connectData?.base64 || connectData?.qrcode?.base64 || null;
       }
 
-      // 2. Set settings (ignore groups, reject calls)
+      // 2. Set settings
       try {
         await fetch(`${apiUrl}/settings/set/${instName}`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: apiKey },
           body: JSON.stringify({
-            rejectCall: true,
+            rejectCall: false,
             groupsIgnore: true,
-            alwaysOnline: true,
+            alwaysOnline: false,
             readMessages: false,
             readStatus: false,
+            syncFullHistory: true,
           }),
         });
       } catch (e) {
@@ -112,11 +112,9 @@ Deno.serve(async (req) => {
               enabled: true,
               url: N8N_WEBHOOK_URL,
               webhookByEvents: false,
-              webhookBase64: false,
+              webhookBase64: true,
               events: [
                 "MESSAGES_UPSERT",
-                "CONNECTION_UPDATE",
-                "QRCODE_UPDATED",
               ],
             }),
           });
@@ -152,11 +150,12 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: apiKey },
         body: JSON.stringify({
-          rejectCall: settings.rejectCall ?? true,
+          rejectCall: settings.rejectCall ?? false,
           groupsIgnore: settings.groupsIgnore ?? true,
-          alwaysOnline: settings.alwaysOnline ?? true,
+          alwaysOnline: settings.alwaysOnline ?? false,
           readMessages: settings.readMessages ?? false,
           readStatus: settings.readStatus ?? false,
+          syncFullHistory: settings.syncFullHistory ?? true,
         }),
       });
 
@@ -170,17 +169,15 @@ Deno.serve(async (req) => {
         await fetch(`${apiUrl}/webhook/set/${instName}`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: apiKey },
-          body: JSON.stringify({
-            enabled: true,
-            url: settings.webhookUrl || N8N_WEBHOOK_URL,
-            webhookByEvents: false,
-            webhookBase64: false,
-            events: settings.events || [
-              "MESSAGES_UPSERT",
-              "CONNECTION_UPDATE",
-              "QRCODE_UPDATED",
-            ],
-          }),
+            body: JSON.stringify({
+              enabled: true,
+              url: settings.webhookUrl || N8N_WEBHOOK_URL,
+              webhookByEvents: false,
+              webhookBase64: true,
+              events: settings.events || [
+                "MESSAGES_UPSERT",
+              ],
+            }),
         });
       }
 

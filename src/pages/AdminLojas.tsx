@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Store, Settings2, Copy, Trash2, Plus, Loader2, Building2, Link2 } from "lucide-react";
+import { Store, Settings2, Copy, Trash2, Plus, Loader2, Building2, Link2, QrCode, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -56,8 +56,11 @@ export default function AdminLojas() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-   const [createForm, setCreateForm] = useState({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia", instance: "" });
+   const [createForm, setCreateForm] = useState({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia" });
    const [linkForm, setLinkForm] = useState({ lojaId: null as string | null, clinic_id: "" });
+   const [qrDialog, setQrDialog] = useState(false);
+   const [qrCode, setQrCode] = useState<string | null>(null);
+   const [creatingInstance, setCreatingInstance] = useState(false);
 
   const { data: lojas, isLoading } = useQuery({
     queryKey: ["admin-lojas"],
@@ -97,24 +100,53 @@ export default function AdminLojas() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      // Auto-generate instance name from loja name
+      const instanceName = createForm.nome_loja
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 40) || "loja";
+
       const { data, error } = await supabase
         .from("lojas")
         .insert({
           clinic_id: createForm.clinic_id,
           nome_loja: createForm.nome_loja,
           nome_assistente_ia: createForm.nome_assistente_ia,
-          instance: createForm.instance,
+          instance: instanceName,
         } as any)
-        .select("id")
+        .select("id, clinic_id")
         .single();
       if (error) throw error;
+
+      // Auto-create instance on Evolution API
+      try {
+        setCreatingInstance(true);
+        const { data: evoData, error: evoErr } = await supabase.functions.invoke("evolution-api", {
+          body: {
+            action: "create_instance",
+            clinic_id: data.clinic_id,
+            instance_name: instanceName,
+          },
+        });
+        if (!evoErr && evoData?.qrcode) {
+          setQrCode(evoData.qrcode);
+          setQrDialog(true);
+        }
+      } catch (e) {
+        console.error("Evolution API error:", e);
+      } finally {
+        setCreatingInstance(false);
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-lojas"] });
       setShowCreate(false);
-      setCreateForm({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia", instance: "" });
-      toast({ title: "Loja criada com sucesso!" });
+      setCreateForm({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia" });
+      toast({ title: "Loja criada com sucesso!", description: qrCode ? "Escaneie o QR Code para conectar o WhatsApp." : undefined });
     },
     onError: (e: any) => toast({ title: "Erro ao criar loja", description: e.message, variant: "destructive" }),
   });
@@ -348,11 +380,7 @@ export default function AdminLojas() {
               <Label>Nome da Assistente IA</Label>
               <Input placeholder="Sofia" value={createForm.nome_assistente_ia} onChange={(e) => setCreateForm((f) => ({ ...f, nome_assistente_ia: e.target.value }))} />
             </div>
-            <div>
-              <Label>Instance Evolution *</Label>
-              <Input placeholder="minha-loja" value={createForm.instance} onChange={(e) => setCreateForm((f) => ({ ...f, instance: e.target.value }))} />
-              <p className="mt-1 text-xs text-muted-foreground">Identificador da instância na Evolution API</p>
-            </div>
+            <p className="text-xs text-muted-foreground">A instância WhatsApp será criada automaticamente ao salvar.</p>
             {!clinics.length && !isLoadingClinics ? (
               <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                 Crie a conta do cliente em <code>/admin</code> antes de cadastrar a loja.
@@ -361,8 +389,8 @@ export default function AdminLojas() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
-            <Button onClick={() => createMutation.mutate()} disabled={!createForm.clinic_id || !createForm.nome_loja || !createForm.instance || createMutation.isPending || !clinics.length}>
-              {createMutation.isPending ? "Criando..." : "Criar Loja"}
+            <Button onClick={() => createMutation.mutate()} disabled={!createForm.clinic_id || !createForm.nome_loja || createMutation.isPending || creatingInstance || !clinics.length}>
+              {createMutation.isPending || creatingInstance ? "Criando..." : "Criar Loja"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -433,6 +461,33 @@ export default function AdminLojas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* QR Code Dialog */}
+      <Dialog open={qrDialog} onOpenChange={setQrDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              Escaneie o QR Code
+            </DialogTitle>
+            <DialogDescription>
+              Abra o WhatsApp no celular → Menu → Dispositivos conectados → Conectar dispositivo
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4">
+            {qrCode ? (
+              <img src={`data:image/png;base64,${qrCode}`} alt="QR Code" className="h-64 w-64" />
+            ) : (
+              <p className="text-muted-foreground">QR Code não disponível</p>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setQrDialog(false)}>
+              Já escaneei
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
