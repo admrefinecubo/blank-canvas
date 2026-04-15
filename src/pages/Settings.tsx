@@ -1051,9 +1051,9 @@ export default function SettingsPage() {
           <PostProcedureTab clinicId={effectiveClinicId} />
         </TabsContent>
 
-        <TabsContent value="integrations" className="mt-4 space-y-4">
+        {showAdminControls && <TabsContent value="integrations" className="mt-4 space-y-4">
           <IntegrationsTab clinicId={effectiveClinicId} activeLojaId={activeLojaId || ""} />
-        </TabsContent>
+        </TabsContent>}
 
         <TabsContent value="lgpd" className="mt-4 space-y-4">
           <LgpdTab clinicId={effectiveClinicId} />
