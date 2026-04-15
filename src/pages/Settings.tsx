@@ -1,17 +1,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, Bot, Loader2, Target, History, Eye } from "lucide-react";
+import { WifiOff, Wifi, Plus, Trash2, UserPlus, Users, Shield, FileText, Calendar, Bot, Loader2, Target, History, Eye, Store, ShoppingCart, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -23,6 +30,38 @@ const ROLE_LABELS: Record<string, string> = {
   clinic_owner: "Proprietário",
   clinic_staff: "Vendedor",
   clinic_receptionist: "Recepcionista",
+};
+
+const WEEKDAYS = [
+  { value: "dom", label: "Dom" },
+  { value: "seg", label: "Seg" },
+  { value: "ter", label: "Ter" },
+  { value: "qua", label: "Qua" },
+  { value: "qui", label: "Qui" },
+  { value: "sex", label: "Sex" },
+  { value: "sab", label: "Sáb" },
+];
+
+const ECOMMERCE_PLATFORMS = [
+  { value: "", label: "Nenhuma" },
+  { value: "shopify", label: "Shopify" },
+  { value: "nuvemshop", label: "Nuvemshop" },
+  { value: "tray", label: "Tray" },
+  { value: "woocommerce", label: "WooCommerce" },
+  { value: "vtex", label: "VTEX" },
+  { value: "outra", label: "Outra" },
+];
+
+const PLATFORM_PLACEHOLDERS: Record<string, string> = {
+  shopify: "https://sualojaexemplo.myshopify.com",
+  nuvemshop: "https://sualojaexemplo.lojaintegrada.com.br",
+  default: "https://...",
+};
+
+const PLATFORM_INSTRUCTIONS: Record<string, string> = {
+  shopify: "Para integrar com Shopify: (1) Acesse Shopify Admin → Apps → Develop Apps → Create App. (2) Permissões: read_products, read_inventory. (3) Cole sua Admin API Key abaixo.",
+  nuvemshop: "Acesse Painel → Configurações → API → Gere o token de acesso. Cole abaixo.",
+  default: "Configure a URL do webhook da sua plataforma para sincronizar produtos e estoque automaticamente.",
 };
 
 // ===================== LGPD Tab =====================
@@ -107,11 +146,78 @@ function LgpdTab({ clinicId }: { clinicId: string }) {
 }
 
 // ===================== Integrations Tab =====================
-function IntegrationsTab({ clinicId }: { clinicId: string }) {
+function IntegrationsTab({ clinicId, activeLojaId }: { clinicId: string; activeLojaId: string }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [gcalForm, setGcalForm] = useState({ api_key: "", calendar_id: "" });
   const [showGcalSetup, setShowGcalSetup] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  // E-commerce local state
+  const { data: lojaEcom } = useQuery({
+    queryKey: ["ecom-loja", activeLojaId],
+    queryFn: async () => {
+      if (!activeLojaId) return null;
+      const { data } = await supabase.from("lojas").select("plataforma_ecommerce, checkout_base_url, ecommerce_api_key").eq("id", activeLojaId).single();
+      return data;
+    },
+    enabled: !!activeLojaId,
+  });
+
+  const [ecomForm, setEcomForm] = useState({ plataforma: "", checkout_url: "", api_key: "" });
+
+  useEffect(() => {
+    if (lojaEcom) {
+      setEcomForm({
+        plataforma: (lojaEcom as any).plataforma_ecommerce || "",
+        checkout_url: (lojaEcom as any).checkout_base_url || "",
+        api_key: (lojaEcom as any).ecommerce_api_key || "",
+      });
+    }
+  }, [lojaEcom]);
+
+  const saveEcomMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeLojaId) throw new Error("Nenhuma loja");
+      const { error } = await supabase.from("lojas").update({
+        plataforma_ecommerce: ecomForm.plataforma.trim() || null,
+        checkout_base_url: ecomForm.checkout_url.trim() || null,
+        ecommerce_api_key: ecomForm.api_key.trim() || null,
+      } as any).eq("id", activeLojaId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ecom-loja"] });
+      queryClient.invalidateQueries({ queryKey: ["settings-loja"] });
+      toast({ title: "Configurações de e-commerce salvas!" });
+    },
+    onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const testConnection = async () => {
+    const webhookUrl = import.meta.env.VITE_WF_ECOMMERCE_TEST_URL;
+    if (!webhookUrl) {
+      setTestResult({ ok: false, message: "URL de teste não configurada (VITE_WF_ECOMMERCE_TEST_URL)." });
+      return;
+    }
+    setTestingConnection(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loja_id: activeLojaId, plataforma: ecomForm.plataforma, api_key: ecomForm.api_key, checkout_base_url: ecomForm.checkout_url }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) setTestResult({ ok: true, message: data.message || "Conexão bem-sucedida!" });
+      else setTestResult({ ok: false, message: data.error || `Erro ${res.status}` });
+    } catch (err: any) {
+      setTestResult({ ok: false, message: err.message || "Falha na conexão" });
+    } finally {
+      setTestingConnection(false);
+    }
+  };
 
   const { data: evolutionStatus } = useQuery({
     queryKey: ["evolution-status-settings", clinicId],
@@ -138,9 +244,72 @@ function IntegrationsTab({ clinicId }: { clinicId: string }) {
 
   const evConnected = evolutionStatus?.status === "connected";
   const gcConnected = gcalStatus?.status === "connected";
+  const showApiKey = ["shopify", "nuvemshop"].includes(ecomForm.plataforma);
+  const checkoutPlaceholder = PLATFORM_PLACEHOLDERS[ecomForm.plataforma] || PLATFORM_PLACEHOLDERS.default;
+  const instructions = ecomForm.plataforma ? (PLATFORM_INSTRUCTIONS[ecomForm.plataforma] || PLATFORM_INSTRUCTIONS.default) : "";
 
   return (
     <>
+      {/* E-commerce Platform Card */}
+      {activeLojaId && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-primary" /><CardTitle className="text-sm">Plataforma de E-commerce</CardTitle></div>
+            <CardDescription>Configure a integração com sua plataforma de vendas online.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label>Plataforma</Label>
+                <Select value={ecomForm.plataforma} onValueChange={v => { setEcomForm(f => ({ ...f, plataforma: v })); setTestResult(null); }}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a plataforma" /></SelectTrigger>
+                  <SelectContent>
+                    {ECOMMERCE_PLATFORMS.map(p => <SelectItem key={p.value || "none"} value={p.value}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>URL base do checkout</Label>
+                <Input value={ecomForm.checkout_url} onChange={e => setEcomForm(f => ({ ...f, checkout_url: e.target.value }))} placeholder={checkoutPlaceholder} />
+              </div>
+            </div>
+
+            {instructions && (
+              <div className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+                <p>{instructions}</p>
+              </div>
+            )}
+
+            {showApiKey && (
+              <div>
+                <Label>API Key da plataforma</Label>
+                <Input type="password" value={ecomForm.api_key} onChange={e => setEcomForm(f => ({ ...f, api_key: e.target.value }))} placeholder="Cole aqui sua API Key" />
+              </div>
+            )}
+
+            {testResult && (
+              <div className={`flex items-center gap-2 rounded-lg border p-3 text-sm ${testResult.ok ? "border-green-500/30 bg-green-500/10 text-green-600" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
+                {testResult.ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                {testResult.message}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button onClick={() => saveEcomMutation.mutate()} disabled={saveEcomMutation.isPending}>
+                {saveEcomMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Salvar
+              </Button>
+              {ecomForm.plataforma && (
+                <Button variant="outline" onClick={testConnection} disabled={testingConnection}>
+                  {testingConnection && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Testar conexão
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="bg-card">
         <CardHeader><CardTitle className="text-sm">Integrações</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -532,6 +701,7 @@ export default function SettingsPage() {
     dias_funcionamento: "",
     desconto_followup_orcamento: "",
     plataforma_ecommerce: "",
+    ecommerce_api_key: "",
   });
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
   const [newMember, setNewMember] = useState({ email: "", password: "", role: "clinic_staff" });
@@ -559,7 +729,7 @@ export default function SettingsPage() {
       if (!activeLojaId) return null;
       const { data, error } = await supabase
         .from("lojas")
-        .select("id, nome_loja, nome_assistente, tom_voz, descricao_loja, especialidades, regras_personalidade, horario_inicio, horario_fim, formas_pagamento, politica_troca, prazo_entrega, frete_gratis_acima, montagem_disponivel, desconto_carrinho_abandonado, desconto_promocao_nao_respondida, checkout_base_url, dias_funcionamento, desconto_followup_orcamento, plataforma_ecommerce")
+        .select("id, nome_loja, nome_assistente, tom_voz, descricao_loja, especialidades, regras_personalidade, horario_inicio, horario_fim, formas_pagamento, politica_troca, prazo_entrega, frete_gratis_acima, montagem_disponivel, desconto_carrinho_abandonado, desconto_promocao_nao_respondida, checkout_base_url, dias_funcionamento, desconto_followup_orcamento, plataforma_ecommerce, ecommerce_api_key")
         .eq("id", activeLojaId)
         .single();
 
@@ -594,6 +764,7 @@ export default function SettingsPage() {
       dias_funcionamento: activeLoja.dias_funcionamento || "seg,ter,qua,qui,sex",
       desconto_followup_orcamento: activeLoja.desconto_followup_orcamento?.toString() || "",
       plataforma_ecommerce: activeLoja.plataforma_ecommerce || "",
+      ecommerce_api_key: (activeLoja as any).ecommerce_api_key || "",
     });
   }, [activeLoja]);
 
@@ -671,7 +842,8 @@ export default function SettingsPage() {
           dias_funcionamento: storeForm.dias_funcionamento.trim() || null,
           desconto_followup_orcamento: storeForm.desconto_followup_orcamento ? parseFloat(storeForm.desconto_followup_orcamento) : null,
           plataforma_ecommerce: storeForm.plataforma_ecommerce.trim() || null,
-        })
+          ecommerce_api_key: (storeForm as any).ecommerce_api_key?.trim() || null,
+        } as any)
         .eq("id", activeLojaId);
 
       if (error) throw error;
@@ -694,7 +866,7 @@ export default function SettingsPage() {
           {showAdminControls && <TabsTrigger value="team">Equipe</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="post-procedure">Pós-Venda</TabsTrigger>}
-          {showAdminControls && <TabsTrigger value="integrations">Integrações</TabsTrigger>}
+          <TabsTrigger value="integrations">Integrações</TabsTrigger>
           {showAdminControls && <TabsTrigger value="lgpd">LGPD</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="audit"><History className="h-3.5 w-3.5 mr-1" />Auditoria</TabsTrigger>}
         </TabsList>
@@ -722,10 +894,39 @@ export default function SettingsPage() {
             <CardHeader><CardTitle className="text-sm">Horário de Funcionamento</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div><Label>Horário de abertura</Label><Input type="time" value={showAdminControls ? (activeLoja?.horario_inicio || "08:00") : storeForm.horario_inicio} onChange={e => setStoreForm(f => ({ ...f, horario_inicio: e.target.value }))} disabled /></div>
-                <div><Label>Horário de fechamento</Label><Input type="time" value={showAdminControls ? (activeLoja?.horario_fim || "18:00") : storeForm.horario_fim} onChange={e => setStoreForm(f => ({ ...f, horario_fim: e.target.value }))} disabled /></div>
+                <div><Label>Horário de abertura</Label><Input type="time" value={storeForm.horario_inicio} onChange={e => setStoreForm(f => ({ ...f, horario_inicio: e.target.value }))} /></div>
+                <div><Label>Horário de fechamento</Label><Input type="time" value={storeForm.horario_fim} onChange={e => setStoreForm(f => ({ ...f, horario_fim: e.target.value }))} /></div>
               </div>
-              <p className="text-sm text-muted-foreground">{showAdminControls ? "Os horários operacionais da loja são editados no detalhe da loja em Admin > Lojas." : "Os horários da loja agora são editados na aba Agente de IA."}</p>
+              <div>
+                <Label className="mb-2 block">Dias de funcionamento</Label>
+                <div className="flex flex-wrap gap-3">
+                  {WEEKDAYS.map(day => {
+                    const dias = storeForm.dias_funcionamento.split(",").map(d => d.trim()).filter(Boolean);
+                    const checked = dias.includes(day.value);
+                    return (
+                      <label key={day.value} className="flex items-center gap-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            const next = v
+                              ? [...dias, day.value]
+                              : dias.filter(d => d !== day.value);
+                            const ordered = WEEKDAYS.map(w => w.value).filter(w => next.includes(w));
+                            setStoreForm(f => ({ ...f, dias_funcionamento: ordered.join(",") }));
+                          }}
+                        />
+                        <span className="text-sm">{day.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              {!showAdminControls && (
+                <Button onClick={() => saveAiAgentMutation.mutate()} disabled={saveAiAgentMutation.isPending} size="sm">
+                  {saveAiAgentMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Salvar horário
+                </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -753,19 +954,6 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader><CardTitle className="text-sm">Horário de Funcionamento</CardTitle></CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label>Horário início</Label>
-                    <Input type="time" value={storeForm.horario_inicio} onChange={e => setStoreForm(f => ({ ...f, horario_inicio: e.target.value }))} />
-                  </div>
-                  <div>
-                    <Label>Horário fim</Label>
-                    <Input type="time" value={storeForm.horario_fim} onChange={e => setStoreForm(f => ({ ...f, horario_fim: e.target.value }))} />
-                  </div>
-                </CardContent>
-              </Card>
 
               <Card>
                 <CardHeader><CardTitle className="text-sm">Regras Comerciais</CardTitle></CardHeader>
@@ -813,23 +1001,11 @@ export default function SettingsPage() {
               </Card>
 
               <Card>
-                <CardHeader><CardTitle className="text-sm">E-commerce & Checkout</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm">Descontos de Follow-up</CardTitle></CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label>Plataforma de e-commerce</Label>
-                    <Input value={storeForm.plataforma_ecommerce} onChange={e => setStoreForm(f => ({ ...f, plataforma_ecommerce: e.target.value }))} placeholder="Ex: Nuvemshop, Shopify, Tray" />
-                  </div>
-                  <div>
-                    <Label>URL base de checkout</Label>
-                    <Input value={storeForm.checkout_base_url} onChange={e => setStoreForm(f => ({ ...f, checkout_base_url: e.target.value }))} placeholder="Ex: https://sualoja.nuvemshop.com.br/checkout" />
-                  </div>
                   <div>
                     <Label>Desconto follow-up orçamento %</Label>
                     <Input type="number" min="0" max="100" step="0.01" value={storeForm.desconto_followup_orcamento} onChange={e => setStoreForm(f => ({ ...f, desconto_followup_orcamento: e.target.value }))} placeholder="10" />
-                  </div>
-                  <div>
-                    <Label>Dias de funcionamento</Label>
-                    <Input value={storeForm.dias_funcionamento} onChange={e => setStoreForm(f => ({ ...f, dias_funcionamento: e.target.value }))} placeholder="Ex: seg,ter,qua,qui,sex,sab" />
                   </div>
                 </CardContent>
               </Card>
@@ -903,7 +1079,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="integrations" className="mt-4 space-y-4">
-          <IntegrationsTab clinicId={effectiveClinicId} />
+          <IntegrationsTab clinicId={effectiveClinicId} activeLojaId={activeLojaId || ""} />
         </TabsContent>
 
         <TabsContent value="lgpd" className="mt-4 space-y-4">
