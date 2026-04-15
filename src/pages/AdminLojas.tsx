@@ -56,8 +56,11 @@ export default function AdminLojas() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-   const [createForm, setCreateForm] = useState({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia", instance: "" });
+   const [createForm, setCreateForm] = useState({ clinic_id: "", nome_loja: "", nome_assistente_ia: "Sofia" });
    const [linkForm, setLinkForm] = useState({ lojaId: null as string | null, clinic_id: "" });
+   const [qrDialog, setQrDialog] = useState(false);
+   const [qrCode, setQrCode] = useState<string | null>(null);
+   const [creatingInstance, setCreatingInstance] = useState(false);
 
   const { data: lojas, isLoading } = useQuery({
     queryKey: ["admin-lojas"],
