@@ -115,7 +115,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const nextRoles = await fetchRolesWithRetry(nextSession.user.id);
     setRoles(nextRoles);
+    rolesRef.current = nextRoles;
     setLastHydratedUserId(nextSession.user.id);
+    lastHydratedUserIdRef.current = nextSession.user.id;
     setLoading(false);
   };
 
