@@ -115,7 +115,7 @@ export const checklistBlocks: ChecklistBlock[] = [
       { number: 50, functionality: "Agendar follow-up automático", description: "Agenda lembretes automáticos: 'medir o espaço', 'finalizar compra', 'ver orçamento pendente'.", status: "done", priority: "Alta", observations: "Implementado no agent-tools + tabela follow_ups" },
       { number: 51, functionality: "Cadastrar lead no CRM", description: "Cadastra o cliente automaticamente com nome, telefone, e-mail, interesse e de onde veio.", status: "done", priority: "Alta", observations: "Cadastro automático via agent-tools" },
       { number: 52, functionality: "Mover no funil de vendas", description: "Move o cliente entre as etapas: novo → qualificado → orçamento → negociação → fechado.", status: "done", priority: "Alta", observations: "mover_pipeline no agent-tools" },
-      { number: 53, functionality: "Gerar link de pagamento", description: "Gera link de cobrança pra o cliente pagar online. Depende do gateway de pagamento do cliente.", status: "in_progress", priority: "Alta", observations: "WF-10 preparado — aguardando gateway do cliente" },
+      { number: 53, functionality: "Gerar link de pagamento", description: "Gera link de cobrança pra o cliente pagar online. Depende do gateway de pagamento do cliente.", status: "done", priority: "Alta", observations: "gerar_cobranca implementado: checkout do produto → checkout da loja → pagamento manual. Registra em vendas + logs_execucao." },
       { number: 54, functionality: "Transferir para vendedor humano", description: "Quando precisa de humano: transfere com resumo completo da conversa e nível de prioridade.", status: "done", priority: "Alta", observations: "WF-05 + WF-12 + handoff.ts" },
     ],
   },
@@ -267,12 +267,12 @@ export const workflows: Workflow[] = [
   },
   {
     id: "WF-06",
-    name: "Enviar Mídia WhatsApp (v2)",
+    name: "Enviar Mídia WhatsApp (v2) — DESCONTINUADO",
     nodes: ["Execute Workflow Trigger", "HTTP Request", "If", "Evolution API", "Code"],
   },
   {
     id: "WF-07",
-    name: "Buscar Produto RAG (v2)",
+    name: "Buscar Produto RAG (v2) — DESCONTINUADO",
     nodes: ["Execute Workflow Trigger", "HTTP Request", "Code"],
   },
   {
@@ -321,6 +321,16 @@ export interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  { date: "2026-04-15T19:00:00", title: "✅ Onboarding Wizard para Lojas", description: "Wizard de 5 etapas (Identidade → Localização → Logística → IA → E-commerce) aparece automaticamente quando campos essenciais estão vazios.", type: "feature" },
+  { date: "2026-04-15T18:30:00", title: "✅ Unificação nome_assistente → nome_assistente_ia", description: "Campos duplicados unificados. Migration copiou dados, frontend atualizado em 4 arquivos, coluna antiga marcada DEPRECATED.", type: "fix" },
+  { date: "2026-04-15T18:00:00", title: "✅ gerar_cobranca funcional", description: "Edge function agent-tools: 3 cenários (checkout produto → checkout loja → pagamento manual). Registra venda + log.", type: "feature" },
+  { date: "2026-04-15T17:30:00", title: "✅ Migration external_id + plataforma", description: "Colunas external_id, plataforma e synced_at adicionadas à tabela produtos. Unique index para upsert do WF-07 Sync.", type: "infra" },
+  { date: "2026-04-15T17:00:00", title: "🔒 RLS habilitado em juliana_crisis_log + search_path fixado", description: "Todas as tabelas agora têm RLS. Funções mutable com search_path fixo.", type: "fix" },
+  { date: "2026-04-15T16:30:00", title: "🔒 Segurança: Keys migradas para Credentials", description: "SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY e EVOLUTION_API_KEY removidas dos workflows e migradas para Predefined Credential Types no N8N.", type: "infra" },
+  { date: "2026-04-15T16:00:00", title: "✅ WF-01 on_conflict corrigido", description: "Upsert de leads corrigido: on_conflict=loja_id,telefone (antes era telefone,instance).", type: "fix" },
+  { date: "2026-04-15T15:30:00", title: "✅ WF-02 Follow-up com JOIN correto", description: "Query corrigida com select=*,leads(*),lojas(*). Code node atualizado para referenciar dados relacionais.", type: "fix" },
+  { date: "2026-04-15T15:00:00", title: "✅ WF-06/WF-07 legados descontinuados", description: "Workflows v2 marcados como inativos. WF-01 usa apenas WF-03 (RAG) e WF-04 (mídia).", type: "infra" },
+  { date: "2026-04-15T14:30:00", title: "✅ Anti-spam delay entre mídias", description: "Wait node de 1.5s adicionado entre envios consecutivos no WF-04.", type: "fix" },
   { date: "2026-04-15T04:00:00", title: "🔥 Seção Promoções em Destaque no Catálogo", description: "Nova seção visual na página LojaCatalogo com cards de produtos em promoção: badge PROMOÇÃO, foto, preço riscado, % OFF, estoque e botão editar. Renderização condicional.", type: "feature" },
   { date: "2026-04-15T03:30:00", title: "🐛 Fix WF-05: lead_id undefined no Supabase", description: "Corrigido bug onde o nó 'Supabase - Buscar Histórico Completo' recebia lead_id undefined, causando falha na busca do histórico durante transbordo.", type: "fix" },
   { date: "2026-04-15T03:00:00", title: "🐛 Fix WF-01: Filtro de áudio no IF Validar Payload", description: "Adicionado filtro para ignorar mensagens de áudio (audioMessage) no IF de validação do webhook, evitando auto-resposta em áudios.", type: "fix" },
