@@ -1,41 +1,34 @@
 
 
-# Auditoria: Configurações Admin — Problemas Encontrados
+# Limpeza: Settings do Admin vs Lojista
 
-## Diagnóstico
+## Problemas encontrados
 
-A página `/configuracoes` (Settings.tsx) é **compartilhada** entre admin e cliente. A lógica `showAdminControls = isPlatformAdmin && appMode === "admin"` decide quais tabs aparecem. Quando o admin acessa, ele vê: **Conta, Equipe, Metas, Pós-Venda, Integrações, LGPD, Auditoria**.
+1. **"Implantação / Equipe"** no sidebar do admin (`AppLayout.tsx` linha 36) aponta para `/settings` — que é a página do **lojista**. Admin não deveria ver essa página.
 
-### Problemas identificados:
+2. **"Agente de IA"** aparece em `/settings` (tab visível para todos, incluindo admin). Essa config é **exclusiva do lojista** — o admin já configura o agente dentro de `/admin/lojas/:id` na tab "Identidade".
 
-**1. Duplicação com AdminLojaDetail** — O admin tem `/admin/lojas/:id` (AdminLojaDetail.tsx) com abas completas: Configuração, Catálogo, Leads, Conversas, Follow-ups, Visitas. Porém a página `/configuracoes` TAMBÉM mostra controles admin (Equipe, Integrações, etc.) criando **duas interfaces diferentes para gerenciar a mesma coisa**. O admin não sabe onde ir.
+3. **LGPD** — tab desnecessária. Remover de `AdminLojaDetail.tsx`.
 
-**2. Integrações duplicadas e confusas** — A tab "Integrações" no Settings mostra: WhatsApp status, Google Calendar (com tutorial técnico de Google Cloud Console), e E-commerce. Mas o WhatsApp já é gerenciado em AdminLojaDetail. E o Google Calendar com tutorial de API Key/Calendar ID é **técnico demais** — e provavelmente não é algo que o cliente (lojista) precise configurar manualmente.
+4. **Metas** — deveria estar no CRM do lojista (`/configuracoes` ou como seção dedicada), não no admin. O admin não define metas, o lojista sim.
 
-**3. Equipe no lugar errado** — A tab "Equipe" (criar/gerenciar membros) aparece SOMENTE para admin dentro de `/configuracoes`. Deveria estar dentro do fluxo de `/admin/lojas/:id` como uma sub-aba, já que cada loja tem sua equipe.
+## Mudanças
 
-**4. Metas, Pós-Venda, LGPD, Auditoria — tabs admin que não fazem sentido aqui** — Estes são controles operacionais por loja. Deveriam estar em `/admin/lojas/:id` (AdminLojaDetail) ou em sub-páginas dedicadas, não na página de "Configurações" genérica.
+### `src/components/AppLayout.tsx`
+- Remover o item **"Implantação / Equipe"** do menu `adminLinks` (linha 36). O admin gerencia equipe dentro de `/admin/lojas/:id` tab Equipe.
 
-**5. A tab "Conta" mostra campos confusos** — Para admin, mostra "Informações da Conta" com Nome da Loja, Telefone, Email da `clinics`. Mas o admin já edita isso em `/admin/lojas/:id`. Redundante.
+### `src/pages/Settings.tsx` (página do lojista `/configuracoes`)
+- Manter tab **Conta** (dados read-only + horário)
+- **Remover tab "Agente de IA"** — o lojista não precisa configurar tom de voz, regras de personalidade, etc. Isso é responsabilidade do admin via `/admin/lojas/:id`
+- **Adicionar tab "Metas"** — reutilizar `AdminTabMetas` passando o `clinicId` do lojista, para que ele defina suas próprias metas de receita
 
----
+### `src/pages/AdminLojaDetail.tsx`
+- **Remover tab LGPD** (não necessário)
+- **Remover tab Metas** (migra pro lojista)
+- Manter: Identidade, Operação, Integrações, Automações, Equipe, Pós-Venda, Auditoria
 
-## Plano de Limpeza
-
-### Para a página `/configuracoes` (Settings.tsx):
-- **Remover todas as tabs admin-only**: Equipe, Metas, Pós-Venda, Integrações, LGPD, Auditoria
-- **Manter para o cliente**: Conta (somente leitura), Agente de IA, Horário de Funcionamento
-- Se o admin acessar `/configuracoes`, redirecionar para `/admin` ou mostrar apenas dados básicos
-
-### Para `/admin/lojas/:id` (AdminLojaDetail.tsx):
-- **Adicionar novas abas** ao `AdminLojaSectionLayout`: Equipe, Metas, Pós-Venda, LGPD, Auditoria
-- Mover os componentes `GoalsTab`, `PostProcedureTab`, `LgpdTab`, `AuditTab` de Settings.tsx para componentes reutilizáveis ou diretamente para novas sub-páginas admin
-- A tab "Integrações" já existe no AdminLojaDetail — remover a duplicata do Settings
-
-### Arquivos alterados:
-1. **`src/pages/Settings.tsx`** — Remover tabs admin-only, simplificar para visão do cliente
-2. **`src/pages/AdminLojaDetail.tsx`** — Adicionar tabs: Equipe, Metas, Pós-Venda, LGPD, Auditoria (mover código de Settings)
-3. **`src/components/AdminLojaSectionLayout.tsx`** — Adicionar novas tabs ao menu de navegação
-
-Nenhuma migration necessária.
+### Arquivos alterados
+1. `src/components/AppLayout.tsx` — remover "Implantação / Equipe" do sidebar admin
+2. `src/pages/Settings.tsx` — remover "Agente de IA", adicionar "Metas"
+3. `src/pages/AdminLojaDetail.tsx` — remover tabs LGPD e Metas
 
