@@ -256,11 +256,91 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ─── gerar_cobranca (placeholder) ───
+    // ─── gerar_cobranca ───
     if (action === "gerar_cobranca") {
+      const { lead_id, produto_id, itens, valor_total, forma_pagamento } = body;
+
+      let produto: any = null;
+      let loja: any = null;
+      let valor = valor_total || 0;
+      let checkoutUrl: string | null = null;
+      let tipo = "pagamento_manual";
+
+      // Fetch produto if provided
+      if (produto_id) {
+        const { data: p, error: pErr } = await supabase
+          .from("produtos")
+          .select("id, nome, preco_original, preco_promocional, checkout_url, external_id")
+          .eq("id", produto_id)
+          .eq("loja_id", loja_id)
+          .single();
+        if (pErr) throw new Error("Produto não encontrado");
+        produto = p;
+        valor = produto.preco_promocional || produto.preco_original;
+      }
+
+      // Cenário 1: produto tem checkout_url
+      if (produto?.checkout_url) {
+        checkoutUrl = produto.checkout_url;
+        tipo = "checkout_existente";
+      }
+
+      // Cenário 2: loja tem checkout_base_url
+      if (!checkoutUrl) {
+        const { data: l } = await supabase
+          .from("lojas")
+          .select("checkout_base_url")
+          .eq("id", loja_id)
+          .single();
+        loja = l;
+
+        if (loja?.checkout_base_url && produto) {
+          checkoutUrl = produto.external_id
+            ? `${loja.checkout_base_url}?product=${produto.external_id}`
+            : `${loja.checkout_base_url}/${produto.id}`;
+          tipo = "checkout_construido";
+        }
+      }
+
+      // Register sale
+      const vendaStatus = checkoutUrl ? "link_gerado" : "aguardando_pagamento";
+      const { data: venda, error: vendaErr } = await supabase.from("vendas").insert({
+        loja_id,
+        lead_id: lead_id || null,
+        produto_id: produto_id || null,
+        valor_total: valor,
+        checkout_url: checkoutUrl,
+        status: vendaStatus,
+        descricao: produto ? produto.nome : (itens ? `Orçamento ${itens.length} itens` : null),
+      }).select("id").single();
+      if (vendaErr) throw vendaErr;
+
+      // Log
+      await supabase.from("logs_execucao").insert({
+        loja_id,
+        lead_id: lead_id || null,
+        evento: "cobranca_gerada",
+        detalhes: { tipo, venda_id: venda.id, valor, checkout_url: checkoutUrl, forma_pagamento },
+      });
+
+      if (checkoutUrl) {
+        return json({
+          success: true,
+          tipo,
+          checkout_url: checkoutUrl,
+          produto: produto?.nome || null,
+          valor,
+          venda_id: venda.id,
+        });
+      }
+
+      // Cenário 3: pagamento manual
       return json({
-        success: false,
-        message: "Integração com gateway de pagamento ainda não configurada. Use o link de checkout do produto.",
+        success: true,
+        tipo: "pagamento_manual",
+        mensagem: "Envie o comprovante de pagamento por aqui. Dados para transferência serão enviados.",
+        venda_id: venda.id,
+        valor,
       });
     }
 
