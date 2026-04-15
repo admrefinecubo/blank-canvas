@@ -150,11 +150,12 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: apiKey },
         body: JSON.stringify({
-          rejectCall: settings.rejectCall ?? true,
+          rejectCall: settings.rejectCall ?? false,
           groupsIgnore: settings.groupsIgnore ?? true,
-          alwaysOnline: settings.alwaysOnline ?? true,
+          alwaysOnline: settings.alwaysOnline ?? false,
           readMessages: settings.readMessages ?? false,
           readStatus: settings.readStatus ?? false,
+          syncFullHistory: settings.syncFullHistory ?? true,
         }),
       });
 
@@ -168,17 +169,15 @@ Deno.serve(async (req) => {
         await fetch(`${apiUrl}/webhook/set/${instName}`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: apiKey },
-          body: JSON.stringify({
-            enabled: true,
-            url: settings.webhookUrl || N8N_WEBHOOK_URL,
-            webhookByEvents: false,
-            webhookBase64: false,
-            events: settings.events || [
-              "MESSAGES_UPSERT",
-              "CONNECTION_UPDATE",
-              "QRCODE_UPDATED",
-            ],
-          }),
+            body: JSON.stringify({
+              enabled: true,
+              url: settings.webhookUrl || N8N_WEBHOOK_URL,
+              webhookByEvents: false,
+              webhookBase64: true,
+              events: settings.events || [
+                "MESSAGES_UPSERT",
+              ],
+            }),
         });
       }
 
