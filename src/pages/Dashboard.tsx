@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, getLeadName } from "@/lib/whatsapp-admin";
+import LojaOnboardingWizard, { needsOnboarding } from "@/components/LojaOnboardingWizard";
 
 function StatCard({ title, value, icon: Icon, href, index = 0 }: { title: string; value: string; icon: ElementType; href?: string; index?: number }) {
   return (
@@ -77,11 +78,11 @@ export default function Dashboard() {
   const nowIso = useMemo(() => new Date().toISOString(), []);
 
   const { data: lojaContext } = useQuery({
-    queryKey: ["dashboard-loja-context", activeLojaId],
+    queryKey: ["loja-onboarding", activeLojaId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lojas")
-        .select("nome_loja, nome_assistente")
+        .select("*")
         .eq("id", activeLojaId!)
         .maybeSingle();
       if (error) throw error;
@@ -89,6 +90,9 @@ export default function Dashboard() {
     },
     enabled: !!activeLojaId,
   });
+
+  const [wizardDismissed, setWizardDismissed] = useState(false);
+  const showWizard = !wizardDismissed && needsOnboarding(lojaContext);
 
   const { data: kpis } = useQuery({
     queryKey: ["dashboard-kpis", activeLojaId, activeClinicId, startOfToday, todayDate, last24Hours, nowIso],
@@ -201,11 +205,18 @@ export default function Dashboard() {
     );
   }
 
-  const assistantName = lojaContext?.nome_assistente || "Assistente";
+  const assistantName = lojaContext?.nome_assistente_ia || "Assistente";
   const currentMonth = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
 
   return (
     <div className="space-y-8">
+      {showWizard && lojaContext && (
+        <LojaOnboardingWizard
+          loja={lojaContext}
+          open={showWizard}
+          onClose={() => setWizardDismissed(true)}
+        />
+      )}
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
