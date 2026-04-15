@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import DaysSchedulePicker from "@/components/DaysSchedulePicker";
 import type { HorariosEspeciais } from "@/lib/constants";
-import { Save, Copy, Check, Loader2, Wifi, WifiOff, QrCode, RefreshCw, Settings2 } from "lucide-react";
+import { Save, Copy, Check, Loader2, Wifi, WifiOff, QrCode, RefreshCw, Settings2, Users, Target, ShoppingBag, Shield, History } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import AdminLojaSectionLayout from "@/components/AdminLojaSectionLayout";
+import AdminTabEquipe from "@/components/admin/AdminTabEquipe";
+import AdminTabMetas from "@/components/admin/AdminTabMetas";
+import AdminTabPosVenda from "@/components/admin/AdminTabPosVenda";
+import AdminTabLgpd from "@/components/admin/AdminTabLgpd";
+import AdminTabAuditoria from "@/components/admin/AdminTabAuditoria";
 
 const TOM_VOZ_OPTIONS = [
   { value: "amigável, profissional e consultivo", label: "Amigável, profissional e consultivo" },
@@ -244,11 +249,16 @@ export default function AdminLojaDetail() {
     >
 
       <Tabs defaultValue="identidade" className="space-y-6">
-        <TabsList className="w-full justify-start">
+        <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
           <TabsTrigger value="identidade">Identidade</TabsTrigger>
           <TabsTrigger value="operacao">Operação</TabsTrigger>
           <TabsTrigger value="integracoes">Integrações</TabsTrigger>
           <TabsTrigger value="automacoes">Automações</TabsTrigger>
+          <TabsTrigger value="equipe"><Users className="h-3.5 w-3.5 mr-1" />Equipe</TabsTrigger>
+          <TabsTrigger value="metas"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>
+          <TabsTrigger value="pos-venda"><ShoppingBag className="h-3.5 w-3.5 mr-1" />Pós-Venda</TabsTrigger>
+          <TabsTrigger value="lgpd"><Shield className="h-3.5 w-3.5 mr-1" />LGPD</TabsTrigger>
+          <TabsTrigger value="auditoria"><History className="h-3.5 w-3.5 mr-1" />Auditoria</TabsTrigger>
         </TabsList>
 
         {/* Tab 1 - Identidade */}
@@ -537,6 +547,31 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab 5 - Equipe */}
+        <TabsContent value="equipe">
+          <AdminTabEquipe clinicId={loja.clinic_id || ""} />
+        </TabsContent>
+
+        {/* Tab 6 - Metas */}
+        <TabsContent value="metas">
+          <AdminTabMetas clinicId={loja.clinic_id || ""} />
+        </TabsContent>
+
+        {/* Tab 7 - Pós-Venda */}
+        <TabsContent value="pos-venda">
+          <AdminTabPosVenda clinicId={loja.clinic_id || ""} />
+        </TabsContent>
+
+        {/* Tab 8 - LGPD */}
+        <TabsContent value="lgpd">
+          <AdminTabLgpd clinicId={loja.clinic_id || ""} />
+        </TabsContent>
+
+        {/* Tab 9 - Auditoria */}
+        <TabsContent value="auditoria">
+          <AdminTabAuditoria clinicId={loja.clinic_id || ""} />
         </TabsContent>
       </Tabs>
 
