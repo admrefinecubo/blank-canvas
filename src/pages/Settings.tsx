@@ -857,7 +857,7 @@ export default function SettingsPage() {
           {showAdminControls && <TabsTrigger value="team">Equipe</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Metas</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="post-procedure">Pós-Venda</TabsTrigger>}
-          <TabsTrigger value="integrations">Integrações</TabsTrigger>
+          {showAdminControls && <TabsTrigger value="integrations">Integrações</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="lgpd">LGPD</TabsTrigger>}
           {showAdminControls && <TabsTrigger value="audit"><History className="h-3.5 w-3.5 mr-1" />Auditoria</TabsTrigger>}
         </TabsList>
@@ -1051,9 +1051,9 @@ export default function SettingsPage() {
           <PostProcedureTab clinicId={effectiveClinicId} />
         </TabsContent>
 
-        <TabsContent value="integrations" className="mt-4 space-y-4">
+        {showAdminControls && <TabsContent value="integrations" className="mt-4 space-y-4">
           <IntegrationsTab clinicId={effectiveClinicId} activeLojaId={activeLojaId || ""} />
-        </TabsContent>
+        </TabsContent>}
 
         <TabsContent value="lgpd" className="mt-4 space-y-4">
           <LgpdTab clinicId={effectiveClinicId} />

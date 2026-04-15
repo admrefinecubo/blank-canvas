@@ -463,7 +463,11 @@ export default function LojaCatalogo() {
             <div className="md:col-span-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(e) => set("descricao", e.target.value)} rows={4} /></div>
             <div className="md:col-span-2"><Label>Tags</Label><Textarea value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder='["colchão","casal","mola"] ou separado por vírgula' rows={2} /></div>
             <div className="md:col-span-2"><Label>Variações (JSON)</Label><Textarea value={form.variacoes} onChange={(e) => set("variacoes", e.target.value)} placeholder='[{"tamanho":"Queen","preco":1899}]' rows={4} /></div>
-            <div className="md:col-span-2"><Label>Checkout URL</Label><Input value={form.checkout_url} onChange={(e) => set("checkout_url", e.target.value)} placeholder="https://checkout.sualoja.com/produto" /></div>
+            <div className="md:col-span-2">
+              <Label>Checkout URL</Label>
+              <Input value={form.checkout_url} onChange={(e) => set("checkout_url", e.target.value)} placeholder="https://checkout.sualoja.com/produto" />
+              <p className="text-xs text-muted-foreground mt-1">Opcional. Se vazio, será usada a URL base configurada pelo administrador.</p>
+            </div>
             <div className="space-y-2">
               <Label>Foto principal</Label>
               <div className="flex flex-col gap-3">
