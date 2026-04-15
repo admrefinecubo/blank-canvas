@@ -115,7 +115,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const nextRoles = await fetchRolesWithRetry(nextSession.user.id);
     setRoles(nextRoles);
+    rolesRef.current = nextRoles;
     setLastHydratedUserId(nextSession.user.id);
+    lastHydratedUserIdRef.current = nextSession.user.id;
     setLoading(false);
   };
 
@@ -203,6 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     setSession(data.session);
+    sessionRef.current = data.session;
     setUser(data.user);
     setImpersonatedClinicId(null);
     localStorage.removeItem('impersonated_clinic_id');
@@ -210,7 +213,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check if user's clinic is active
     const userRoles = await fetchRolesWithRetry(data.user.id);
     setRoles(userRoles);
+    rolesRef.current = userRoles;
     setLastHydratedUserId(data.user.id);
+    lastHydratedUserIdRef.current = data.user.id;
 
     const isAdmin = userRoles.some(r => r.role === 'platform_admin');
     if (!isAdmin && userRoles.length) {
