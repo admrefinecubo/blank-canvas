@@ -417,7 +417,7 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {whatsappStatus === "disconnected" || whatsappStatus === "error" ? (
+                  {(whatsappStatus === "disconnected" || whatsappStatus === "error") && !form.instance && (
                     <Button
                       onClick={() => createInstanceMutation.mutate()}
                       disabled={createInstanceMutation.isPending || !form.instance}
@@ -426,7 +426,20 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                       <QrCode className="h-4 w-4" />
                       {createInstanceMutation.isPending ? "Criando..." : "Criar Instância e Conectar"}
                     </Button>
-                  ) : whatsappStatus === "pending" ? (
+                  )}
+
+                  {(whatsappStatus === "disconnected" || whatsappStatus === "error") && !!form.instance && (
+                    <Button
+                      onClick={() => reconnectMutation.mutate()}
+                      disabled={reconnectMutation.isPending}
+                      className="gap-2"
+                    >
+                      <Wifi className="h-4 w-4" />
+                      {reconnectMutation.isPending ? "Reconectando..." : "Reconectar"}
+                    </Button>
+                  )}
+
+                  {whatsappStatus === "pending" && (
                     <Button
                       onClick={() => reconnectMutation.mutate()}
                       disabled={reconnectMutation.isPending}
@@ -436,7 +449,7 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
                       <QrCode className="h-4 w-4" />
                       {reconnectMutation.isPending ? "Obtendo QR..." : "Obter QR Code"}
                     </Button>
-                  ) : null}
+                  )}
 
                   {whatsappStatus === "connected" && (
                     <Button
