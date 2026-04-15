@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import DaysSchedulePicker from "@/components/DaysSchedulePicker";
+import type { HorariosEspeciais } from "@/lib/constants";
 import { Save, Copy, Check, Loader2, Wifi, WifiOff, QrCode, RefreshCw, Settings2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -312,21 +314,16 @@ ${form.montagem_disponivel ? `Montagem disponível: Sim` : ""}`}
         <TabsContent value="operacao">
           <Card>
             <CardContent className="space-y-5 pt-6">
-              <div className="grid gap-5 md:grid-cols-2">
-                <div>
-                  <Label>Abre às</Label>
-                  <Input type="time" value={form.horario_inicio || "08:00"} onChange={(e) => set("horario_inicio", e.target.value)} />
-                </div>
-                <div>
-                  <Label>Fecha às</Label>
-                  <Input type="time" value={form.horario_fim || "18:00"} onChange={(e) => set("horario_fim", e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <Label>Dias de funcionamento</Label>
-                <Input placeholder="Ex: Segunda a Sábado" value={form.dias_funcionamento || ""} onChange={(e) => set("dias_funcionamento", e.target.value)} />
-              </div>
-              <div>
+              <DaysSchedulePicker
+                diasFuncionamento={form.dias_funcionamento || ""}
+                onDiasChange={(v) => set("dias_funcionamento", v)}
+                horarioInicio={form.horario_inicio || "08:00"}
+                horarioFim={form.horario_fim || "18:00"}
+                onHorarioInicioChange={(v) => set("horario_inicio", v)}
+                onHorarioFimChange={(v) => set("horario_fim", v)}
+                horariosEspeciais={(form.horarios_especiais as HorariosEspeciais) || {}}
+                onHorariosEspeciaisChange={(v) => set("horarios_especiais", v)}
+              />
                 <Label>Endereço completo</Label>
                 <Input placeholder="Rua, número, bairro, cidade - UF" value={form.endereco || ""} onChange={(e) => set("endereco", e.target.value)} />
               </div>
