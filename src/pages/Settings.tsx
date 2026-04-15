@@ -750,6 +750,7 @@ export default function SettingsPage() {
       desconto_promocao_nao_respondida: activeLoja.desconto_promocao_nao_respondida?.toString() || "",
       checkout_base_url: activeLoja.checkout_base_url || "",
       dias_funcionamento: activeLoja.dias_funcionamento || "seg,ter,qua,qui,sex",
+      horarios_especiais: ((activeLoja as any).horarios_especiais as HorariosEspeciais) || {},
       desconto_followup_orcamento: activeLoja.desconto_followup_orcamento?.toString() || "",
       plataforma_ecommerce: activeLoja.plataforma_ecommerce || "",
       ecommerce_api_key: (activeLoja as any).ecommerce_api_key || "",
@@ -828,6 +829,7 @@ export default function SettingsPage() {
           desconto_promocao_nao_respondida: descontoPromocao,
           checkout_base_url: storeForm.checkout_base_url.trim() || null,
           dias_funcionamento: storeForm.dias_funcionamento.trim() || null,
+          horarios_especiais: storeForm.horarios_especiais || {},
           desconto_followup_orcamento: storeForm.desconto_followup_orcamento ? parseFloat(storeForm.desconto_followup_orcamento) : null,
           plataforma_ecommerce: storeForm.plataforma_ecommerce.trim() || null,
           ecommerce_api_key: (storeForm as any).ecommerce_api_key?.trim() || null,
@@ -881,34 +883,16 @@ export default function SettingsPage() {
           <Card className="bg-card">
             <CardHeader><CardTitle className="text-sm">Horário de Funcionamento</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div><Label>Horário de abertura</Label><Input type="time" value={storeForm.horario_inicio} onChange={e => setStoreForm(f => ({ ...f, horario_inicio: e.target.value }))} /></div>
-                <div><Label>Horário de fechamento</Label><Input type="time" value={storeForm.horario_fim} onChange={e => setStoreForm(f => ({ ...f, horario_fim: e.target.value }))} /></div>
-              </div>
-              <div>
-                <Label className="mb-2 block">Dias de funcionamento</Label>
-                <div className="flex flex-wrap gap-3">
-                  {WEEKDAYS.map(day => {
-                    const dias = storeForm.dias_funcionamento.split(",").map(d => d.trim()).filter(Boolean);
-                    const checked = dias.includes(day.value);
-                    return (
-                      <label key={day.value} className="flex items-center gap-1.5 cursor-pointer">
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(v) => {
-                            const next = v
-                              ? [...dias, day.value]
-                              : dias.filter(d => d !== day.value);
-                            const ordered = WEEKDAYS.map(w => w.value).filter(w => next.includes(w));
-                            setStoreForm(f => ({ ...f, dias_funcionamento: ordered.join(",") }));
-                          }}
-                        />
-                        <span className="text-sm">{day.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+              <DaysSchedulePicker
+                diasFuncionamento={storeForm.dias_funcionamento}
+                onDiasChange={(v) => setStoreForm(f => ({ ...f, dias_funcionamento: v }))}
+                horarioInicio={storeForm.horario_inicio}
+                horarioFim={storeForm.horario_fim}
+                onHorarioInicioChange={(v) => setStoreForm(f => ({ ...f, horario_inicio: v }))}
+                onHorarioFimChange={(v) => setStoreForm(f => ({ ...f, horario_fim: v }))}
+                horariosEspeciais={storeForm.horarios_especiais}
+                onHorariosEspeciaisChange={(v) => setStoreForm(f => ({ ...f, horarios_especiais: v }))}
+              />
               {!showAdminControls && (
                 <Button onClick={() => saveAiAgentMutation.mutate()} disabled={saveAiAgentMutation.isPending} size="sm">
                   {saveAiAgentMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
