@@ -307,7 +307,7 @@ export default function AdminLojaDetail() {
               <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 space-y-2">
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Preview do Prompt (somente leitura)</p>
                 <pre className="whitespace-pre-wrap text-xs text-muted-foreground font-mono max-h-[300px] overflow-y-auto">
-{`Você é ${form.nome_assistente || "[Nome da IA]"}, assistente virtual da loja ${form.nome_loja || "[Nome da Loja]"}.
+{`Você é ${form.nome_assistente_ia || "[Nome da IA]"}, assistente virtual da loja ${form.nome_loja || "[Nome da Loja]"}.
 ${form.descricao_loja ? `\nSobre a loja: ${form.descricao_loja}` : ""}
 ${form.especialidades ? `Especialidades: ${form.especialidades}` : ""}
 ${form.tom_voz ? `Tom de voz: ${form.tom_voz}` : ""}
