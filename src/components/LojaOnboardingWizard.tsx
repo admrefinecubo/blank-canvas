@@ -340,8 +340,8 @@ export default function LojaOnboardingWizard({ loja, open, onClose }: Props) {
 
           {step === 4 && (
             <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+                <CheckCircle2 className="h-10 w-10 text-primary" />
               </div>
               <h3 className="text-xl font-semibold">Tudo pronto!</h3>
               <p className="text-muted-foreground max-w-sm">
