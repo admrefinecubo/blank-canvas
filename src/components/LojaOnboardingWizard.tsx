@@ -375,6 +375,7 @@ export default function LojaOnboardingWizard({ loja, open, onClose }: Props) {
           </div>
         </div>
       </div>
+      </div>
     </div>
   );
 }
