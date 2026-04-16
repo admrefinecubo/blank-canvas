@@ -3,6 +3,7 @@ import {
   Plus, Pencil, Trash2, Loader2, Package, Upload, ImageIcon, ExternalLink,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import VariationEditor, { Variacao, parseVariacoesFromDb, serializeVariacoes } from "@/components/VariationEditor";
 import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ const EMPTY_FORM = {
   descricao: "",
   categoria: "",
   tags: "",
-  variacoes: "",
+  variacoes: [] as Variacao[],
   preco_original: "",
   preco_promocional: "",
   estoque_disponivel: true,
@@ -103,14 +104,8 @@ const parseTagsInput = (value: string) => {
   return JSON.stringify(tags);
 };
 
-const parseVariationsInput = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = JSON.parse(trimmed);
-  if (!Array.isArray(parsed)) {
-    throw new Error("Variações devem ser um array JSON");
-  }
-  return JSON.stringify(parsed);
+const parseVariationsInput = (value: Variacao[]) => {
+  return serializeVariacoes(value);
 };
 
 export default function LojaCatalogo() {
@@ -172,7 +167,7 @@ export default function LojaCatalogo() {
       descricao: data.descricao || "",
       categoria: data.categoria || "",
       tags: data.tags || "",
-      variacoes: data.variacoes || "",
+      variacoes: parseVariacoesFromDb(data.variacoes),
       preco_original: data.preco_original?.toString() || "",
       preco_promocional: data.preco_promocional?.toString() || "",
       estoque_disponivel: data.estoque_disponivel ?? true,
@@ -462,7 +457,7 @@ export default function LojaCatalogo() {
             <div><Label>Preço promocional</Label><Input type="number" value={form.preco_promocional} onChange={(e) => set("preco_promocional", e.target.value)} /></div>
             <div className="md:col-span-2"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(e) => set("descricao", e.target.value)} rows={4} /></div>
             <div className="md:col-span-2"><Label>Tags</Label><Textarea value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder='["colchão","casal","mola"] ou separado por vírgula' rows={2} /></div>
-            <div className="md:col-span-2"><Label>Variações (JSON)</Label><Textarea value={form.variacoes} onChange={(e) => set("variacoes", e.target.value)} placeholder='[{"tamanho":"Queen","preco":1899}]' rows={4} /></div>
+            <div className="md:col-span-2"><VariationEditor value={form.variacoes} onChange={(v) => set("variacoes", v)} /></div>
             <div className="md:col-span-2">
               <Label>Checkout URL</Label>
               <Input value={form.checkout_url} onChange={(e) => set("checkout_url", e.target.value)} placeholder="https://checkout.sualoja.com/produto" />
