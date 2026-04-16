@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
 
     // ─── gerar_cobranca ───
     if (action === "gerar_cobranca") {
-      const { lead_id, produto_id, itens, valor_total, forma_pagamento } = body;
+      const { lead_id, produto_id, variacao_nome, itens, valor_total, forma_pagamento } = body;
 
       let produto: any = null;
       let loja: any = null;
@@ -270,17 +270,31 @@ Deno.serve(async (req) => {
       if (produto_id) {
         const { data: p, error: pErr } = await supabase
           .from("produtos")
-          .select("id, nome, preco_original, preco_promocional, checkout_url, external_id")
+          .select("id, nome, preco_original, preco_promocional, checkout_url, external_id, variacoes")
           .eq("id", produto_id)
           .eq("loja_id", loja_id)
           .single();
         if (pErr) throw new Error("Produto não encontrado");
         produto = p;
         valor = produto.preco_promocional || produto.preco_original;
+
+        // Check if a specific variation was requested
+        if (variacao_nome && Array.isArray(produto.variacoes)) {
+          const variacao = produto.variacoes.find((v: any) =>
+            v.nome?.toLowerCase() === variacao_nome.toLowerCase()
+          );
+          if (variacao) {
+            if (variacao.preco) valor = variacao.preco_promocional || variacao.preco;
+            if (variacao.checkout_url) {
+              checkoutUrl = variacao.checkout_url;
+              tipo = "checkout_variacao";
+            }
+          }
+        }
       }
 
-      // Cenário 1: produto tem checkout_url
-      if (produto?.checkout_url) {
+      // Cenário 1: produto tem checkout_url (and variation didn't override)
+      if (!checkoutUrl && produto?.checkout_url) {
         checkoutUrl = produto.checkout_url;
         tipo = "checkout_existente";
       }
