@@ -165,8 +165,8 @@ export default function LojaOnboardingWizard({ loja, open, onClose }: Props) {
     errors[key] ? <p className="text-xs text-destructive mt-1">{errors[key]}</p> : null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 backdrop-blur-sm">
-      <div className="w-full max-w-xl mx-auto px-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm overflow-y-auto py-8">
+      <div className="w-full max-w-xl mx-auto px-4 bg-card border border-border rounded-2xl p-6 shadow-lg my-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
