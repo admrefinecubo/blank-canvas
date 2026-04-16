@@ -1201,11 +1201,13 @@ export type Database = {
           especificacoes: string | null
           estoque: number | null
           estoque_disponivel: boolean
+          external_id: string | null
           foto_detalhe: string | null
           foto_principal: string | null
           id: string
           loja_id: string
           nome: string
+          plataforma: string | null
           preco_original: number
           preco_promocional: number | null
           tags: string | null
@@ -1222,11 +1224,13 @@ export type Database = {
           especificacoes?: string | null
           estoque?: number | null
           estoque_disponivel?: boolean
+          external_id?: string | null
           foto_detalhe?: string | null
           foto_principal?: string | null
           id?: string
           loja_id: string
           nome: string
+          plataforma?: string | null
           preco_original?: number
           preco_promocional?: number | null
           tags?: string | null
@@ -1243,11 +1247,13 @@ export type Database = {
           especificacoes?: string | null
           estoque?: number | null
           estoque_disponivel?: boolean
+          external_id?: string | null
           foto_detalhe?: string | null
           foto_principal?: string | null
           id?: string
           loja_id?: string
           nome?: string
+          plataforma?: string | null
           preco_original?: number
           preco_promocional?: number | null
           tags?: string | null
