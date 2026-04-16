@@ -695,6 +695,7 @@ export type Database = {
           ecommerce_api_key: string | null
           endereco: string | null
           especialidades: string | null
+          external_id: string | null
           formas_pagamento: string | null
           frete_gratis_acima: number | null
           horario_fim: string | null
@@ -707,6 +708,7 @@ export type Database = {
           nome_assistente: string | null
           nome_assistente_ia: string | null
           nome_loja: string
+          onboarding_concluido: boolean | null
           plataforma_ecommerce: string | null
           politica_troca: string | null
           prazo_entrega: string | null
@@ -727,6 +729,7 @@ export type Database = {
           ecommerce_api_key?: string | null
           endereco?: string | null
           especialidades?: string | null
+          external_id?: string | null
           formas_pagamento?: string | null
           frete_gratis_acima?: number | null
           horario_fim?: string | null
@@ -739,6 +742,7 @@ export type Database = {
           nome_assistente?: string | null
           nome_assistente_ia?: string | null
           nome_loja: string
+          onboarding_concluido?: boolean | null
           plataforma_ecommerce?: string | null
           politica_troca?: string | null
           prazo_entrega?: string | null
@@ -759,6 +763,7 @@ export type Database = {
           ecommerce_api_key?: string | null
           endereco?: string | null
           especialidades?: string | null
+          external_id?: string | null
           formas_pagamento?: string | null
           frete_gratis_acima?: number | null
           horario_fim?: string | null
@@ -771,6 +776,7 @@ export type Database = {
           nome_assistente?: string | null
           nome_assistente_ia?: string | null
           nome_loja?: string
+          onboarding_concluido?: boolean | null
           plataforma_ecommerce?: string | null
           politica_troca?: string | null
           prazo_entrega?: string | null

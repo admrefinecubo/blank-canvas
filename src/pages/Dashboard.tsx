@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getLeadName } from "@/lib/whatsapp-admin";
-import LojaOnboardingWizard, { needsOnboarding } from "@/components/LojaOnboardingWizard";
+import LojaOnboardingWizard from "@/components/LojaOnboardingWizard";
 import { TrendBadge } from "@/components/TrendBadge";
 import { PipelineBar } from "@/components/PipelineBar";
 import { MiniAreaChart } from "@/components/MiniAreaChart";
@@ -162,7 +162,7 @@ export default function Dashboard() {
   });
 
   const [wizardDismissed, setWizardDismissed] = useState(false);
-  const showWizard = !wizardDismissed && needsOnboarding(lojaContext);
+  const showWizard = !wizardDismissed && lojaContext && lojaContext.onboarding_concluido === false;
 
   const { data: kpis, isLoading: kpisLoading } = useQuery({
     queryKey: ["dashboard-kpis-v2", activeLojaId, activeClinicId, startOfToday, startOfYesterday, todayDate, last24Hours, nowIso],
