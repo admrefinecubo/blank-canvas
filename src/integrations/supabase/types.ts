@@ -1212,7 +1212,7 @@ export type Database = {
           preco_promocional: number | null
           tags: string | null
           updated_at: string
-          variacoes: string | null
+          variacoes: Json | null
           video_url: string | null
         }
         Insert: {
@@ -1235,7 +1235,7 @@ export type Database = {
           preco_promocional?: number | null
           tags?: string | null
           updated_at?: string
-          variacoes?: string | null
+          variacoes?: Json | null
           video_url?: string | null
         }
         Update: {
@@ -1258,7 +1258,7 @@ export type Database = {
           preco_promocional?: number | null
           tags?: string | null
           updated_at?: string
-          variacoes?: string | null
+          variacoes?: Json | null
           video_url?: string | null
         }
         Relationships: [
