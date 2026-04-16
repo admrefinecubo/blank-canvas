@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import AdminLojaSectionLayout from "@/components/AdminLojaSectionLayout";
+import VariationEditor, { parseVariacoesFromDb, serializeVariacoes } from "@/components/VariationEditor";
 
 const CATEGORIAS = ["Sala", "Quarto", "Sala de Jantar", "Colchões", "Planejados", "Outros"];
 
@@ -36,7 +37,7 @@ const EMPTY_FORM = {
   categoria: "",
   tags: "",
   especificacoes: "",
-  variacoes: "",
+  variacoes: [] as import("@/components/VariationEditor").Variacao[],
   preco_original: "",
   preco_promocional: "",
   estoque_disponivel: true,
@@ -104,7 +105,7 @@ export default function AdminLojaCatalogo() {
       categoria: data.categoria || "",
       tags: data.tags || "",
       especificacoes: data.especificacoes || "",
-      variacoes: data.variacoes || "",
+      variacoes: parseVariacoesFromDb(data.variacoes),
       preco_original: data.preco_original?.toString() || "",
       preco_promocional: data.preco_promocional?.toString() || "",
       estoque_disponivel: data.estoque_disponivel ?? true,
@@ -124,7 +125,7 @@ export default function AdminLojaCatalogo() {
         categoria: form.categoria || null,
         tags: form.tags || null,
         especificacoes: form.especificacoes || null,
-        variacoes: form.variacoes || null,
+        variacoes: serializeVariacoes(form.variacoes),
         preco_original: Number(form.preco_original),
         preco_promocional: form.preco_promocional ? Number(form.preco_promocional) : null,
         estoque_disponivel: form.estoque_disponivel,
@@ -375,10 +376,7 @@ export default function AdminLojaCatalogo() {
               <Label>Especificações</Label>
               <Textarea rows={3} placeholder="Dimensões: 2,20m x 90cm. Material: tecido suede." value={form.especificacoes} onChange={(e) => set("especificacoes", e.target.value)} />
             </div>
-            <div>
-              <Label>Variações</Label>
-              <Textarea rows={2} placeholder="Cinza, Bege, Preto" value={form.variacoes} onChange={(e) => set("variacoes", e.target.value)} />
-            </div>
+            <VariationEditor value={form.variacoes} onChange={(v) => set("variacoes", v)} />
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label>Preço original *</Label>
