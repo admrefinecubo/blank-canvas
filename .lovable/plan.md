@@ -1,47 +1,53 @@
 
 
-# Bug Fix: "No path back to referenced node" no WF-01
+# Debug Completo: WF-01 — "no unique or exclusion constraint matching the ON CONFLICT specification"
 
-## Diagnóstico
+## Causa Raiz
 
-O node **"Supabase - Buscar ou Criar Lead (Upsert)"** (linha 271 do JSON) usa esta expressão:
+O node **"Supabase - Buscar ou Criar Lead (Upsert)"** (id: `feae6b5a`) na linha 247 do JSON faz POST para:
 
 ```
-"loja_id": "{{ ($('Supabase - Carregar Config da Loja (Tenant)').item.json[0] || {}).id }}"
+/rest/v1/leads?on_conflict=loja_id,telefone
 ```
 
-Porém, na cadeia de conexões atual, o fluxo é:
+Com header `Prefer: resolution=merge-duplicates`.
 
-```text
-Marcar MessageId → Buscar/Criar Lead → Redis → IF Pausado? → Carregar Config Loja → Histórico → ...
+Porém no banco, a tabela `leads` tem apenas estas constraints únicas:
+- `leads_pkey` → `(id)` 
+- `leads_telefone_instance_unique` → `(telefone, instance)`
+
+**NÃO existe** constraint unique em `(loja_id, telefone)`. O PostgREST rejeita com "no unique or exclusion constraint matching the ON CONFLICT specification".
+
+## Solução: 2 passos
+
+### Passo 1 — Criar unique constraint no banco
+
+Executar migration SQL:
+
+```sql
+CREATE UNIQUE INDEX IF NOT EXISTS leads_loja_telefone_uidx 
+  ON leads(loja_id, telefone);
 ```
 
-Ou seja, **"Buscar ou Criar Lead" executa ANTES de "Carregar Config da Loja"**, mas referencia dados dele. O n8n detecta que não há caminho de volta e mostra o erro.
+Isso cria o índice único que o WF-01 espera. O índice antigo `(telefone, instance)` pode coexistir — não conflita.
 
-## Solução — Prompt para Claude
+### Passo 2 — Gerar prompt atualizado para Claude
 
-Gerar um arquivo `.md` com o prompt preciso para o Claude corrigir o JSON do WF-01, reordenando as conexões para que "Carregar Config da Loja" execute ANTES de "Buscar ou Criar Lead".
+Atualizar o arquivo `PROMPT-FIX-WF01-v2.md` adicionando este bug e a informação de que a migration já foi aplicada, para que o Claude saiba que o `on_conflict=loja_id,telefone` agora está correto e não precisa ser alterado.
 
-### A correção no fluxo deve ser:
+### Verificação adicional: node `mensagens_processadas`
 
-```text
-ANTES:
-  Marcar MessageId → Buscar/Criar Lead → Redis → IF Pausado → Carregar Config Loja
+O node "Marcar MessageId como Processado" (id: `1d3aad0a`, linha 206) faz POST para `/rest/v1/mensagens_processadas` **sem** `?on_conflict=message_id` na URL. O PostgREST infere o PK automaticamente quando há `Prefer: resolution=merge-duplicates`, então isso funciona. Mas para ser explícito e robusto, vamos adicionar `?on_conflict=message_id` na URL também.
 
-DEPOIS:
-  Marcar MessageId → Carregar Config Loja → Buscar/Criar Lead → Redis → IF Pausado
-```
+## Resumo das mudanças
 
-Isso resolve porque "Buscar/Criar Lead" precisa do `loja_id` que vem de "Carregar Config da Loja".
+| O quê | Onde | Ação |
+|-------|------|------|
+| Criar `leads_loja_telefone_uidx` | Supabase (migration) | `CREATE UNIQUE INDEX` |
+| Adicionar `?on_conflict=message_id` | WF-01 node `Marcar MessageId` (URL linha 206) | Prompt para Claude |
+| Documentar no prompt | `/mnt/documents/PROMPT-FIX-WF01-v3.md` | Gerar arquivo atualizado |
 
-### Mudanças no JSON `connections`:
+## Nota técnica
 
-1. **"Supabase - Marcar MessageId como Processado"** → output muda de `Buscar ou Criar Lead` para `Carregar Config da Loja (Tenant)`
-2. **"Supabase - Carregar Config da Loja (Tenant)"** → output muda de `Carregar Histórico` para `Buscar ou Criar Lead (Upsert)`
-3. **"Supabase - Buscar ou Criar Lead (Upsert)"** → output continua apontando para `Redis GET - Checar Pausa` (sem mudança)
-4. **"IF - Agente Está Pausado?"** → output false muda de `Carregar Config da Loja` para `Carregar Histórico de Conversa`
-
-### Entregável
-
-Um arquivo markdown em `/mnt/documents/` com o prompt completo, incluindo os 4 blocos JSON exatos de `connections` a serem alterados, IDs dos nodes envolvidos, e instrução para NÃO alterar nenhum outro node.
+O `on_conflict=loja_id,telefone` no node de leads está correto para a lógica de negócio (um lead por loja+telefone). O problema é apenas que o índice correspondente não existia no banco. Após a migration, o upsert vai funcionar.
 
