@@ -1572,14 +1572,19 @@ export type Database = {
         }
         Returns: {
           categoria: string
+          checkout_url: string
           descricao: string
+          especificacoes: string
           estoque_disponivel: boolean
+          foto_detalhe: string
           foto_principal: string
           id: string
           nome: string
           preco_original: number
           preco_promocional: number
           similarity: number
+          tags: string
+          variacoes: Json
           video_url: string
         }[]
       }
