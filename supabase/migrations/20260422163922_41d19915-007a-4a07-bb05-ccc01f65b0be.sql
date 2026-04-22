@@ -1,0 +1,1 @@
+UPDATE produtos SET embedding = NULL;
