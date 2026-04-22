@@ -358,7 +358,7 @@ export default function Dashboard() {
         />
         <StatCard title="Follow-ups pendentes" value={String(kpis?.followUpsPendentes ?? 0)} icon={Workflow} href="/followups" isLoading={kpisLoading} />
         <StatCard title="Visitas agendadas" value={String(kpis?.visitasAgendadas ?? 0)} icon={CalendarDays} href="/visitas" isLoading={kpisLoading} />
-        <StatCard title="Produtos no catálogo" value={String(kpis?.produtosCatalogo ?? 0)} icon={Package} href="/catalogo" isLoading={kpisLoading} />
+        <StatCard title="Produtos cadastrados" value={String(kpis?.produtosCatalogo ?? 0)} icon={Package} href="/catalogo" isLoading={kpisLoading} />
       </div>
 
       {/* Charts row: Weekly + Pipeline + Sales */}
@@ -479,7 +479,7 @@ export default function Dashboard() {
             <CardContent className="grid gap-2">
               {[
                 { label: "Ver follow-ups", href: "/followups", icon: Workflow },
-                { label: "Abrir catálogo", href: "/catalogo", icon: ShoppingBag },
+                { label: "Abrir produtos", href: "/catalogo", icon: ShoppingBag },
                 { label: "Gerenciar leads", href: "/leads", icon: Users },
                 { label: "Ver visitas", href: "/visitas", icon: CalendarDays },
               ].map((item) => (

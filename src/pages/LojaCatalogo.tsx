@@ -308,7 +308,7 @@ export default function LojaCatalogo() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Catálogo de produtos</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Produtos</h1>
           <p className="mt-1 text-sm text-muted-foreground">Gerencie os produtos que alimentam a operação comercial da sua loja.</p>
         </div>
         <div className="flex flex-wrap gap-2">

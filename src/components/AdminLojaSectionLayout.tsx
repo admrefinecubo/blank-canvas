@@ -16,7 +16,7 @@ interface Props {
 
 const tabs = [
   { label: "Configuração", href: (id: string) => `/admin/lojas/${id}`, icon: Settings2 },
-  { label: "Catálogo", href: (id: string) => `/admin/lojas/${id}/catalogo`, icon: Package },
+  { label: "Produtos", href: (id: string) => `/admin/lojas/${id}/catalogo`, icon: Package },
   { label: "Leads", href: (id: string) => `/admin/lojas/${id}/leads`, icon: Users2 },
   { label: "Conversas", href: (id: string) => `/admin/lojas/${id}/conversas`, icon: MessageSquareText },
   { label: "Follow-ups", href: (id: string) => `/admin/lojas/${id}/followups`, icon: MessageSquareText },
