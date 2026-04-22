@@ -22,7 +22,7 @@ const clientNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Clientes / Leads", url: "/leads", icon: Users },
   { title: "WhatsApp", url: "/whatsapp", icon: MessageSquare },
-  { title: "Catálogo", url: "/catalogo", icon: Package },
+  { title: "Produtos", url: "/catalogo", icon: Package },
   { title: "Agenda / Visitas", url: "/visitas", icon: Calendar },
   { title: "Follow-ups", url: "/followups", icon: Workflow },
   { title: "Campanhas", url: "/campanhas", icon: BarChart3 },
@@ -38,7 +38,7 @@ const adminNavItems = [
 const breadcrumbMap: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/leads": "Clientes / Leads",
-  "/catalogo": "Catálogo",
+  "/catalogo": "Produtos",
   "/configuracoes": "Configurações",
   "/followups": "Follow-ups",
   "/visitas": "Visitas à Loja",
