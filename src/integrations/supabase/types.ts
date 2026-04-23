@@ -579,6 +579,7 @@ export type Database = {
           created_at: string
           email: string | null
           etapa_pipeline: string
+          followup_etapa: number | null
           id: string
           instance: string | null
           interesse: string | null
@@ -602,6 +603,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           etapa_pipeline?: string
+          followup_etapa?: number | null
           id?: string
           instance?: string | null
           interesse?: string | null
@@ -625,6 +627,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           etapa_pipeline?: string
+          followup_etapa?: number | null
           id?: string
           instance?: string | null
           interesse?: string | null
