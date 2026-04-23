@@ -448,7 +448,7 @@ export default function LojaCatalogo() {
       </Card>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editId ? "Editar produto" : "Novo produto"}</DialogTitle></DialogHeader>
           <div className="grid gap-4 md:grid-cols-2">
             <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => set("nome", e.target.value)} /></div>
