@@ -89,33 +89,18 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (!webhookRes.ok) throw new Error(`Webhook retornou erro ${webhookRes.status}`);
+    if (!webhookRes.ok) {
+      const errText = await webhookRes.text().catch(() => "");
+      throw new Error(`Webhook N8N retornou ${webhookRes.status}: ${errText.slice(0, 200)}`);
+    }
 
-    // Validate webhook response - require explicit confirmation
-    let webhookResult: Record<string, unknown> = {};
+    // Webhook respondeu 2xx - considerar disparo aceito.
+    // Logamos a resposta para diagnóstico mas não exigimos campos específicos,
+    // pois a configuração do "Respond to Webhook" no N8N pode variar.
     try {
-      webhookResult = await webhookRes.json();
-    } catch {
-      // If n8n returns empty or non-JSON, treat as unconfirmed
-      throw new Error(
-        "O webhook não retornou confirmação de processamento. " +
-        "O disparo não foi efetivado. Verifique a configuração do N8N."
-      );
-    }
-
-    // Accept if webhook returned success/accepted flag or an execution ID
-    const confirmed =
-      webhookResult.success === true ||
-      webhookResult.accepted === true ||
-      !!webhookResult.executionId ||
-      !!webhookResult.execution_id;
-
-    if (!confirmed) {
-      throw new Error(
-        "O webhook respondeu mas não confirmou o processamento. " +
-        "Resposta: " + JSON.stringify(webhookResult).slice(0, 200)
-      );
-    }
+      const txt = await webhookRes.text();
+      console.log("N8N webhook response:", txt.slice(0, 500));
+    } catch { /* ignore */ }
 
     const { error: updateError } = await supabase
       .from("promotional_campaigns")
