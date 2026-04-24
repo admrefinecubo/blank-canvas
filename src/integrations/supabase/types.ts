@@ -708,7 +708,7 @@ export type Database = {
           instance: string | null
           maps_link: string | null
           montagem_disponivel: boolean
-          nome_assistente: string | null
+          msg_fora_horario: string | null
           nome_assistente_ia: string | null
           nome_loja: string
           onboarding_concluido: boolean | null
@@ -742,7 +742,7 @@ export type Database = {
           instance?: string | null
           maps_link?: string | null
           montagem_disponivel?: boolean
-          nome_assistente?: string | null
+          msg_fora_horario?: string | null
           nome_assistente_ia?: string | null
           nome_loja: string
           onboarding_concluido?: boolean | null
@@ -776,7 +776,7 @@ export type Database = {
           instance?: string | null
           maps_link?: string | null
           montagem_disponivel?: boolean
-          nome_assistente?: string | null
+          msg_fora_horario?: string | null
           nome_assistente_ia?: string | null
           nome_loja?: string
           onboarding_concluido?: boolean | null
