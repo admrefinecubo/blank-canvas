@@ -433,6 +433,7 @@ export type Database = {
           created_at: string
           enviado: boolean
           enviado_em: string | null
+          erro_envio: string | null
           id: string
           lead_id: string | null
           loja_id: string
@@ -446,6 +447,7 @@ export type Database = {
           created_at?: string
           enviado?: boolean
           enviado_em?: string | null
+          erro_envio?: string | null
           id?: string
           lead_id?: string | null
           loja_id: string
@@ -459,6 +461,7 @@ export type Database = {
           created_at?: string
           enviado?: boolean
           enviado_em?: string | null
+          erro_envio?: string | null
           id?: string
           lead_id?: string | null
           loja_id?: string
@@ -584,13 +587,19 @@ export type Database = {
           instance: string | null
           interesse: string | null
           is_bot_active: boolean
+          lead_score: number | null
           loja_id: string
+          motivo_risco: string | null
           nome: string | null
           nps_comentario: string | null
           nps_score: number | null
           orcamento_faixa: string | null
           origem: string | null
           pos_venda_status: string | null
+          produtos_consultados: Json | null
+          risco_perda: string | null
+          sentimento_atual: string | null
+          sentimento_historico: Json | null
           telefone: string
           ultima_interacao: string | null
           ultima_mensagem: string | null
@@ -608,13 +617,19 @@ export type Database = {
           instance?: string | null
           interesse?: string | null
           is_bot_active?: boolean
+          lead_score?: number | null
           loja_id: string
+          motivo_risco?: string | null
           nome?: string | null
           nps_comentario?: string | null
           nps_score?: number | null
           orcamento_faixa?: string | null
           origem?: string | null
           pos_venda_status?: string | null
+          produtos_consultados?: Json | null
+          risco_perda?: string | null
+          sentimento_atual?: string | null
+          sentimento_historico?: Json | null
           telefone: string
           ultima_interacao?: string | null
           ultima_mensagem?: string | null
@@ -632,13 +647,19 @@ export type Database = {
           instance?: string | null
           interesse?: string | null
           is_bot_active?: boolean
+          lead_score?: number | null
           loja_id?: string
+          motivo_risco?: string | null
           nome?: string | null
           nps_comentario?: string | null
           nps_score?: number | null
           orcamento_faixa?: string | null
           origem?: string | null
           pos_venda_status?: string | null
+          produtos_consultados?: Json | null
+          risco_perda?: string | null
+          sentimento_atual?: string | null
+          sentimento_historico?: Json | null
           telefone?: string
           ultima_interacao?: string | null
           ultima_mensagem?: string | null
@@ -1194,6 +1215,41 @@ export type Database = {
           },
         ]
       }
+      product_complements: {
+        Row: {
+          categoria_complementar: string
+          categoria_origem: string
+          created_at: string | null
+          id: string
+          loja_id: string | null
+          prioridade: number | null
+        }
+        Insert: {
+          categoria_complementar: string
+          categoria_origem: string
+          created_at?: string | null
+          id?: string
+          loja_id?: string | null
+          prioridade?: number | null
+        }
+        Update: {
+          categoria_complementar?: string
+          categoria_origem?: string
+          created_at?: string | null
+          id?: string
+          loja_id?: string | null
+          prioridade?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_complements_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtos: {
         Row: {
           categoria: string | null
@@ -1547,9 +1603,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_lead_score: { Args: { _loja_id?: string }; Returns: undefined }
       decrementar_estoque: {
         Args: { p_produto_id: string; p_quantidade?: number }
         Returns: undefined
+      }
+      get_cross_sell_products: {
+        Args: { _lead_id: string; _limit?: number; _loja_id: string }
+        Returns: {
+          categoria: string
+          checkout_url: string
+          foto_principal: string
+          motivo_sugestao: string
+          nome: string
+          preco_original: number
+          preco_promocional: number
+          produto_id: string
+        }[]
       }
       has_clinic_access: {
         Args: { _clinic_id: string; _user_id: string }
