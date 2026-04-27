@@ -1,0 +1,1 @@
+UPDATE leads SET agente_pausado = false, is_bot_active = true, etapa_pipeline = 'novo' WHERE id = '74e69299-8c2a-4c5b-b3b1-6d786d973567';
