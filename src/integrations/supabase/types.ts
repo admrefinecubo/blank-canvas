@@ -471,11 +471,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_catalogo_ia"
+            referencedColumns: ["produto_id"]
+          },
+          {
             foreignKeyName: "estoque_movimentacoes_variacao_id_fkey"
             columns: ["variacao_id"]
             isOneToOne: false
             referencedRelation: "produto_variacoes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_variacao_id_fkey"
+            columns: ["variacao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_catalogo_ia"
+            referencedColumns: ["variacao_id"]
           },
         ]
       }
@@ -1021,6 +1035,13 @@ export type Database = {
             referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "midias_enviadas_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_catalogo_ia"
+            referencedColumns: ["produto_id"]
+          },
         ]
       }
       nps_responses: {
@@ -1260,11 +1281,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pedido_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_catalogo_ia"
+            referencedColumns: ["produto_id"]
+          },
+          {
             foreignKeyName: "pedido_itens_variacao_id_fkey"
             columns: ["variacao_id"]
             isOneToOne: false
             referencedRelation: "produto_variacoes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_variacao_id_fkey"
+            columns: ["variacao_id"]
+            isOneToOne: false
+            referencedRelation: "vw_catalogo_ia"
+            referencedColumns: ["variacao_id"]
           },
         ]
       }
@@ -1605,6 +1640,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "produtos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_variacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_catalogo_ia"
+            referencedColumns: ["produto_id"]
           },
         ]
       }
@@ -1977,6 +2019,13 @@ export type Database = {
             referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vendas_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_catalogo_ia"
+            referencedColumns: ["produto_id"]
+          },
         ]
       }
       visitas: {
@@ -2035,7 +2084,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_catalogo_ia: {
+        Row: {
+          atributos: Json | null
+          categoria: string | null
+          checkout_url: string | null
+          descricao: string | null
+          estoque: number | null
+          estoque_disponivel: boolean | null
+          imagem_url: string | null
+          loja_id: string | null
+          nome_exibicao: string | null
+          nome_produto: string | null
+          nome_variacao: string | null
+          plataforma: string | null
+          preco: number | null
+          preco_promocional: number | null
+          produto_ativo: boolean | null
+          produto_external_id: string | null
+          produto_id: string | null
+          produto_source_updated_at: string | null
+          sku: string | null
+          tags: string | null
+          variacao_ativa: boolean | null
+          variacao_external_id: string | null
+          variacao_id: string | null
+          variacao_source_updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_lead_score: { Args: { _loja_id?: string }; Returns: undefined }
@@ -2158,6 +2243,41 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      ia_catalogo_buscar: {
+        Args: { params: Json }
+        Returns: {
+          atributos: Json | null
+          categoria: string | null
+          checkout_url: string | null
+          descricao: string | null
+          estoque: number | null
+          estoque_disponivel: boolean | null
+          imagem_url: string | null
+          loja_id: string | null
+          nome_exibicao: string | null
+          nome_produto: string | null
+          nome_variacao: string | null
+          plataforma: string | null
+          preco: number | null
+          preco_promocional: number | null
+          produto_ativo: boolean | null
+          produto_external_id: string | null
+          produto_id: string | null
+          produto_source_updated_at: string | null
+          sku: string | null
+          tags: string | null
+          variacao_ativa: boolean | null
+          variacao_external_id: string | null
+          variacao_id: string | null
+          variacao_source_updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vw_catalogo_ia"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       match_produtos: {
         Args: {
