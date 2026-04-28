@@ -362,6 +362,123 @@ export type Database = {
           },
         ]
       }
+      ecommerce_webhook_events: {
+        Row: {
+          created_at: string
+          erro: string | null
+          event_id: string | null
+          headers: Json | null
+          id: string
+          loja_id: string
+          payload_original: Json | null
+          plataforma: string
+          processado: boolean
+          topico: string
+          triggered_at: string | null
+          webhook_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          erro?: string | null
+          event_id?: string | null
+          headers?: Json | null
+          id?: string
+          loja_id: string
+          payload_original?: Json | null
+          plataforma: string
+          processado?: boolean
+          topico: string
+          triggered_at?: string | null
+          webhook_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          erro?: string | null
+          event_id?: string | null
+          headers?: Json | null
+          id?: string
+          loja_id?: string
+          payload_original?: Json | null
+          plataforma?: string
+          processado?: boolean
+          topico?: string
+          triggered_at?: string | null
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecommerce_webhook_events_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_movimentacoes: {
+        Row: {
+          created_at: string
+          id: string
+          loja_id: string
+          origem: string
+          produto_id: string
+          quantidade_anterior: number
+          quantidade_movimentada: number
+          quantidade_nova: number
+          referencia_id: string | null
+          source_updated_at: string | null
+          variacao_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          loja_id: string
+          origem: string
+          produto_id: string
+          quantidade_anterior?: number
+          quantidade_movimentada?: number
+          quantidade_nova?: number
+          referencia_id?: string | null
+          source_updated_at?: string | null
+          variacao_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          loja_id?: string
+          origem?: string
+          produto_id?: string
+          quantidade_anterior?: number
+          quantidade_movimentada?: number
+          quantidade_nova?: number
+          referencia_id?: string | null
+          source_updated_at?: string | null
+          variacao_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_movimentacoes_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentacoes_variacao_id_fkey"
+            columns: ["variacao_id"]
+            isOneToOne: false
+            referencedRelation: "produto_variacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_installments: {
         Row: {
           amount: number
@@ -716,7 +833,8 @@ export type Database = {
           desconto_promocao_nao_respondida: number | null
           descricao_loja: string | null
           dias_funcionamento: string | null
-          ecommerce_api_key: string | null
+          ecommerce_access_token: string | null
+          ecommerce_store_id: string | null
           endereco: string | null
           especialidades: string | null
           external_id: string | null
@@ -737,7 +855,9 @@ export type Database = {
           politica_troca: string | null
           prazo_entrega: string | null
           regras_personalidade: string | null
+          sync_job_id: string | null
           tom_voz: string | null
+          ultima_sync_catalogo: string | null
           updated_at: string
         }
         Insert: {
@@ -750,7 +870,8 @@ export type Database = {
           desconto_promocao_nao_respondida?: number | null
           descricao_loja?: string | null
           dias_funcionamento?: string | null
-          ecommerce_api_key?: string | null
+          ecommerce_access_token?: string | null
+          ecommerce_store_id?: string | null
           endereco?: string | null
           especialidades?: string | null
           external_id?: string | null
@@ -771,7 +892,9 @@ export type Database = {
           politica_troca?: string | null
           prazo_entrega?: string | null
           regras_personalidade?: string | null
+          sync_job_id?: string | null
           tom_voz?: string | null
+          ultima_sync_catalogo?: string | null
           updated_at?: string
         }
         Update: {
@@ -784,7 +907,8 @@ export type Database = {
           desconto_promocao_nao_respondida?: number | null
           descricao_loja?: string | null
           dias_funcionamento?: string | null
-          ecommerce_api_key?: string | null
+          ecommerce_access_token?: string | null
+          ecommerce_store_id?: string | null
           endereco?: string | null
           especialidades?: string | null
           external_id?: string | null
@@ -805,7 +929,9 @@ export type Database = {
           politica_troca?: string | null
           prazo_entrega?: string | null
           regras_personalidade?: string | null
+          sync_job_id?: string | null
           tom_voz?: string | null
+          ultima_sync_catalogo?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1075,6 +1201,157 @@ export type Database = {
           },
         ]
       }
+      pedido_itens: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          pedido_id: string
+          preco_unitario: number
+          produto_external_id: string | null
+          produto_id: string | null
+          quantidade: number
+          sku: string | null
+          subtotal: number
+          variacao_external_id: string | null
+          variacao_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          pedido_id: string
+          preco_unitario?: number
+          produto_external_id?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          sku?: string | null
+          subtotal?: number
+          variacao_external_id?: string | null
+          variacao_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          pedido_id?: string
+          preco_unitario?: number
+          produto_external_id?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          sku?: string | null
+          subtotal?: number
+          variacao_external_id?: string | null
+          variacao_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_variacao_id_fkey"
+            columns: ["variacao_id"]
+            isOneToOne: false
+            referencedRelation: "produto_variacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          canal: string | null
+          created_at: string
+          customer_email: string | null
+          customer_nome: string | null
+          customer_telefone: string | null
+          desconto: number | null
+          external_id: string | null
+          frete: number | null
+          id: string
+          lead_id: string | null
+          loja_id: string
+          moeda: string | null
+          notas: string | null
+          payload_original: Json | null
+          plataforma: string | null
+          source_updated_at: string | null
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          canal?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_nome?: string | null
+          customer_telefone?: string | null
+          desconto?: number | null
+          external_id?: string | null
+          frete?: number | null
+          id?: string
+          lead_id?: string | null
+          loja_id: string
+          moeda?: string | null
+          notas?: string | null
+          payload_original?: Json | null
+          plataforma?: string | null
+          source_updated_at?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          canal?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_nome?: string | null
+          customer_telefone?: string | null
+          desconto?: number | null
+          external_id?: string | null
+          frete?: number | null
+          id?: string
+          lead_id?: string | null
+          loja_id?: string
+          moeda?: string | null
+          notas?: string | null
+          payload_original?: Json | null
+          plataforma?: string | null
+          source_updated_at?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_procedure_templates: {
         Row: {
           active: boolean
@@ -1250,8 +1527,90 @@ export type Database = {
           },
         ]
       }
+      produto_variacoes: {
+        Row: {
+          ativo: boolean
+          atributos: Json | null
+          checkout_url: string | null
+          created_at: string
+          estoque: number
+          estoque_disponivel: boolean
+          external_id: string | null
+          id: string
+          imagem_url: string | null
+          inventory_item_id: string | null
+          loja_id: string
+          nome: string
+          posicao: number | null
+          preco: number | null
+          preco_promocional: number | null
+          produto_id: string
+          sku: string | null
+          source_updated_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          atributos?: Json | null
+          checkout_url?: string | null
+          created_at?: string
+          estoque?: number
+          estoque_disponivel?: boolean
+          external_id?: string | null
+          id?: string
+          imagem_url?: string | null
+          inventory_item_id?: string | null
+          loja_id: string
+          nome: string
+          posicao?: number | null
+          preco?: number | null
+          preco_promocional?: number | null
+          produto_id: string
+          sku?: string | null
+          source_updated_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          atributos?: Json | null
+          checkout_url?: string | null
+          created_at?: string
+          estoque?: number
+          estoque_disponivel?: boolean
+          external_id?: string | null
+          id?: string
+          imagem_url?: string | null
+          inventory_item_id?: string | null
+          loja_id?: string
+          nome?: string
+          posicao?: number | null
+          preco?: number | null
+          preco_promocional?: number | null
+          produto_id?: string
+          sku?: string | null
+          source_updated_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_variacoes_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_variacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtos: {
         Row: {
+          ativo: boolean
           categoria: string | null
           checkout_url: string | null
           created_at: string
@@ -1266,15 +1625,19 @@ export type Database = {
           id: string
           loja_id: string
           nome: string
+          payload_original: Json | null
           plataforma: string | null
           preco_original: number
           preco_promocional: number | null
+          sku: string | null
+          source_updated_at: string | null
           tags: string | null
           updated_at: string
           variacoes: Json | null
           video_url: string | null
         }
         Insert: {
+          ativo?: boolean
           categoria?: string | null
           checkout_url?: string | null
           created_at?: string
@@ -1289,15 +1652,19 @@ export type Database = {
           id?: string
           loja_id: string
           nome: string
+          payload_original?: Json | null
           plataforma?: string | null
           preco_original?: number
           preco_promocional?: number | null
+          sku?: string | null
+          source_updated_at?: string | null
           tags?: string | null
           updated_at?: string
           variacoes?: Json | null
           video_url?: string | null
         }
         Update: {
+          ativo?: boolean
           categoria?: string | null
           checkout_url?: string | null
           created_at?: string
@@ -1312,9 +1679,12 @@ export type Database = {
           id?: string
           loja_id?: string
           nome?: string
+          payload_original?: Json | null
           plataforma?: string | null
           preco_original?: number
           preco_promocional?: number | null
+          sku?: string | null
+          source_updated_at?: string | null
           tags?: string | null
           updated_at?: string
           variacoes?: Json | null
@@ -1447,6 +1817,71 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_jobs: {
+        Row: {
+          created_at: string
+          erros: Json | null
+          finished_at: string | null
+          forcar_reimportacao: boolean | null
+          id: string
+          loja_id: string
+          modo: string
+          plataforma: string
+          solicitado_por: string | null
+          started_at: string | null
+          status: string
+          total_atualizados: number | null
+          total_criados: number | null
+          total_erros: number | null
+          total_lidos: number | null
+          total_variacoes: number | null
+        }
+        Insert: {
+          created_at?: string
+          erros?: Json | null
+          finished_at?: string | null
+          forcar_reimportacao?: boolean | null
+          id?: string
+          loja_id: string
+          modo?: string
+          plataforma: string
+          solicitado_por?: string | null
+          started_at?: string | null
+          status?: string
+          total_atualizados?: number | null
+          total_criados?: number | null
+          total_erros?: number | null
+          total_lidos?: number | null
+          total_variacoes?: number | null
+        }
+        Update: {
+          created_at?: string
+          erros?: Json | null
+          finished_at?: string | null
+          forcar_reimportacao?: boolean | null
+          id?: string
+          loja_id?: string
+          modo?: string
+          plataforma?: string
+          solicitado_por?: string | null
+          started_at?: string | null
+          status?: string
+          total_atualizados?: number | null
+          total_criados?: number | null
+          total_erros?: number | null
+          total_lidos?: number | null
+          total_variacoes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_jobs_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
             referencedColumns: ["id"]
           },
         ]
@@ -1604,9 +2039,69 @@ export type Database = {
     }
     Functions: {
       calculate_lead_score: { Args: { _loja_id?: string }; Returns: undefined }
-      decrementar_estoque: {
-        Args: { p_produto_id: string; p_quantidade?: number }
-        Returns: undefined
+      decrementar_estoque:
+        | {
+            Args: { p_produto_id: string; p_quantidade?: number }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_produto_id: string
+              p_quantidade?: number
+              p_variacao_id?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_produto_id: string
+              p_quantidade?: number
+              p_variacao_id?: string
+            }
+            Returns: {
+              estoque_anterior: number
+              estoque_novo: number
+            }[]
+          }
+      fn_ecommerce_import_produto: {
+        Args: {
+          p_categoria?: string
+          p_checkout_url?: string
+          p_descricao?: string
+          p_estoque?: number
+          p_external_id: string
+          p_foto_principal?: string
+          p_loja_id: string
+          p_nome: string
+          p_plataforma: string
+          p_preco_original?: number
+          p_preco_promocional?: number
+          p_sku?: string
+          p_variacoes?: Json
+        }
+        Returns: Json
+      }
+      fn_ecommerce_webhook_process: {
+        Args: {
+          p_categoria?: string
+          p_checkout_url?: string
+          p_descricao?: string
+          p_estoque?: number
+          p_event_id?: string
+          p_external_id?: string
+          p_foto_principal?: string
+          p_headers?: Json
+          p_loja_id: string
+          p_nome?: string
+          p_payload_original?: Json
+          p_plataforma: string
+          p_preco_original?: number
+          p_preco_promocional?: number
+          p_sku?: string
+          p_topico?: string
+          p_variacoes?: Json
+        }
+        Returns: Json
       }
       get_cross_sell_products: {
         Args: { _lead_id: string; _limit?: number; _loja_id: string }
