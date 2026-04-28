@@ -2124,30 +2124,15 @@ export type Database = {
     }
     Functions: {
       calculate_lead_score: { Args: { _loja_id?: string }; Returns: undefined }
-      decrementar_estoque:
-        | {
-            Args: { p_produto_id: string; p_quantidade?: number }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_produto_id: string
-              p_quantidade?: number
-              p_variacao_id?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_produto_id: string
-              p_quantidade?: number
-              p_variacao_id?: string
-            }
-            Returns: {
-              estoque_anterior: number
-              estoque_novo: number
-            }[]
-          }
+      decrementar_estoque: {
+        Args: {
+          p_produto_id: string
+          p_quantidade?: number
+          p_referencia_id?: string
+          p_variacao_id?: string
+        }
+        Returns: Json
+      }
       fn_ecommerce_import_produto: {
         Args: {
           p_categoria?: string
@@ -2302,6 +2287,7 @@ export type Database = {
         Args: {
           p_produto_id: string
           p_quantidade?: number
+          p_referencia_id?: string
           p_variacao_id?: string
         }
         Returns: Json
