@@ -2081,6 +2081,34 @@ export type Database = {
         }
         Returns: Json
       }
+      fn_ecommerce_order_process: {
+        Args: {
+          p_acao_estoque?: string
+          p_canal?: string
+          p_customer_email?: string
+          p_customer_nome?: string
+          p_customer_telefone?: string
+          p_desconto?: number
+          p_event_id: string
+          p_external_id?: string
+          p_frete?: number
+          p_headers?: Json
+          p_itens?: Json
+          p_loja_id: string
+          p_moeda?: string
+          p_notas?: string
+          p_numero_pedido?: string
+          p_payload_original?: Json
+          p_plataforma: string
+          p_source_created_at?: string
+          p_source_updated_at?: string
+          p_status?: string
+          p_subtotal?: number
+          p_topico: string
+          p_total?: number
+        }
+        Returns: Json
+      }
       fn_ecommerce_webhook_process: {
         Args: {
           p_categoria?: string
@@ -2149,6 +2177,14 @@ export type Database = {
           preco_promocional: number
           similarity: number
         }[]
+      }
+      recompor_estoque: {
+        Args: {
+          p_produto_id: string
+          p_quantidade?: number
+          p_variacao_id?: string
+        }
+        Returns: Json
       }
     }
     Enums: {
