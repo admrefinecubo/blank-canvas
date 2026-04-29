@@ -2147,6 +2147,7 @@ export type Database = {
           p_preco_original?: number
           p_preco_promocional?: number
           p_sku?: string
+          p_tags?: string
           p_variacoes?: Json
         }
         Returns: Json
@@ -2196,6 +2197,7 @@ export type Database = {
           p_preco_original?: number
           p_preco_promocional?: number
           p_sku?: string
+          p_tags?: string
           p_topico?: string
           p_variacoes?: Json
         }
