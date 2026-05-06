@@ -838,6 +838,7 @@ export type Database = {
       }
       lojas: {
         Row: {
+          api_provider: string | null
           ativo: boolean
           checkout_base_url: string | null
           clinic_id: string | null
@@ -860,6 +861,9 @@ export type Database = {
           id: string
           instance: string | null
           maps_link: string | null
+          meta_access_token_encrypted: string | null
+          meta_phone_number_id: string | null
+          meta_waba_id: string | null
           montagem_disponivel: boolean
           msg_fora_horario: string | null
           nome_assistente_ia: string | null
@@ -875,6 +879,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          api_provider?: string | null
           ativo?: boolean
           checkout_base_url?: string | null
           clinic_id?: string | null
@@ -897,6 +902,9 @@ export type Database = {
           id?: string
           instance?: string | null
           maps_link?: string | null
+          meta_access_token_encrypted?: string | null
+          meta_phone_number_id?: string | null
+          meta_waba_id?: string | null
           montagem_disponivel?: boolean
           msg_fora_horario?: string | null
           nome_assistente_ia?: string | null
@@ -912,6 +920,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          api_provider?: string | null
           ativo?: boolean
           checkout_base_url?: string | null
           clinic_id?: string | null
@@ -934,6 +943,9 @@ export type Database = {
           id?: string
           instance?: string | null
           maps_link?: string | null
+          meta_access_token_encrypted?: string | null
+          meta_phone_number_id?: string | null
+          meta_waba_id?: string | null
           montagem_disponivel?: boolean
           msg_fora_horario?: string | null
           nome_assistente_ia?: string | null
