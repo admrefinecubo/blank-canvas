@@ -718,6 +718,7 @@ export type Database = {
           instance: string | null
           interesse: string | null
           is_bot_active: boolean
+          last_inbound_at: string | null
           lead_score: number | null
           loja_id: string
           motivo_risco: string | null
@@ -735,6 +736,7 @@ export type Database = {
           ultima_interacao: string | null
           ultima_mensagem: string | null
           updated_at: string
+          wa_id: string | null
         }
         Insert: {
           agente_pausado?: boolean | null
@@ -748,6 +750,7 @@ export type Database = {
           instance?: string | null
           interesse?: string | null
           is_bot_active?: boolean
+          last_inbound_at?: string | null
           lead_score?: number | null
           loja_id: string
           motivo_risco?: string | null
@@ -765,6 +768,7 @@ export type Database = {
           ultima_interacao?: string | null
           ultima_mensagem?: string | null
           updated_at?: string
+          wa_id?: string | null
         }
         Update: {
           agente_pausado?: boolean | null
@@ -778,6 +782,7 @@ export type Database = {
           instance?: string | null
           interesse?: string | null
           is_bot_active?: boolean
+          last_inbound_at?: string | null
           lead_score?: number | null
           loja_id?: string
           motivo_risco?: string | null
@@ -795,6 +800,7 @@ export type Database = {
           ultima_interacao?: string | null
           ultima_mensagem?: string | null
           updated_at?: string
+          wa_id?: string | null
         }
         Relationships: [
           {
@@ -840,6 +846,7 @@ export type Database = {
         Row: {
           api_provider: string | null
           ativo: boolean
+          canal_whatsapp: string
           checkout_base_url: string | null
           clinic_id: string | null
           created_at: string
@@ -881,6 +888,7 @@ export type Database = {
         Insert: {
           api_provider?: string | null
           ativo?: boolean
+          canal_whatsapp?: string
           checkout_base_url?: string | null
           clinic_id?: string | null
           created_at?: string
@@ -922,6 +930,7 @@ export type Database = {
         Update: {
           api_provider?: string | null
           ativo?: boolean
+          canal_whatsapp?: string
           checkout_base_url?: string | null
           clinic_id?: string | null
           created_at?: string
@@ -988,6 +997,104 @@ export type Database = {
           instance?: string | null
           message_id?: string
           remotejid?: string | null
+        }
+        Relationships: []
+      }
+      meta_templates: {
+        Row: {
+          body_text: string | null
+          categoria: string
+          created_at: string
+          id: string
+          idioma: string
+          loja_id: string | null
+          meta_template_id: string | null
+          nome: string
+          num_variaveis: number
+          rejection_reason: string | null
+          status: string
+          tem_botoes: boolean
+          updated_at: string
+        }
+        Insert: {
+          body_text?: string | null
+          categoria: string
+          created_at?: string
+          id?: string
+          idioma?: string
+          loja_id?: string | null
+          meta_template_id?: string | null
+          nome: string
+          num_variaveis?: number
+          rejection_reason?: string | null
+          status?: string
+          tem_botoes?: boolean
+          updated_at?: string
+        }
+        Update: {
+          body_text?: string | null
+          categoria?: string
+          created_at?: string
+          id?: string
+          idioma?: string
+          loja_id?: string | null
+          meta_template_id?: string | null
+          nome?: string
+          num_variaveis?: number
+          rejection_reason?: string | null
+          status?: string
+          tem_botoes?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_templates_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_webhook_events: {
+        Row: {
+          event_type: string
+          id: string
+          message_id: string | null
+          phone_number_id: string | null
+          processed: boolean
+          processing_error: string | null
+          raw_payload: Json
+          received_at: string
+          status: string | null
+          wa_id: string | null
+          waba_id: string | null
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          message_id?: string | null
+          phone_number_id?: string | null
+          processed?: boolean
+          processing_error?: string | null
+          raw_payload: Json
+          received_at?: string
+          status?: string | null
+          wa_id?: string | null
+          waba_id?: string | null
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          message_id?: string | null
+          phone_number_id?: string | null
+          processed?: boolean
+          processing_error?: string | null
+          raw_payload?: Json
+          received_at?: string
+          status?: string | null
+          wa_id?: string | null
+          waba_id?: string | null
         }
         Relationships: []
       }
@@ -2278,6 +2385,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      lead_pode_receber_texto_livre: {
+        Args: { p_lead_id: string }
+        Returns: boolean
+      }
       match_produtos: {
         Args: {
           loja_id_param: string
@@ -2297,6 +2408,14 @@ export type Database = {
           similarity: number
         }[]
       }
+      normalize_phone_br: {
+        Args: { input: string }
+        Returns: {
+          com_nove: string
+          e164: string
+          sem_nove: string
+        }[]
+      }
       recompor_estoque: {
         Args: {
           p_produto_id: string
@@ -2305,6 +2424,10 @@ export type Database = {
           p_variacao_id?: string
         }
         Returns: Json
+      }
+      touch_lead_inbound: {
+        Args: { p_lead_id: string; p_wa_id: string }
+        Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
     }
