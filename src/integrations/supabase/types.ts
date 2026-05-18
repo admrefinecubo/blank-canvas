@@ -562,6 +562,7 @@ export type Database = {
           agendado_para: string
           campaign_id: string | null
           created_at: string
+          desconto_pct: number | null
           enviado: boolean
           enviado_em: string | null
           erro_envio: string | null
@@ -576,6 +577,7 @@ export type Database = {
           agendado_para: string
           campaign_id?: string | null
           created_at?: string
+          desconto_pct?: number | null
           enviado?: boolean
           enviado_em?: string | null
           erro_envio?: string | null
@@ -590,6 +592,7 @@ export type Database = {
           agendado_para?: string
           campaign_id?: string | null
           created_at?: string
+          desconto_pct?: number | null
           enviado?: boolean
           enviado_em?: string | null
           erro_envio?: string | null
@@ -725,9 +728,12 @@ export type Database = {
           nome: string | null
           nps_comentario: string | null
           nps_score: number | null
+          opt_out: boolean
+          opt_out_at: string | null
           orcamento_faixa: string | null
           origem: string | null
           pos_venda_status: string | null
+          prioridade_transbordo: number
           produtos_consultados: Json | null
           risco_perda: string | null
           sentimento_atual: string | null
@@ -735,6 +741,7 @@ export type Database = {
           telefone: string
           ultima_interacao: string | null
           ultima_mensagem: string | null
+          ultima_promocao_em: string | null
           updated_at: string
           wa_id: string | null
         }
@@ -757,9 +764,12 @@ export type Database = {
           nome?: string | null
           nps_comentario?: string | null
           nps_score?: number | null
+          opt_out?: boolean
+          opt_out_at?: string | null
           orcamento_faixa?: string | null
           origem?: string | null
           pos_venda_status?: string | null
+          prioridade_transbordo?: number
           produtos_consultados?: Json | null
           risco_perda?: string | null
           sentimento_atual?: string | null
@@ -767,6 +777,7 @@ export type Database = {
           telefone: string
           ultima_interacao?: string | null
           ultima_mensagem?: string | null
+          ultima_promocao_em?: string | null
           updated_at?: string
           wa_id?: string | null
         }
@@ -789,9 +800,12 @@ export type Database = {
           nome?: string | null
           nps_comentario?: string | null
           nps_score?: number | null
+          opt_out?: boolean
+          opt_out_at?: string | null
           orcamento_faixa?: string | null
           origem?: string | null
           pos_venda_status?: string | null
+          prioridade_transbordo?: number
           produtos_consultados?: Json | null
           risco_perda?: string | null
           sentimento_atual?: string | null
@@ -799,6 +813,7 @@ export type Database = {
           telefone?: string
           ultima_interacao?: string | null
           ultima_mensagem?: string | null
+          ultima_promocao_em?: string | null
           updated_at?: string
           wa_id?: string | null
         }
@@ -846,9 +861,13 @@ export type Database = {
         Row: {
           api_provider: string | null
           ativo: boolean
+          cadencia_carrinho: Json | null
+          cadencia_orcamento: Json | null
+          cadencia_promocao: Json | null
           canal_whatsapp: string
           checkout_base_url: string | null
           clinic_id: string | null
+          comportamento_fora_horario: string
           created_at: string
           desconto_carrinho_abandonado: number | null
           desconto_followup_orcamento: number | null
@@ -862,6 +881,10 @@ export type Database = {
           external_id: string | null
           formas_pagamento: string | null
           frete_gratis_acima: number | null
+          gateway_api_key: string | null
+          gateway_modo: string
+          gateway_pagamento: string
+          gateway_webhook_secret: string | null
           horario_fim: string | null
           horario_inicio: string | null
           horarios_especiais: Json | null
@@ -876,6 +899,7 @@ export type Database = {
           nome_assistente_ia: string | null
           nome_loja: string
           onboarding_concluido: boolean | null
+          orcamento_validade_dias: number
           plataforma_ecommerce: string | null
           politica_troca: string | null
           prazo_entrega: string | null
@@ -884,13 +908,18 @@ export type Database = {
           tom_voz: string | null
           ultima_sync_catalogo: string | null
           updated_at: string
+          vendedores: Json
         }
         Insert: {
           api_provider?: string | null
           ativo?: boolean
+          cadencia_carrinho?: Json | null
+          cadencia_orcamento?: Json | null
+          cadencia_promocao?: Json | null
           canal_whatsapp?: string
           checkout_base_url?: string | null
           clinic_id?: string | null
+          comportamento_fora_horario?: string
           created_at?: string
           desconto_carrinho_abandonado?: number | null
           desconto_followup_orcamento?: number | null
@@ -904,6 +933,10 @@ export type Database = {
           external_id?: string | null
           formas_pagamento?: string | null
           frete_gratis_acima?: number | null
+          gateway_api_key?: string | null
+          gateway_modo?: string
+          gateway_pagamento?: string
+          gateway_webhook_secret?: string | null
           horario_fim?: string | null
           horario_inicio?: string | null
           horarios_especiais?: Json | null
@@ -918,6 +951,7 @@ export type Database = {
           nome_assistente_ia?: string | null
           nome_loja: string
           onboarding_concluido?: boolean | null
+          orcamento_validade_dias?: number
           plataforma_ecommerce?: string | null
           politica_troca?: string | null
           prazo_entrega?: string | null
@@ -926,13 +960,18 @@ export type Database = {
           tom_voz?: string | null
           ultima_sync_catalogo?: string | null
           updated_at?: string
+          vendedores?: Json
         }
         Update: {
           api_provider?: string | null
           ativo?: boolean
+          cadencia_carrinho?: Json | null
+          cadencia_orcamento?: Json | null
+          cadencia_promocao?: Json | null
           canal_whatsapp?: string
           checkout_base_url?: string | null
           clinic_id?: string | null
+          comportamento_fora_horario?: string
           created_at?: string
           desconto_carrinho_abandonado?: number | null
           desconto_followup_orcamento?: number | null
@@ -946,6 +985,10 @@ export type Database = {
           external_id?: string | null
           formas_pagamento?: string | null
           frete_gratis_acima?: number | null
+          gateway_api_key?: string | null
+          gateway_modo?: string
+          gateway_pagamento?: string
+          gateway_webhook_secret?: string | null
           horario_fim?: string | null
           horario_inicio?: string | null
           horarios_especiais?: Json | null
@@ -960,6 +1003,7 @@ export type Database = {
           nome_assistente_ia?: string | null
           nome_loja?: string
           onboarding_concluido?: boolean | null
+          orcamento_validade_dias?: number
           plataforma_ecommerce?: string | null
           politica_troca?: string | null
           prazo_entrega?: string | null
@@ -968,6 +1012,7 @@ export type Database = {
           tom_voz?: string | null
           ultima_sync_catalogo?: string | null
           updated_at?: string
+          vendedores?: Json
         }
         Relationships: [
           {
@@ -1442,6 +1487,7 @@ export type Database = {
           source_updated_at: string | null
           status: string
           subtotal: number
+          tipo_entrega: string | null
           total: number
           updated_at: string
         }
@@ -1464,6 +1510,7 @@ export type Database = {
           source_updated_at?: string | null
           status?: string
           subtotal?: number
+          tipo_entrega?: string | null
           total?: number
           updated_at?: string
         }
@@ -1486,6 +1533,7 @@ export type Database = {
           source_updated_at?: string | null
           status?: string
           subtotal?: number
+          tipo_entrega?: string | null
           total?: number
           updated_at?: string
         }
@@ -1783,6 +1831,7 @@ export type Database = {
           external_id: string | null
           foto_detalhe: string | null
           foto_principal: string | null
+          foto_supabase_url: string | null
           id: string
           loja_id: string
           nome: string
@@ -1810,6 +1859,7 @@ export type Database = {
           external_id?: string | null
           foto_detalhe?: string | null
           foto_principal?: string | null
+          foto_supabase_url?: string | null
           id?: string
           loja_id: string
           nome: string
@@ -1837,6 +1887,7 @@ export type Database = {
           external_id?: string | null
           foto_detalhe?: string | null
           foto_principal?: string | null
+          foto_supabase_url?: string | null
           id?: string
           loja_id?: string
           nome?: string
@@ -1858,6 +1909,60 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "lojas"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos_embedding_queue: {
+        Row: {
+          attempts: number
+          claim_token: string | null
+          claimed_at: string | null
+          enqueued_at: string
+          id: number
+          last_error: string | null
+          loja_id: string
+          processed_at: string | null
+          produto_id: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          claim_token?: string | null
+          claimed_at?: string | null
+          enqueued_at?: string
+          id?: number
+          last_error?: string | null
+          loja_id: string
+          processed_at?: string | null
+          produto_id: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          claim_token?: string | null
+          claimed_at?: string | null
+          enqueued_at?: string
+          id?: number
+          last_error?: string | null
+          loja_id?: string
+          processed_at?: string | null
+          produto_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_embedding_queue_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_embedding_queue_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "vw_catalogo_ia"
+            referencedColumns: ["produto_id"]
           },
         ]
       }
@@ -2242,7 +2347,40 @@ export type Database = {
       }
     }
     Functions: {
+      assign_vendedor_visita: {
+        Args: { p_data_visita: string; p_loja_id: string }
+        Returns: {
+          endereco: string
+          loja_nome: string
+          maps_link: string
+          vendedor_id: string
+          vendedor_nome: string
+        }[]
+      }
       calculate_lead_score: { Args: { _loja_id?: string }; Returns: undefined }
+      claim_embedding_jobs: {
+        Args: { batch_size?: number }
+        Returns: {
+          categoria: string
+          claim_token: string
+          descricao: string
+          especificacoes: Json
+          job_id: number
+          loja_id: string
+          nome: string
+          produto_id: string
+          tags: string[]
+        }[]
+      }
+      complete_embedding_job: {
+        Args: {
+          p_claim_token: string
+          p_embedding: string
+          p_error?: string
+          p_job_id: number
+        }
+        Returns: boolean
+      }
       decrementar_estoque: {
         Args: {
           p_produto_id: string
@@ -2251,6 +2389,10 @@ export type Database = {
           p_variacao_id?: string
         }
         Returns: Json
+      }
+      enqueue_followups_cadencia: {
+        Args: { p_lead_id: string; p_loja_id: string; p_tipo_cadencia: string }
+        Returns: number
       }
       fn_ecommerce_import_produto: {
         Args: {
@@ -2389,6 +2531,15 @@ export type Database = {
         Args: { p_lead_id: string }
         Returns: boolean
       }
+      mark_lead_opt_out: {
+        Args: { p_loja_id: string; p_telefone: string; p_via?: string }
+        Returns: {
+          lead_id: string
+          opt_out: boolean
+          opt_out_at: string
+          was_already_opted_out: boolean
+        }[]
+      }
       match_produtos: {
         Args: {
           loja_id_param: string
@@ -2406,6 +2557,33 @@ export type Database = {
           preco_original: number
           preco_promocional: number
           similarity: number
+        }[]
+      }
+      match_produtos_filtered: {
+        Args: {
+          apenas_disponivel?: boolean
+          filtro_categoria?: string
+          filtro_preco_max?: number
+          filtro_preco_min?: number
+          filtro_tamanho?: string
+          loja_id_param: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          categoria: string
+          checkout_url: string
+          descricao: string
+          estoque_disponivel: boolean
+          foto_principal: string
+          foto_supabase_url: string
+          id: string
+          nome: string
+          preco_original: number
+          preco_promocional: number
+          similarity: number
+          variacoes: Json
         }[]
       }
       normalize_phone_br: {
